@@ -56,6 +56,35 @@ Navegador ──> /datacenter360/index.html + app.js (ECharts)
 
 A correlação entre chamado e host usa o título gerado pela integração Zabbix → GLPI (`[Severidade] HOST: problema`), e o vínculo com o evento usa o link `eventid=` gravado no corpo do chamado.
 
+## Plugin para o GLPI (menu lateral)
+
+A pasta [`glpi-plugin/datacenter360`](glpi-plugin/datacenter360) é um plugin do GLPI 11/12 que coloca o painel no menu lateral, **acima de Ativos**:
+
+```
+Dashboard
+   ├─ DataCenter 360      → painel
+   └─ Topologia da rede   → topologia
+Ativos
+...
+```
+
+- As páginas abrem o dashboard **dentro do GLPI** (cabeçalho e menu do GLPI), com botão "Abrir em tela cheia".
+- Acesso controlado pelo direito **DataCenter 360**, em *Administração → Perfis → [perfil] → aba DataCenter 360*. Na instalação, a leitura é liberada para os perfis da interface padrão (técnicos e administradores); perfis self-service ficam sem acesso.
+- Sessões abertas antes da instalação passam a ver o menu sem precisar relogar.
+
+### Instalação do plugin
+
+```bash
+sudo cp -r glpi-plugin/datacenter360 /var/www/glpi/plugins/
+sudo chown -R www-data:www-data /var/www/glpi/plugins/datacenter360
+cd /var/www/glpi
+sudo -u www-data php bin/console plugin:install --username=glpi datacenter360
+sudo -u www-data php bin/console plugin:activate datacenter360
+sudo -u www-data php bin/console cache:clear
+```
+
+Ou pela interface, em *Configurar → Plugins*. Ao atualizar o GLPI, copie a pasta `plugins/` da versão anterior para a nova, como nas demais pastas de dados.
+
 ## Requisitos
 
 - Zabbix 7.x com API habilitada.
@@ -98,6 +127,7 @@ A correlação entre chamado e host usa o título gerado pela integração Zabbi
 |---|---|
 | `index.html`, `app.css`, `app.js` | Painel |
 | `topologia.html`, `topologia.css`, `topologia.js` | Topologia animada da rede |
+| `glpi-plugin/datacenter360/` | Plugin do GLPI: seção Dashboard no menu lateral |
 | `logos.js` | Logotipos dos ativos (Simple Icons), gerado por `tools/gerar_logos.sh` |
 | `api.php` | Backend somente leitura (Zabbix + GLPI) |
 | `instalar.sh` | Instalação e atualização no servidor |
