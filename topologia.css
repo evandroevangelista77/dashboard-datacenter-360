@@ -133,3 +133,17 @@
   .node .halo { display: none; }
   .link .packet, .mon circle { display: none; }
 }
+
+/* ---------- ícones maiores com logotipos animados */
+.node .orbit { fill: none; stroke-width: 2; stroke-linecap: round; opacity: 0.85; }
+.node.online .orbit { stroke: var(--good); }
+.node.degradado .orbit { stroke: var(--warning); }
+.node.offline .orbit { stroke: var(--critical); opacity: 0.6; }
+.node.desconhecido .orbit { stroke: var(--muted); opacity: 0.4; }
+.node .logo { filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.18)); }
+.node.offline .logo { opacity: 0.45; filter: grayscale(0.7); }
+.node.desconhecido .logo { opacity: 0.55; }
+.node .name { font-size: 14px; }
+.node .ip { font-size: 11.5px; }
+.node .badge text { font-size: 12px; }
+@media (prefers-reduced-motion: reduce) { .node .orbit { display: none; } }

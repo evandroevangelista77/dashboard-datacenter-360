@@ -37,6 +37,22 @@
     external: '<circle r="13"/><path d="M-13 0h26M0-13c-6 7-6 19 0 26M0-13c6 7 6 19 0 26"/>',
   };
 
+  /* raio de cada tipo de ativo (o switch é um retângulo de 260×72) */
+  const RADIUS = { internet: 54, external: 40, gateway: 46, zabbix: 46, proxy: 46, server: 46, workstation: 46 };
+  const SW_H = 36;
+
+  /* logotipo de cada ativo: pelo papel, nome, grupos e templates */
+  function logoFor(n) {
+    const txt = `${n.name} ${(n.groups || []).join(' ')} ${(n.templates || []).join(' ')}`.toLowerCase();
+    if (n.role === 'zabbix' || n.role === 'proxy') return 'zabbix';
+    if (txt.includes('glpi')) return 'glpi';
+    for (const k of ['grafana', 'prometheus', 'ubuntu', 'centos', 'google']) if (txt.includes(k)) return k;
+    if (txt.includes('vault') || txt.includes('hashicorp')) return 'vault';
+    if (txt.includes('macos') || txt.includes('imac')) return 'apple';
+    if (n.role === 'server' && txt.includes('linux')) return 'linux';
+    return null;
+  }
+
   /* ---------------- estado */
   let topo = null, layout = null, hoverId = null, selectedId = null, nextAt = 0, timer = null;
   const view = { x: 0, y: 0, w: W, h: 900, base: null };
@@ -55,26 +71,26 @@
     const pos = {};
     const cx = W / 2;
     // Internet e serviços externos
-    pos.internet = { x: cx, y: 110 };
+    pos.internet = { x: cx, y: 125 };
     externals.forEach((n, i) => {
       const side = i % 2 === 0 ? -1 : 1, k = Math.floor(i / 2);
-      pos[n.id] = { x: cx + side * (300 + k * 190), y: 110 };
+      pos[n.id] = { x: cx + side * (320 + k * 210), y: 125 };
     });
     // Gateway (o primeiro; demais ao lado)
-    gateways.forEach((n, i) => { pos[n.id] = { x: cx + i * 200, y: 300 }; });
-    if (!gateways.length) pos.gateway = { x: cx, y: 300 };
+    gateways.forEach((n, i) => { pos[n.id] = { x: cx + i * 220, y: 330 }; });
+    if (!gateways.length) pos.gateway = { x: cx, y: 330 };
     // Switch núcleo
-    pos.switch = { x: cx, y: 470 };
+    pos.switch = { x: cx, y: 510 };
     // LAN em fileiras de até 10 (uma fileira evita links cruzando por trás de outros ativos)
     const perRow = Math.min(10, Math.max(1, lan.length));
     const rows = Math.ceil(lan.length / perRow) || 1;
-    const gap = Math.min(190, (W - 200) / Math.max(1, perRow - 1));
+    const gap = Math.min(210, (W - 200) / Math.max(1, perRow - 1));
     lan.forEach((n, i) => {
       const row = Math.floor(i / perRow), inRow = Math.min(perRow, lan.length - row * perRow), col = i % perRow;
       const span = gap * (inRow - 1);
-      pos[n.id] = { x: cx - span / 2 + col * gap, y: 690 + row * 210 };
+      pos[n.id] = { x: cx - span / 2 + col * gap, y: 750 + row * 250 };
     });
-    const height = 690 + rows * 210 + 30;
+    const height = 750 + rows * 250 + 40;
     return { pos, lan, externals, gateways, height };
   }
 
@@ -117,28 +133,64 @@
     return g;
   }
 
-  function drawNode(layer, n, p, opts = {}) {
-    const r = opts.r || 34;
+  function drawLogo(parent, n) {
+    const key = logoFor(n);
+    const LOGOS = window.DC360_LOGOS || {};
+    if (key === 'zabbix') {                       // marca Zabbix: Z branco no quadrado vermelho
+      el('rect', { x: -21, y: -21, width: 42, height: 42, rx: 7, fill: '#D40000' }, parent);
+      el('path', { d: 'M-10-10h20l-20 20h20', fill: 'none', stroke: '#fff', 'stroke-width': 5, 'stroke-linejoin': 'round' }, parent);
+    } else if (key === 'glpi') {
+      el('image', { href: 'logo-glpi.svg', x: -30, y: -13, width: 60, height: 26 }, parent);
+    } else if (key && LOGOS[key]) {
+      const s = 2.1;                               // caixa 24×24 → ~50 px
+      el('path', { d: LOGOS[key].d, fill: LOGOS[key].color, transform: `scale(${s}) translate(-12,-12)` }, parent);
+    } else {                                       // sem marca: ícone de linha do papel
+      const icon = el('g', { class: 'icon', transform: n.role === 'switch' ? 'scale(2)' : 'scale(1.55)' }, parent);
+      icon.innerHTML = ICONS[n.role] || ICONS.server;
+      return icon;
+    }
+    return null;
+  }
+
+  function drawNode(layer, n, p) {
+    const sw = n.role === 'switch';
+    const r = RADIUS[n.role] || 46;
     const g = el('g', { class: `node ${n.status} role-${n.role}`, transform: `translate(${p.x},${p.y})`, 'data-id': n.id, tabindex: 0, role: 'button',
       'aria-label': `${n.name}, ${ROLE[n.role]}, ${STATUS[n.status]}` }, layer);
-    const halo = el('circle', { class: 'halo', r, opacity: 0 }, g);
-    if (n.status !== 'desconhecido') {
-      const t = n.status === 'offline' ? 1.2 : n.status === 'degradado' ? 1.8 : 2.8;
-      el('animate', { attributeName: 'r', values: `${r};${r + 16}`, dur: `${t}s`, repeatCount: 'indefinite' }, halo);
+    const live = n.status !== 'desconhecido';
+    const t = n.status === 'offline' ? 1.2 : n.status === 'degradado' ? 1.8 : 2.8;
+
+    // halo pulsante
+    const halo = el('circle', { class: 'halo', r: sw ? 0 : r, opacity: 0 }, g);
+    if (live && !sw) {
+      el('animate', { attributeName: 'r', values: `${r};${r + 20}`, dur: `${t}s`, repeatCount: 'indefinite' }, halo);
       el('animate', { attributeName: 'opacity', values: '0.7;0', dur: `${t}s`, repeatCount: 'indefinite' }, halo);
     }
-    if (n.role === 'switch') el('rect', { class: 'ring', x: -110, y: -30, width: 220, height: 60, rx: 14 }, g);
-    else el('circle', { class: 'ring', r }, g);
-    const icon = el('g', { class: 'icon', transform: n.role === 'switch' ? 'scale(1.6)' : 'scale(1.15)' }, g);
-    icon.innerHTML = ICONS[n.role] || ICONS.server;
-    const ty = n.role === 'switch' ? 50 : r + 20;
-    const max = n.role === 'switch' ? 40 : 22;
+    // placa e anel em órbita (gira mais rápido quanto pior o estado)
+    if (sw) el('rect', { class: 'ring', x: -130, y: -SW_H, width: 260, height: SW_H * 2, rx: 16 }, g);
+    else {
+      el('circle', { class: 'ring', r }, g);
+      const orbit = el('circle', { class: 'orbit', r: r + 7, 'stroke-dasharray': `${Math.round(r * 0.9)} ${Math.round(r * 0.5)}` }, g);
+      if (live) el('animateTransform', { attributeName: 'transform', type: 'rotate', from: '0', to: '360', dur: `${t * 3.2}s`, repeatCount: 'indefinite' }, orbit);
+    }
+    // logotipo "respirando"; offline fica apagado e parado
+    const logo = el('g', { class: 'logo' }, g);
+    const icon = drawLogo(logo, n);
+    if (n.status === 'online' || n.status === 'degradado') {
+      el('animateTransform', { attributeName: 'transform', type: 'scale', values: '1;1.08;1', dur: n.status === 'online' ? '3.2s' : '1.6s', repeatCount: 'indefinite' }, logo);
+    }
+    if (icon && n.role === 'gateway' && live) {  // setas do roteador girando
+      el('animateTransform', { attributeName: 'transform', type: 'rotate', from: '0', to: '360', dur: '12s', repeatCount: 'indefinite', additive: 'sum' }, icon);
+    }
+
+    const ty = sw ? SW_H + 22 : r + 24;
+    const max = sw ? 40 : 22;
     el('text', { class: 'name', y: ty }, g).textContent = n.name.length > max ? n.name.slice(0, max - 1) + '…' : n.name;
-    if (n.ip) el('text', { class: 'ip', y: ty + 16 }, g).textContent = n.ip;
-    el('text', { class: 'st', y: ty + (n.ip ? 31 : 16) }, g).textContent = STATUS[n.status];
+    if (n.ip) el('text', { class: 'ip', y: ty + 17 }, g).textContent = n.ip;
+    el('text', { class: 'st', y: ty + (n.ip ? 33 : 17) }, g).textContent = STATUS[n.status];
     if (n.problem_count) {
-      const b = el('g', { class: 'badge', transform: `translate(${n.role === 'switch' ? 104 : r * 0.72},${-(n.role === 'switch' ? 24 : r * 0.72)})` }, g);
-      el('circle', { r: 11, fill: SEV_COLOR[n.max_severity ?? 0] }, b);
+      const b = el('g', { class: 'badge', transform: `translate(${sw ? 124 : r * 0.74},${-(sw ? 30 : r * 0.74)})` }, g);
+      el('circle', { r: 13, fill: SEV_COLOR[n.max_severity ?? 0] }, b);
       el('text', {}, b).textContent = n.problem_count > 9 ? '9+' : n.problem_count;
       el('title', {}, b).textContent = `${n.problem_count} problema(s) · pior: ${SEV[n.max_severity]}`;
     }
@@ -159,11 +211,11 @@
       el('text', { x: x + 18, y: y + 26 }, g).textContent = label;
     };
     const extSpan = externals.length ? Math.max(...externals.map((n) => Math.abs(pos[n.id].x - W / 2))) + 130 : 200;
-    zone(W / 2 - extSpan, 30, extSpan * 2, 170, 'Internet · serviços externos');
-    zone(W / 2 - 300, 230, 600, 320, 'Borda · roteamento');
+    zone(W / 2 - extSpan, 30, extSpan * 2, 215, 'Internet · serviços externos');
+    zone(W / 2 - 320, 265, 640, 340, 'Borda · roteamento');
     const lanXs = lan.map((n) => pos[n.id].x);
     const lanL = Math.min(...lanXs, W / 2 - 200) - 130, lanR = Math.max(...lanXs, W / 2 + 200) + 130;
-    zone(lanL, 590, lanR - lanL, layout.height - 600, `LAN ${topo.lan}`);
+    zone(lanL, 630, lanR - lanL, layout.height - 640, `LAN ${topo.lan}`);
 
     // nós sintéticos: internet e switch
     const anyExtUp = externals.some((n) => n.status === 'online');
@@ -176,19 +228,19 @@
     // links: serviços externos ↔ internet ↔ gateway ↔ switch ↔ LAN
     externals.forEach((n) => {
       const p = pos[n.id], side = p.x < W / 2 ? 1 : -1;
-      drawLink(links, `l-${n.id}`, { x: p.x + side * 36, y: p.y }, { x: pos.internet.x - side * 42, y: pos.internet.y }, n.status, { kind: 'side', ends: [n.id, 'internet'] });
+      drawLink(links, `l-${n.id}`, { x: p.x + side * RADIUS.external, y: p.y }, { x: pos.internet.x - side * RADIUS.internet, y: pos.internet.y }, n.status, { kind: 'side', ends: [n.id, 'internet'] });
     });
-    drawLink(links, 'l-wan', { x: pos.internet.x, y: pos.internet.y + 30 }, { x: gwPos.x, y: gwPos.y - 36 }, internet.status, { core: true, ends: ['internet', gw ? gw.id : 'gateway'] });
-    drawLink(links, 'l-core', { x: gwPos.x, y: gwPos.y + 36 }, { x: pos.switch.x, y: pos.switch.y - 30 }, gwStatus, { core: true, latency: gw?.latency_ms, ends: [gw ? gw.id : 'gateway', 'switch'] });
+    drawLink(links, 'l-wan', { x: pos.internet.x, y: pos.internet.y + RADIUS.internet }, { x: gwPos.x, y: gwPos.y - RADIUS.gateway }, internet.status, { core: true, ends: ['internet', gw ? gw.id : 'gateway'] });
+    drawLink(links, 'l-core', { x: gwPos.x, y: gwPos.y + RADIUS.gateway }, { x: pos.switch.x, y: pos.switch.y - SW_H }, gwStatus, { core: true, latency: gw?.latency_ms, ends: [gw ? gw.id : 'gateway', 'switch'] });
     lan.forEach((n, i) => {
       const p = pos[n.id];
-      const port = pos.switch.x - 90 + (180 * (i + 0.5)) / lan.length;
-      drawLink(links, `l-${n.id}`, { x: port, y: pos.switch.y + 30 }, { x: p.x, y: p.y - 36 }, n.status, { latency: n.latency_ms, ends: ['switch', n.id] });
+      const port = pos.switch.x - 110 + (220 * (i + 0.5)) / lan.length;
+      drawLink(links, `l-${n.id}`, { x: port, y: pos.switch.y + SW_H }, { x: p.x, y: p.y - RADIUS[n.role] }, n.status, { latency: n.latency_ms, ends: ['switch', n.id] });
     });
 
     // nós
-    drawNode(nodesL, internet, pos.internet, { r: 42 });
-    externals.forEach((n) => drawNode(nodesL, n, pos[n.id], { r: 30 }));
+    drawNode(nodesL, internet, pos.internet);
+    externals.forEach((n) => drawNode(nodesL, n, pos[n.id]));
     if (gw) gateways.forEach((n) => drawNode(nodesL, n, pos[n.id]));
     else drawNode(nodesL, { id: 'gateway', name: 'Gateway', role: 'gateway', status: 'desconhecido', ip: '', problem_count: 0 }, pos.gateway);
     drawNode(nodesL, sw, pos.switch);
@@ -218,7 +270,8 @@
       if (src && src.id === n.id) return;
       const g = el('g', { class: 'mon' }, layer);
       const lift = Math.max(120, Math.abs(p.x - sp.x) * 0.35);
-      const d = `M${sp.x},${sp.y - 34} C${sp.x},${sp.y - lift} ${p.x},${p.y + (p.y < sp.y ? lift : -lift)} ${p.x},${p.y + (p.y < sp.y ? 34 : -34)}`;
+      const rr = RADIUS[n.role] || 46;
+      const d = `M${sp.x},${sp.y - 46} C${sp.x},${sp.y - lift} ${p.x},${p.y + (p.y < sp.y ? lift : -lift)} ${p.x},${p.y + (p.y < sp.y ? rr : -rr)}`;
       el('path', { d, id: `m-${n.id}` }, g);
       const c = el('circle', { r: 2.6 }, g);
       const am = el('animateMotion', { dur: '3.2s', begin: `${(i % 6) * 0.5}s`, repeatCount: 'indefinite' }, c);

@@ -24,6 +24,7 @@ Mapa da rede monitorada, montado automaticamente a partir dos hosts do Zabbix e 
 
 - **Camadas**: Internet com os serviços externos verificados pelo Zabbix → gateway → switch núcleo da LAN → servidores, Zabbix server, proxy e estações.
 - **Papel de cada ativo**: deduzido de templates, grupos e IP (*Zabbix server health*, *Zabbix proxy health*, *macOS*/*Windows*, interface `127.0.0.1` ou grupo *Website* para serviços externos, IP terminado em `.1` para o gateway).
+- **Logotipos animados**: cada ativo mostra o logotipo da sua tecnologia (Zabbix, GLPI, Grafana, Prometheus, Vault, Ubuntu, CentOS, Apple, Google, Linux), com anel em órbita na cor do status e logotipo "respirando"; ativos offline ficam apagados.
 - **Links animados**: pacotes trafegando nos dois sentidos em links ativos (mais rápidos com latência menor); link degradado em âmbar; link sem resposta em vermelho tracejado com ✕. Latência ICMP sobre cada link.
 - **Status do nó**: ICMP quando existe; senão, disponibilidade das interfaces; problemas Alta/Desastre marcam como degradado; serviços externos pelo pior problema; proxy pelo último contato com o server.
 - **Interação**: passar o mouse destaca o caminho do ativo até a internet; clique abre os detalhes (latência, perda, problemas, grupos, templates e atalhos para o painel e o Zabbix); busca por nome ou IP; zoom com a roda do mouse e arraste; "Fluxo de monitoramento" mostra a coleta do Zabbix (e do proxy) até cada ativo.
@@ -97,6 +98,7 @@ A correlação entre chamado e host usa o título gerado pela integração Zabbi
 |---|---|
 | `index.html`, `app.css`, `app.js` | Painel |
 | `topologia.html`, `topologia.css`, `topologia.js` | Topologia animada da rede |
+| `logos.js` | Logotipos dos ativos (Simple Icons), gerado por `tools/gerar_logos.sh` |
 | `api.php` | Backend somente leitura (Zabbix + GLPI) |
 | `instalar.sh` | Instalação e atualização no servidor |
 | `bg-datacenter.svg` | Fundo do corredor de datacenter, gerado por `tools/gerar_fundo.py` |
@@ -106,4 +108,5 @@ A correlação entre chamado e host usa o título gerado pela integração Zabbi
 ## Créditos e licenças de terceiros
 
 - [Apache ECharts](https://echarts.apache.org/) 5.5.1, licença Apache 2.0, incluído sem alterações.
-- Zabbix e GLPI são marcas de seus respectivos titulares. Os logotipos aparecem apenas para identificar os sistemas integrados.
+- [Simple Icons](https://simpleicons.org) 16.34.0, licença CC0 1.0, para os logotipos da topologia.
+- Zabbix, GLPI e as demais marcas exibidas pertencem a seus respectivos titulares. Os logotipos aparecem apenas para identificar os sistemas monitorados.

@@ -41,7 +41,7 @@ PHP
     echo "config criado em $CONF"
 fi
 
-for f in api.php index.html app.css app.js echarts.min.js logo-zabbix.svg logo-glpi.svg bg-datacenter.svg topologia.html topologia.css topologia.js; do
+for f in api.php index.html app.css app.js echarts.min.js logo-zabbix.svg logo-glpi.svg bg-datacenter.svg topologia.html topologia.css topologia.js logos.js; do
     [ -f "$SRC/$f" ] && install -o root -g www-data -m 644 "$SRC/$f" "$WEB/$f"
 done
 
