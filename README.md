@@ -18,6 +18,18 @@ Feito para ficar aberto numa TV de sala de operações (modo tela cheia) e tamb�
 | **Tabelas** | Zabbix + GLPI | Problemas ativos (filtro por severidade) e chamados (em aberto, solucionados, fora do SLA), ordenáveis |
 | **Chamado em foco** | GLPI + Zabbix | Ao filtrar um chamado: dados do GLPI e a linha do tempo do evento no Zabbix (detecção, reconhecimentos, recuperação) |
 
+### Topologia (`topologia.html`)
+
+Mapa da rede monitorada, montado automaticamente a partir dos hosts do Zabbix e atualizado a cada 30 s:
+
+- **Camadas**: Internet com os serviços externos verificados pelo Zabbix → gateway → switch núcleo da LAN → servidores, Zabbix server, proxy e estações.
+- **Papel de cada ativo**: deduzido de templates, grupos e IP (*Zabbix server health*, *Zabbix proxy health*, *macOS*/*Windows*, interface `127.0.0.1` ou grupo *Website* para serviços externos, IP terminado em `.1` para o gateway).
+- **Links animados**: pacotes trafegando nos dois sentidos em links ativos (mais rápidos com latência menor); link degradado em âmbar; link sem resposta em vermelho tracejado com ✕. Latência ICMP sobre cada link.
+- **Status do nó**: ICMP quando existe; senão, disponibilidade das interfaces; problemas Alta/Desastre marcam como degradado; serviços externos pelo pior problema; proxy pelo último contato com o server.
+- **Interação**: passar o mouse destaca o caminho do ativo até a internet; clique abre os detalhes (latência, perda, problemas, grupos, templates e atalhos para o painel e o Zabbix); busca por nome ou IP; zoom com a roda do mouse e arraste; "Fluxo de monitoramento" mostra a coleta do Zabbix (e do proxy) até cada ativo.
+
+O usuário de API só leitura precisa de leitura também nos **grupos de templates**, senão o papel dos ativos não é identificado.
+
 ### Definições das métricas
 
 - **MTTD**: início do problema → primeiro reconhecimento no Zabbix.
@@ -53,7 +65,7 @@ A correlação entre chamado e host usa o título gerado pela integração Zabbi
 ## Instalação
 
 1. **No Zabbix**, crie um usuário só de leitura e um token de API para ele:
-   - grupo de usuários sem acesso à interface, com permissão de **leitura** nos grupos de hosts;
+   - grupo de usuários sem acesso à interface, com permissão de **leitura** nos grupos de hosts e nos grupos de templates;
    - papel *User role*;
    - token em *Usuários → Tokens de API*.
 
@@ -83,7 +95,8 @@ A correlação entre chamado e host usa o título gerado pela integração Zabbi
 
 | Arquivo | Função |
 |---|---|
-| `index.html`, `app.css`, `app.js` | Interface |
+| `index.html`, `app.css`, `app.js` | Painel |
+| `topologia.html`, `topologia.css`, `topologia.js` | Topologia animada da rede |
 | `api.php` | Backend somente leitura (Zabbix + GLPI) |
 | `instalar.sh` | Instalação e atualização no servidor |
 | `bg-datacenter.svg` | Fundo do corredor de datacenter, gerado por `tools/gerar_fundo.py` |

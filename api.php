@@ -462,11 +462,122 @@ function data(): array
     ];
 }
 
+/**
+ * Topologia: ativos monitorados, papel de cada um na rede e estado dos links.
+ * O papel vem de grupos/templates/IP; o estado do link vem do ICMP quando existe,
+ * senão da disponibilidade das interfaces, e dos problemas para serviços externos.
+ */
+function topology(): array
+{
+    global $cfg;
+    $hosts = zbx('host.get', [
+        'output' => ['hostid', 'host', 'name', 'monitored_by', 'proxyid', 'active_available'],
+        'filter' => ['status' => 0],
+        'selectInterfaces' => ['ip', 'type', 'available', 'main', 'error'],
+        'selectHostGroups' => ['name'],
+        'selectParentTemplates' => ['name'],
+    ]);
+    $hostids = array_column($hosts, 'hostid');
+
+    $icmp = [];
+    foreach (zbx('item.get', ['output' => ['hostid', 'key_', 'lastvalue', 'lastclock'], 'hostids' => $hostids,
+        'filter' => ['key_' => ['icmpping', 'icmppingsec', 'icmppingloss']], 'monitored' => true]) as $i) {
+        if ((int)$i['lastclock'] > 0) {
+            $icmp[$i['hostid']][$i['key_']] = (float)$i['lastvalue'];
+        }
+    }
+
+    $problems = [];
+    $probs = zbx('problem.get', ['output' => ['eventid', 'name', 'severity', 'clock'], 'sortfield' => ['eventid'], 'sortorder' => 'DESC']);
+    if ($probs) {
+        $byEvent = [];
+        foreach (zbx('event.get', ['output' => ['eventid'], 'eventids' => array_column($probs, 'eventid'), 'selectHosts' => ['hostid']]) as $e) {
+            $byEvent[$e['eventid']] = $e['hosts'][0]['hostid'] ?? null;
+        }
+        foreach ($probs as $p) {
+            if ($h = $byEvent[$p['eventid']] ?? null) {
+                $problems[$h][] = ['name' => $p['name'], 'severity' => (int)$p['severity'], 'clock' => (int)$p['clock']];
+            }
+        }
+    }
+
+    $proxies = [];
+    foreach (zbx('proxy.get', ['output' => ['proxyid', 'name', 'state', 'lastaccess']]) as $p) {
+        $proxies[$p['proxyid']] = ['name' => $p['name'], 'online' => $p['state'] === '2', 'lastaccess' => (int)$p['lastaccess']];
+    }
+
+    $nodes = [];
+    foreach ($hosts as $h) {
+        $main = null;
+        foreach ($h['interfaces'] as $if) {
+            if ($if['main'] === '1') {
+                $main = $if;
+                break;
+            }
+        }
+        $ip = $main['ip'] ?? '';
+        $groups = array_column($h['hostgroups'], 'name');
+        $tpls = array_column($h['parentTemplates'], 'name');
+        $tplText = implode(' ', $tpls);
+
+        if (str_contains($tplText, 'Zabbix server health')) {
+            $role = 'zabbix';
+        } elseif (str_contains($tplText, 'Zabbix proxy health')) {
+            $role = 'proxy';
+        } elseif ($ip === '127.0.0.1' || in_array('Website', $groups, true)) {
+            $role = 'external';            // verificado pelo Zabbix server, vive na internet
+        } elseif ($ip !== '' && preg_match('/\.1$/', $ip) && !str_contains($tplText, 'Linux')) {
+            $role = 'gateway';
+        } elseif (str_contains($tplText, 'macOS') || str_contains($tplText, 'Windows')) {
+            $role = 'workstation';
+        } else {
+            $role = 'server';
+        }
+
+        $hp = $problems[$h['hostid']] ?? [];
+        $maxSev = $hp ? max(array_column($hp, 'severity')) : null;
+        $ping = $icmp[$h['hostid']] ?? [];
+        if ($role === 'external') {
+            $status = $maxSev === null ? 'online' : ($maxSev >= 4 ? 'offline' : 'degradado');
+        } elseif (isset($ping['icmpping'])) {
+            $status = $ping['icmpping'] >= 1 ? (($ping['icmppingloss'] ?? 0) > 0 ? 'degradado' : 'online') : 'offline';
+        } else {
+            $status = hostStatus($h);
+        }
+        if ($role === 'proxy') {
+            // o estado real do proxy está no registro de proxy (último contato com o server)
+            foreach ($proxies as $p) {
+                if ($p['name'] === $h['host'] || count($proxies) === 1) {
+                    $status = $p['online'] ? 'online' : 'offline';
+                }
+            }
+        }
+        if ($status === 'online' && $maxSev !== null && $maxSev >= 4 && $role !== 'external') {
+            $status = 'degradado';     // responde, mas tem problema alto/desastre
+        }
+
+        $nodes[] = [
+            'id' => $h['hostid'], 'name' => $h['name'], 'host' => $h['host'], 'ip' => $ip, 'role' => $role,
+            'status' => $status, 'groups' => $groups, 'templates' => $tpls,
+            'latency_ms' => isset($ping['icmppingsec']) ? round($ping['icmppingsec'] * 1000, 2) : null,
+            'loss' => $ping['icmppingloss'] ?? null,
+            'problems' => array_slice($hp, 0, 6), 'problem_count' => count($hp), 'max_severity' => $maxSev,
+            'via_proxy' => $h['monitored_by'] === '1' ? ($proxies[$h['proxyid']]['name'] ?? 'proxy') : null,
+            'proxyid' => $h['monitored_by'] === '1' ? $h['proxyid'] : null,
+        ];
+    }
+
+    return ['generated_at' => time(), 'nodes' => $nodes, 'proxies' => $proxies,
+        'lan' => $cfg['lan_label'] ?? '192.168.15.0/24',
+        'links' => ['zabbix' => rtrim($cfg['zabbix_front'], '/'), 'glpi' => rtrim($cfg['glpi_front'], '/')]];
+}
+
 try {
     $action = $_GET['action'] ?? 'data';
     $out = match ($action) {
         'hosts' => array_map(fn($h) => ['hostid' => $h['hostid'], 'name' => $h['name']], hosts()),
         'data' => data(),
+        'topology' => topology(),
         default => fail(400, 'Ação desconhecida'),
     };
     echo json_encode($out, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
