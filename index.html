@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DataCenter 360</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2l12 7v14l-12 7-12-7V9z' fill='none' stroke='%2322d3ee' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%2322d3ee'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="grid-bg" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2l12 7v14l-12 7-12-7V9z"/><circle cx="16" cy="16" r="4"/></svg>
+    <div>
+      <h1>DATACENTER <span>360</span></h1>
+      <p>Centro de Operações · monitoramento e atendimento</p>
+    </div>
+  </div>
+
+  <nav class="sources" aria-label="Sistemas integrados">
+    <a class="source" id="srcZabbix" href="#" target="_blank" rel="noopener" title="Abrir o Zabbix">
+      <img src="logo-zabbix.svg" alt="Zabbix" width="76" height="20">
+      <span class="ver"><span class="led" data-led></span><span data-ver>—</span></span>
+    </a>
+    <span class="link-flow" aria-hidden="true"><i></i><i></i><i></i></span>
+    <a class="source" id="srcGlpi" href="#" target="_blank" rel="noopener" title="Abrir o GLPI">
+      <img src="logo-glpi.svg" alt="GLPI" width="54" height="23">
+      <span class="ver"><span class="led" data-led></span><span data-ver>—</span></span>
+    </a>
+  </nav>
+
+  <div class="topbar-right">
+    <div class="clock" id="clock">--:--:--</div>
+    <label class="refresh">Atualizar
+      <select id="refresh">
+        <option value="0">manual</option>
+        <option value="30">30 s</option>
+        <option value="60" selected>1 min</option>
+        <option value="300">5 min</option>
+      </select>
+    </label>
+    <button type="button" class="icon" id="reload" title="Atualizar agora" aria-label="Atualizar agora">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>
+    </button>
+    <button type="button" class="icon" id="fullscreen" title="Tela cheia (modo TV)" aria-label="Tela cheia">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+    </button>
+  </div>
+  <div class="countdown" aria-hidden="true"><span id="countdown"></span></div>
+</header>
+
+<form class="filters" id="filters" autocomplete="off">
+  <div class="presets" role="group" aria-label="Período">
+    <button type="button" data-preset="today">Hoje</button>
+    <button type="button" data-preset="7" class="on">7 dias</button>
+    <button type="button" data-preset="30">30 dias</button>
+    <button type="button" data-preset="90">90 dias</button>
+    <button type="button" data-preset="month">Mês atual</button>
+  </div>
+  <label>De <input type="date" id="from" required></label>
+  <label>Até <input type="date" id="to" required></label>
+  <label>Host
+    <select id="host"><option value="">Todos os hosts</option></select>
+  </label>
+  <label class="grow">Chamado
+    <input type="search" id="ticket" placeholder="nº do chamado ou texto do título">
+  </label>
+  <button type="submit" class="primary">Aplicar</button>
+  <button type="button" id="clear" class="ghost">Limpar</button>
+</form>
+
+<div class="ticker" id="ticker" aria-label="Problemas ativos em tempo real">
+  <span class="ticker-label"><span class="led ok"></span>AO VIVO</span>
+  <div class="ticker-track"><div class="ticker-move" id="tickerMove"></div></div>
+</div>
+
+<main class="dash" id="dash">
+  <section class="kpis" aria-label="Indicadores">
+    <button type="button" class="kpi" data-kpi="alerts" data-go="secActive" title="Eventos de problema abertos pelo Zabbix no período"><h3>Alertas</h3><b>—</b><small></small></button>
+    <button type="button" class="kpi" data-kpi="active" data-go="secActive" title="Problemas que continuam abertos agora"><h3>Problemas ativos</h3><b>—</b><small></small></button>
+    <button type="button" class="kpi" data-kpi="tickets" data-go="secTickets" title="Chamados abertos no GLPI no período"><h3>Chamados</h3><b>—</b><small></small></button>
+    <button type="button" class="kpi" data-kpi="hosts" data-go="secHosts" title="Hosts monitorados e disponibilidade média por ICMP"><h3>Hosts</h3><b>—</b><small></small></button>
+    <button type="button" class="kpi" data-kpi="sla" data-go="secTickets" title="Chamados solucionados dentro da meta (SLA do chamado ou meta por prioridade)"><h3>SLA de solução</h3><b>—</b><small></small></button>
+    <button type="button" class="kpi" data-kpi="tma" data-go="secTickets" title="Tempo médio de atendimento: abertura → solução no GLPI"><h3>TMA</h3><b>—</b><small></small></button>
+    <button type="button" class="kpi" data-kpi="mttd" data-go="secActive" title="Tempo médio para detectar: início do problema → 1º reconhecimento no Zabbix"><h3>MTTD</h3><b>—</b><small></small></button>
+    <button type="button" class="kpi" data-kpi="mttr" data-go="secActive" title="Tempo médio para reparar: início do problema → recuperação"><h3>MTTR</h3><b>—</b><small></small></button>
+  </section>
+
+  <section class="panel span-8 db-panel">
+    <header><h2>Banco de dados</h2><span class="hint" id="dbHost"></span></header>
+    <div class="gauges">
+      <div class="chart gauge" id="gEff"></div>
+      <div class="chart gauge" id="gUtil"></div>
+      <div class="chart gauge" id="gConn"></div>
+      <div class="chart gauge" id="gQps"></div>
+    </div>
+    <dl class="db-stats" id="dbStats"></dl>
+  </section>
+  <section class="panel span-4">
+    <header><h2>Saúde do GLPI</h2><span class="hint">status.php + login</span></header>
+    <ul class="health" id="health"></ul>
+    <header class="sub"><h2>SLAs de serviço (Zabbix)</h2></header>
+    <ul class="slas" id="slas"></ul>
+  </section>
+
+  <section class="panel span-12" id="secHosts">
+    <header><h2>Hosts</h2><span class="hint" id="hostsHint"></span></header>
+    <div class="hostgrid" id="hostGrid"></div>
+  </section>
+
+  <section class="panel span-4">
+    <header><h2>Hosts com mais alertas</h2><span class="hint">clique para filtrar</span></header>
+    <div class="chart" id="chTopHosts"></div>
+  </section>
+  <section class="panel span-4">
+    <header><h2>Chamados por categoria</h2><span class="hint">clique para filtrar</span></header>
+    <div class="chart" id="chCategory"></div>
+  </section>
+  <section class="panel span-4">
+    <header><h2>Chamados por entidade</h2><span class="hint">clique para filtrar</span></header>
+    <div class="chart" id="chEntity"></div>
+  </section>
+
+  <section class="panel span-12" id="detailPanel" hidden>
+    <header><h2>Chamado em foco</h2><button type="button" class="ghost small" id="closeDetail">fechar</button></header>
+    <div id="detail"></div>
+  </section>
+
+  <section class="panel span-6" id="secActive">
+    <header><h2>Problemas ativos</h2><span class="hint" id="activeHint"></span></header>
+    <div class="chips" id="sevChips" role="group" aria-label="Filtrar por severidade"></div>
+    <div class="table-wrap"><table id="tblActive" data-sort="clock" data-dir="desc">
+      <thead><tr>
+        <th data-key="severity">Severidade</th><th data-key="host">Host</th><th data-key="name">Problema</th>
+        <th data-key="clock" class="num">Duração</th><th data-key="acknowledged">Rec.</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+  <section class="panel span-6" id="secTickets">
+    <header><h2>Chamados</h2><span class="hint" id="ticketsHint"></span></header>
+    <div class="chips" id="ticketChips" role="group" aria-label="Filtrar chamados"></div>
+    <div class="table-wrap"><table id="tblTickets" data-sort="id" data-dir="desc">
+      <thead><tr>
+        <th data-key="id" class="num">Nº</th><th data-key="name">Título</th><th data-key="status_id">Status</th>
+        <th data-key="priority_id">Prioridade</th><th data-key="category">Categoria</th>
+        <th data-key="resolve_seconds" class="num">Solução</th><th data-key="sla_ok">SLA</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+</main>
+
+<footer class="foot">
+  <span id="updated">—</span>
+  <span>MTTD = início do problema → 1º reconhecimento · MTTR = início → recuperação · TMA = abertura → solução · SLA = SLA do chamado ou meta por prioridade</span>
+</footer>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="echarts.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
