@@ -85,6 +85,19 @@ sudo -u www-data php bin/console cache:clear
 
 Ou pela interface, em *Configurar → Plugins*. Ao atualizar o GLPI, copie a pasta `plugins/` da versão anterior para a nova, como nas demais pastas de dados.
 
+## Tema do GLPI (paleta DataCenter 360)
+
+[`glpi-theme/datacenter360.scss`](glpi-theme/datacenter360.scss) é uma paleta do GLPI com as cores do painel (azul-noite, superfícies azul-escuras, destaque ciano e as mesmas cores de status), o corredor de datacenter bem transparente ao fundo e os mesmos detalhes de vidro, bordas e foco. Com ela, o GLPI e o painel parecem uma coisa só.
+
+```bash
+sudo install -o www-data -g www-data -m 644 glpi-theme/datacenter360.scss /var/www/glpi/files/_themes/
+cd /var/www/glpi
+sudo -u www-data php bin/console config:set palette datacenter360   # padrão para todos
+sudo -u www-data php bin/console cache:clear
+```
+
+Cada usuário ainda pode escolher outra paleta em *Minhas configurações → Personalização*. Quem já estava logado passa a ver o tema novo depois de sair e entrar de novo.
+
 ## Requisitos
 
 - Zabbix 7.x com API habilitada.
@@ -127,6 +140,7 @@ Ou pela interface, em *Configurar → Plugins*. Ao atualizar o GLPI, copie a pas
 |---|---|
 | `index.html`, `app.css`, `app.js` | Painel |
 | `topologia.html`, `topologia.css`, `topologia.js` | Topologia animada da rede |
+| `glpi-theme/datacenter360.scss` | Paleta do GLPI com as cores do painel |
 | `glpi-plugin/datacenter360/` | Plugin do GLPI: seção Dashboard no menu lateral |
 | `logos.js` | Logotipos dos ativos (Simple Icons), gerado por `tools/gerar_logos.sh` |
 | `api.php` | Backend somente leitura (Zabbix + GLPI) |

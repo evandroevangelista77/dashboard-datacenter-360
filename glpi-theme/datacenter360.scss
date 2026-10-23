@@ -1,0 +1,182 @@
+/* theme-name: DataCenter 360 */
+// Paleta do GLPI com as cores do painel DataCenter 360 (azul-noite, superfícies
+// azul-escuras e destaque ciano), para o GLPI e o painel parecerem uma coisa só.
+// Instalação: copiar para files/_themes/ do GLPI (GLPI_THEMES_DIR).
+
+$is-dark: true;
+
+:root[data-glpi-theme="datacenter360"] {
+    // base (mesmos tokens do app.css do painel)
+    --dc-page: #070b14;
+    --dc-surface: #0e1626;
+    --dc-surface-2: #121d31;
+    --dc-text: #e6edf6;
+    --dc-text-2: #a9b6c8;
+    --dc-muted: #7b8798;
+    --dc-accent: #22d3ee;
+    --dc-ring: rgba(56, 189, 248, 0.16);
+    --dc-ring-strong: rgba(56, 189, 248, 0.38);
+
+    --tblr-dark: var(--dc-surface);
+    --tblr-light: var(--dc-text-2);
+    --tblr-body-bg: var(--dc-page);
+    --tblr-bg-surface: var(--dc-surface);
+    --tblr-bg-surface-secondary: var(--dc-surface-2);
+    --tblr-bg-surface-tertiary: #16233a;
+    --tblr-body-color: #cfd9e6;
+    --tblr-emphasis-color: var(--dc-text);
+    --tblr-heading-color: var(--dc-text);
+    --tblr-primary-rgb: 34, 211, 238;
+    --tblr-primary-fg: #04222a;
+    --tblr-secondary: var(--dc-text-2);
+    --tblr-secondary-fg: var(--dc-surface);
+    --tblr-link-color-rgb: 125, 211, 252;
+    --tblr-link-hover-color-rgb: 186, 230, 253;
+    --tblr-code-color: #7dd3fc;
+    --tblr-muted: var(--dc-muted);
+    --tblr-secondary-color: var(--dc-muted);
+    --tblr-border-color: var(--dc-ring);
+    --tblr-border-color-translucent: var(--dc-ring);
+    --tblr-badge-bg: var(--dc-text-2);
+    --tblr-badge-color: var(--dc-surface);
+
+    // estados com as mesmas cores do painel
+    --tblr-success: #0ca30c;
+    --tblr-success-rgb: 12, 163, 12;
+    --tblr-warning: #fab219;
+    --tblr-warning-rgb: 250, 178, 25;
+    --tblr-danger: #d03b3b;
+    --tblr-danger-rgb: 208, 59, 59;
+    --tblr-info: #3987e5;
+    --tblr-info-rgb: 57, 135, 229;
+
+    --glpi-mainmenu-bg: #0a1220;
+    --glpi-mainmenu-fg: #cfe3f5;
+    --glpi-form-header-fg: var(--dc-accent);
+    --glpi-form-header-border-color: var(--dc-ring);
+    --glpi-search-bg: var(--dc-surface);
+    --glpi-search-fg: var(--dc-text);
+    --glpi-tabs-bg: #0b1322;
+    --glpi-tabs-fg: var(--dc-text-2);
+    --glpi-tabs-border-color: var(--dc-ring);
+    --glpi-tabs-active-bg: #16263f;
+    --glpi-tabs-active-fg: var(--dc-text);
+    --glpi-tabs-active-border-color: var(--dc-accent);
+    --glpi-itil-secondary-bg: #0b1322;
+    --glpi-timeline-fup-bg: #0f1a2c;
+    --glpi-timeline-fup-fg: var(--dc-text-2);
+    --glpi-timeline-fup-border: var(--dc-ring-strong);
+    --glpi-helpdesk-header: #0e1a2e;
+    --glpi-helpdesk-tiles-section-bg: #0b1424;
+    --glpi-helpdesk-tabs-section-bg: #08101c;
+    --glpi-palette-color-1: #0e1626;
+    --glpi-palette-color-2: #070b14;
+    --glpi-palette-color-3: #3987e5;
+    --glpi-palette-color-4: #22d3ee;
+    --glpi-illustrations-header-light: #0b1424;
+    --glpi-illustrations-gradient-1: hsl(190deg, 80%, 70%);
+    --glpi-illustrations-gradient-2: hsl(205deg, 60%, 40%);
+    --glpi-illustrations-gradient-3: hsl(215deg, 50%, 18%);
+
+    // ---------- fundo: o mesmo corredor de datacenter do painel, bem transparente
+    body {
+        background-color: var(--dc-page);
+    }
+
+    body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background:
+            radial-gradient(1200px 600px at 80% -10%, rgba(34, 211, 238, 0.08), transparent 60%),
+            linear-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px) 0 0 / 40px 40px,
+            linear-gradient(90deg, rgba(56, 189, 248, 0.04) 1px, transparent 1px) 0 0 / 40px 40px,
+            url("/datacenter360/bg-datacenter.svg") center / cover no-repeat;
+        opacity: 0.55;
+    }
+
+    .page,
+    .page-wrapper {
+        background: transparent;
+    }
+
+    // ---------- menu lateral e cabeçalho
+    aside.navbar,
+    .navbar-vertical {
+        border-right: 1px solid var(--dc-ring);
+        box-shadow: inset -1px 0 0 rgba(34, 211, 238, 0.05);
+    }
+
+    .navbar-vertical .nav-link.active,
+    .navbar-vertical .dropdown-item.active,
+    .navbar-vertical .nav-item.active > .nav-link {
+        color: var(--dc-text) !important;
+        background: rgba(34, 211, 238, 0.12);
+        box-shadow: inset 3px 0 0 var(--dc-accent);
+    }
+
+    .navbar-vertical .nav-link:hover,
+    .navbar-vertical .dropdown-item:hover {
+        background: rgba(34, 211, 238, 0.07);
+    }
+
+    header.navbar {
+        background: rgba(10, 18, 32, 0.85);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--dc-ring);
+    }
+
+    // ---------- cartões, tabelas e formulários com o vidro do painel
+    .card,
+    .search-card,
+    .modal-content,
+    .dropdown-menu {
+        background-color: rgba(14, 22, 38, 0.88);
+        border-color: var(--dc-ring);
+    }
+
+    .card-header,
+    .table thead th {
+        border-color: var(--dc-ring);
+    }
+
+    .table thead th {
+        color: var(--dc-muted);
+        letter-spacing: 0.06em;
+    }
+
+    .table-hover > tbody > tr:hover > * {
+        background-color: rgba(34, 211, 238, 0.05);
+    }
+
+    .form-control,
+    .form-select,
+    .select2-container--default .select2-selection {
+        background-color: var(--dc-surface);
+        border-color: var(--dc-ring);
+        color: var(--dc-text);
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--dc-accent);
+        box-shadow: 0 0 0 0.2rem rgba(34, 211, 238, 0.18);
+    }
+
+    .btn-primary {
+        background: linear-gradient(180deg, #0891b2, #0e7490);
+        border-color: rgba(34, 211, 238, 0.4);
+        color: #ecfeff;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(180deg, #06b6d4, #0891b2);
+        color: #fff;
+    }
+
+    .nav-tabs .nav-link.active {
+        box-shadow: inset 0 -2px 0 var(--dc-accent);
+    }
+}
