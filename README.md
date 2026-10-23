@@ -183,6 +183,31 @@ O script é idempotente (o que já existe é mantido):
 GLPI_URL=http://<glpi>/apirest.php GLPI_APP_TOKEN=... GLPI_USER_TOKEN=... python3 glpi-projetos/criar_campos.py
 ```
 
+## Importação de cronograma do MS Project (plugin)
+
+[`glpi-plugin/cronograma`](glpi-plugin/cronograma) adiciona ao **Projeto** do GLPI 12 a aba **Cronograma (MS Project)**, que importa um cronograma `.mpp`/`.mpt` ou XML (MSPDI) como tarefas do projeto:
+
+- **Tarefas e hierarquia**: nome, notas, datas planejadas e reais, duração, % concluído e marcos, respeitando os níveis de estrutura do Project. A tarefa-resumo do projeto pode atualizar as datas planejadas do próprio Projeto.
+- **Dependências** (TI, II, TT, IT, com latência em dias), que aparecem no Gantt do GLPI.
+- **Recursos**: quem tiver usuário no GLPI (login ou nome completo) entra na equipe da tarefa; os demais ficam registrados no comentário da tarefa.
+- **Reimportação sem duplicar**: cada tarefa fica vinculada ao UID do Project, então uma nova importação atualiza as existentes, cria as novas e, se pedido, manda para a lixeira as que saíram do cronograma.
+- O arquivo original é anexado como documento do projeto e cada importação fica no histórico da aba.
+
+### Instalação
+
+O `.mpp` é convertido no servidor pelo [MPXJ](https://www.mpxj.org/) (Java). Sem Java, o plugin aceita só o XML exportado pelo Project (*Arquivo → Salvar como → XML*).
+
+```bash
+sudo apt install default-jre-headless
+# MPXJ: mpxj.jar e a pasta lib/ do pacote de distribuição em /opt/mpxj
+sudo cp -r glpi-plugin/cronograma /var/www/glpi/plugins/
+sudo chown -R www-data:www-data /var/www/glpi/plugins/cronograma
+sudo -u www-data php /var/www/glpi/bin/console plugin:install --username=glpi cronograma
+sudo -u www-data php /var/www/glpi/bin/console plugin:activate cronograma
+```
+
+Os caminhos do Java e do MPXJ ficam em `glpi_configs` (contexto `plugin:cronograma`, chaves `java` e `classpath`).
+
 ## Requisitos
 
 - Zabbix 7.x com API habilitada.
@@ -228,6 +253,7 @@ GLPI_URL=http://<glpi>/apirest.php GLPI_APP_TOKEN=... GLPI_USER_TOKEN=... python
 | `glpi-theme/datacenter360.scss` | Paleta do GLPI com as cores do painel |
 | `glpi-plugin/assinatura/` | Plugin do GLPI: assinatura digital no chamado via LibreSign |
 | `nextcloud-app/oakmail/` | App do Nextcloud: título e assunto próprios nos e-mails do LibreSign |
+| `glpi-plugin/cronograma/` | Plugin do GLPI: importação de cronograma do MS Project nas tarefas do projeto |
 | `glpi-projetos/criar_campos.py` | Campos extras do cadastro de Projeto (plugin Fields) |
 | `glpi-plugin/datacenter360/` | Plugin do GLPI: seção Dashboard no menu lateral |
 | `logos.js` | Logotipos dos ativos (Simple Icons), gerado por `tools/gerar_logos.sh` |
