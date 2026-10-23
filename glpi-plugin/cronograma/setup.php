@@ -25,6 +25,9 @@ function plugin_init_cronograma(): void
         ProjectTask::class => 'plugin_cronograma_item_purge',
         Project::class     => 'plugin_cronograma_item_purge',
     ];
+    // barra de evolução e zebra na lista de tarefas do projeto
+    $PLUGIN_HOOKS['add_css']['cronograma']        = ['css/tarefas.css'];
+    $PLUGIN_HOOKS['add_javascript']['cronograma'] = ['js/tarefas.js'];
 }
 
 function plugin_version_cronograma(): array

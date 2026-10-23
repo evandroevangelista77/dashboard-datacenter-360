@@ -192,6 +192,7 @@ GLPI_URL=http://<glpi>/apirest.php GLPI_APP_TOKEN=... GLPI_USER_TOKEN=... python
 - **Recursos**: quem tiver usuário no GLPI (login ou nome completo) entra na equipe da tarefa; os demais ficam registrados no comentário da tarefa.
 - **Reimportação sem duplicar**: cada tarefa fica vinculada ao UID do Project, então uma nova importação atualiza as existentes, cria as novas e, se pedido, manda para a lixeira as que saíram do cronograma.
 - O arquivo original é anexado como documento do projeto e cada importação fica no histórico da aba.
+- Na lista **Tarefas do projeto**, o "Percentual finalizado" vira uma barra de evolução (verde concluída, azul a partir de 50%, laranja abaixo) e as linhas ficam alternadas, clara e escura.
 
 ### Instalação
 

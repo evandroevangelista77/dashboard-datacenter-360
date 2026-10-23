@@ -1,0 +1,42 @@
+/* Lista de tarefas do projeto: zebra e barra de evolução (ver js/tarefas.js) */
+.cronograma-tarefas > tbody > tr:nth-child(odd) > td {
+    background-color: rgba(var(--tblr-body-color-rgb, 255, 255, 255), .08);
+}
+.cronograma-tarefas > tbody > tr:nth-child(even) > td {
+    background-color: rgba(0, 0, 0, .28);
+}
+.cronograma-tarefas > tbody > tr:hover > td {
+    background-color: rgba(var(--tblr-primary-rgb, 32, 107, 196), .14);
+}
+.cronograma-tarefas > tbody > tr > td {
+    border-bottom: 1px solid rgba(var(--tblr-body-color-rgb, 255, 255, 255), .06);
+}
+
+.cg-progress {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    min-width: 150px;
+}
+.cg-track {
+    flex: 1;
+    height: 8px;
+    border-radius: 4px;
+    background: rgba(var(--tblr-body-color-rgb, 255, 255, 255), .12);
+    overflow: hidden;
+}
+.cg-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width .4s ease;
+}
+.cg-done { background: #2fb344; }
+.cg-high { background: #22b8cf; }
+.cg-low  { background: #f59f00; }
+.cg-zero { background: transparent; }
+.cg-label {
+    min-width: 2.8rem;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
