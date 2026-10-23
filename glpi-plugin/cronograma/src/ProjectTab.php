@@ -27,7 +27,7 @@ class ProjectTab extends CommonGLPI
             return false;
         }
         $projectId = (int) $item->getID();
-        $imported = countElementsInTable('glpi_plugin_cronograma_tasks', ['projects_id' => $projectId]);
+        $imported = self::countImported($projectId);
 
         echo "<div class='p-3'>";
         if ($item->canUpdateItem()) {
@@ -66,7 +66,7 @@ class ProjectTab extends CommonGLPI
         global $CFG_GLPI;
         $projectId = (int) $project->getID();
         $action = htmlspecialchars($CFG_GLPI['root_doc'] . '/plugins/cronograma/front/import.form.php', ENT_QUOTES);
-        $imported = countElementsInTable('glpi_plugin_cronograma_tasks', ['projects_id' => $projectId]);
+        $imported = self::countImported($projectId);
         $back = htmlspecialchars($project->getLinkURL() . '&forcetab=' . rawurlencode(self::class . '$1'), ENT_QUOTES);
 
         echo "<div class='container-fluid'><div class='card mb-3'><div class='card-header'><h3 class='card-title'><i class='ti ti-file-upload me-2'></i>Importar cronograma do MS Project — "
@@ -142,9 +142,21 @@ class ProjectTab extends CommonGLPI
         }, true);
         status.innerHTML = "<div class='small text-secondary'>Pronto para importar.</div>";
     };
-    document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();
+    init(); // o script vem logo depois do formulário: não precisa esperar o resto da página
 })();
 </script>
 JS;
+    }
+
+    /** Tarefas importadas que ainda existem no projeto (fora da lixeira). */
+    private static function countImported(int $projectId): int
+    {
+        global $DB;
+        return (int) $DB->request([
+            'COUNT'      => 'cpt',
+            'FROM'       => 'glpi_plugin_cronograma_tasks AS m',
+            'INNER JOIN' => ['glpi_projecttasks AS t' => ['ON' => ['m' => 'projecttasks_id', 't' => 'id']]],
+            'WHERE'      => ['m.projects_id' => $projectId, 't.is_deleted' => 0],
+        ])->current()['cpt'];
     }
 }

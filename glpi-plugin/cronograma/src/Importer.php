@@ -31,13 +31,26 @@ class Importer
         $projectId = (int) $project->getID();
         $stats = ['created' => 0, 'updated' => 0, 'removed' => 0, 'links' => 0, 'team' => 0, 'warnings' => []];
 
-        // UID do Project → id da tarefa no GLPI (só tarefas que ainda existem)
+        // vínculos de tarefas apagadas ou na lixeira são descartados: a tarefa é recriada
+        $stale = [];
+        foreach ($DB->request([
+            'SELECT'    => ['m.id'],
+            'FROM'      => 'glpi_plugin_cronograma_tasks AS m',
+            'LEFT JOIN' => ['glpi_projecttasks AS t' => ['ON' => ['m' => 'projecttasks_id', 't' => 'id']]],
+            'WHERE'     => ['m.projects_id' => $projectId, 'OR' => ['t.id' => null, 't.is_deleted' => 1]],
+        ]) as $row) {
+            $stale[] = (int) $row['id'];
+        }
+        if ($stale) {
+            $DB->delete('glpi_plugin_cronograma_tasks', ['id' => $stale]);
+        }
+
+        // UID do Project → id da tarefa no GLPI
         $map = [];
         foreach ($DB->request([
-            'SELECT' => ['m.ms_uid', 'm.projecttasks_id'],
-            'FROM'   => 'glpi_plugin_cronograma_tasks AS m',
-            'INNER JOIN' => ['glpi_projecttasks AS t' => ['ON' => ['m' => 'projecttasks_id', 't' => 'id']]],
-            'WHERE'  => ['m.projects_id' => $projectId],
+            'SELECT' => ['ms_uid', 'projecttasks_id'],
+            'FROM'   => 'glpi_plugin_cronograma_tasks',
+            'WHERE'  => ['projects_id' => $projectId],
         ]) as $row) {
             $map[(int) $row['ms_uid']] = (int) $row['projecttasks_id'];
         }

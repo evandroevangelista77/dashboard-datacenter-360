@@ -66,3 +66,11 @@ function plugin_cronograma_uninstall(): bool
 
     return true;
 }
+
+function plugin_cronograma_item_purge(CommonDBTM $item): void
+{
+    global $DB;
+
+    $field = $item instanceof Project ? 'projects_id' : 'projecttasks_id';
+    $DB->delete('glpi_plugin_cronograma_tasks', [$field => $item->getID()]);
+}

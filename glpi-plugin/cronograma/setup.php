@@ -17,7 +17,14 @@ define('PLUGIN_CRONOGRAMA_MAX_GLPI', '12.0.99');
 
 function plugin_init_cronograma(): void
 {
+    global $PLUGIN_HOOKS;
+
     Plugin::registerClass(ProjectTab::class, ['addtabon' => [Project::class]]);
+    // tarefa ou projeto apagado de vez: o vínculo com o UID do Project sai junto
+    $PLUGIN_HOOKS['item_purge']['cronograma'] = [
+        ProjectTask::class => 'plugin_cronograma_item_purge',
+        Project::class     => 'plugin_cronograma_item_purge',
+    ];
 }
 
 function plugin_version_cronograma(): array
