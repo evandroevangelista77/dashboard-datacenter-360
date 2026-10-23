@@ -82,7 +82,7 @@ class Importer
                 'plan_end_date'      => $t['finish'],
                 'real_start_date'    => $t['actual_start'],
                 'real_end_date'      => $t['actual_finish'],
-                'planned_duration'   => $t['duration'],
+                'planned_duration'   => self::plannedDuration($t),
                 'effective_duration' => 0, // o GLPI recalcula quando há início e fim reais
                 'percent_done'       => $t['percent'],
                 'auto_percent_done'  => 0,
@@ -213,5 +213,17 @@ class Importer
             }
         }
         return $this->userIndex[mb_strtolower(trim($name))] ?? null;
+    }
+
+    /**
+     * Duração planejada em tempo corrido (fim − início), como o GLPI calcula a efetiva.
+     * Sem as duas datas, usa a duração de trabalho do Project.
+     */
+    private static function plannedDuration(array $t): int
+    {
+        if ($t['start'] && $t['finish']) {
+            return max(0, strtotime($t['finish']) - strtotime($t['start']));
+        }
+        return $t['duration'];
     }
 }

@@ -187,7 +187,7 @@ GLPI_URL=http://<glpi>/apirest.php GLPI_APP_TOKEN=... GLPI_USER_TOKEN=... python
 
 [`glpi-plugin/cronograma`](glpi-plugin/cronograma) adiciona ao **Projeto** do GLPI 12 a aba **Cronograma (MS Project)**, que importa um cronograma `.mpp`/`.mpt` ou XML (MSPDI) como tarefas do projeto:
 
-- **Tarefas e hierarquia**: nome, notas, datas planejadas e reais, duração, % concluído e marcos, respeitando os níveis de estrutura do Project. A tarefa-resumo do projeto pode atualizar as datas planejadas do próprio Projeto.
+- **Tarefas e hierarquia**: nome, notas, datas planejadas e reais, duração planejada em tempo corrido (como a efetiva do GLPI), % concluído e marcos, respeitando os níveis de estrutura do Project. A tarefa-resumo do projeto pode atualizar as datas planejadas do próprio Projeto.
 - **Dependências** (TI, II, TT, IT, com latência em dias), que aparecem no Gantt do GLPI.
 - **Recursos**: quem tiver usuário no GLPI (login ou nome completo) entra na equipe da tarefa; os demais ficam registrados no comentário da tarefa.
 - **Reimportação sem duplicar**: cada tarefa fica vinculada ao UID do Project, então uma nova importação atualiza as existentes, cria as novas e, se pedido, manda para a lixeira as que saíram do cronograma.
