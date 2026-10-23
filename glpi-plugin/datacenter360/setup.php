@@ -27,6 +27,14 @@ function plugin_init_datacenter360(): void
         $_SESSION['glpiactiveprofile'][Menu::$rightname] = (int) ($rights[Menu::$rightname] ?? 0);
     }
 
+    // Sessão sem paleta própria cai na constante interna "auror" do ThemeManager,
+    // ignorando a paleta padrão configurada; aplica a padrão (ex.: datacenter360).
+    // Quem escolheu uma paleta em "Minhas configurações" já tem a chave e não é afetado.
+    global $CFG_GLPI;
+    if (isset($_SESSION['glpiID']) && empty($_SESSION['glpipalette']) && !empty($CFG_GLPI['palette'])) {
+        $_SESSION['glpipalette'] = $CFG_GLPI['palette'];
+    }
+
     // Seção "Dashboard" no menu lateral; quem não tem o direito não vê os itens
     // (Menu::getMenuContent() devolve false).
     $PLUGIN_HOOKS[Hooks::MENU_TOADD]['datacenter360'] = [Menu::SECTOR => [Menu::class]];
