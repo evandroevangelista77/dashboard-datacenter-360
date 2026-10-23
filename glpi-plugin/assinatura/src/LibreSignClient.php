@@ -33,6 +33,21 @@ class LibreSignClient
         ]);
     }
 
+    /**
+     * Campo de assinatura visível no canto inferior direito da página, logo acima do
+     * rodapé de validação do LibreSign. Coordenadas a partir do canto inferior
+     * esquerdo, então valem para qualquer altura de página.
+     */
+    public function addVisibleSignature(string $fileUuid, int $fileId, int $signRequestId, int $page): array
+    {
+        return $this->ocs('POST', '/file-element/' . rawurlencode($fileUuid), [
+            'signRequestId' => $signRequestId,
+            'fileId'        => $fileId,
+            'type'          => 'signature',
+            'coordinates'   => ['page' => $page, 'llx' => 330, 'lly' => 86, 'urx' => 560, 'ury' => 161],
+        ]);
+    }
+
     public function validate(string $uuid): array
     {
         return $this->ocs('GET', '/file/validate/uuid/' . rawurlencode($uuid));

@@ -58,7 +58,8 @@ class SignRequest extends CommonDBTM
             ? self::attachedPdf($ticket, $documentId)
             : [self::ticketPdf($ticket), sprintf('Chamado %d - %s', $ticket->getID(), $ticket->fields['name'])];
 
-        $file = (new LibreSignClient())->requestSignature(
+        $client = new LibreSignClient();
+        $file = $client->requestSignature(
             mb_substr($docName, 0, 200),
             $pdf,
             [[
@@ -70,6 +71,19 @@ class SignRequest extends CommonDBTM
         );
         if (empty($file['uuid'])) {
             throw new RuntimeException('O LibreSign não devolveu o identificador do documento.');
+        }
+
+        // bloco de assinatura visível na última página (sem ele a assinatura é só digital)
+        $warning = null;
+        try {
+            $client->addVisibleSignature(
+                $file['uuid'],
+                (int) $file['id'],
+                (int) ($file['signers'][0]['signRequestId'] ?? 0),
+                max(1, preg_match_all('#/Type\s*/Page(?![a-z])#', $pdf))
+            );
+        } catch (Throwable $e) {
+            $warning = 'Campo visível não criado (a assinatura digital continua válida): ' . $e->getMessage();
         }
 
         $req = new self();
@@ -85,6 +99,7 @@ class SignRequest extends CommonDBTM
             'file_id'             => (int) ($file['id'] ?? 0),
             'status'              => 'pending',
             'message'             => $message,
+            'last_error'          => $warning,
             'date_creation'       => $_SESSION['glpi_currenttime'],
             'date_mod'            => $_SESSION['glpi_currenttime'],
         ]);

@@ -131,6 +131,18 @@ sudo -u www-data php bin/console plugin:activate assinatura
 
 Depois preencha *Configurar → Plugins → Assinatura digital*: URL do Nextcloud, usuário de serviço e senha de aplicativo (gravada criptografada). O botão **Testar conexão** valida as credenciais. Os assinantes precisam ter e-mail cadastrado no GLPI.
 
+### Carimbo sem a marca do LibreSign (opcional)
+
+O bloco de assinatura visível vem, por padrão, com o logotipo do LibreSign como marca d'água e o texto "Assinado com LibreSign". Para um carimbo neutro e um rodapé sem a marca (o QR code e o link de validação continuam):
+
+```bash
+cd /var/www/nextcloud
+sudo -u www-data php occ config:app:set libresign signature_text --value='{"template":"Assinado digitalmente\n{{SignerCommonName}}\nEmissor: {{IssuerCommonName}}\nData: {{ServerSignatureDate}}","background_type":"deleted"}'
+sudo -u www-data php occ config:app:set libresign footer_signed_by --value='Documento assinado digitalmente.'
+```
+
+Para voltar ao padrão: `occ config:app:delete libresign signature_text` e `occ config:app:delete libresign footer_signed_by`.
+
 ## Requisitos
 
 - Zabbix 7.x com API habilitada.
