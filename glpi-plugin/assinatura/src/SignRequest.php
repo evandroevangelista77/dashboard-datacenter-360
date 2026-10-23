@@ -56,7 +56,7 @@ class SignRequest extends CommonDBTM
 
         [$pdf, $docName] = $source === 'document'
             ? self::attachedPdf($ticket, $documentId)
-            : [self::ticketPdf($ticket), sprintf('Chamado %d - %s', $ticket->getID(), $ticket->fields['name'])];
+            : [self::ticketPdf($ticket), sprintf('Relatório de Atendimento Técnico - Chamado %d', $ticket->getID())];
 
         $client = new LibreSignClient();
         $file = $client->requestSignature(

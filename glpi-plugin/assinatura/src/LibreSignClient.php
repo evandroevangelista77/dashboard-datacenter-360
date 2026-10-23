@@ -44,7 +44,8 @@ class LibreSignClient
             'signRequestId' => $signRequestId,
             'fileId'        => $fileId,
             'type'          => 'signature',
-            'coordinates'   => ['page' => $page, 'llx' => 330, 'lly' => 86, 'urx' => 560, 'ury' => 161],
+            // 270×77 pt: proporção 3,5:1 do carimbo do LibreSign (desenho à esquerda, texto à direita)
+            'coordinates'   => ['page' => $page, 'llx' => 290, 'lly' => 86, 'urx' => 560, 'ury' => 163],
         ]);
     }
 

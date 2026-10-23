@@ -133,6 +133,32 @@ Depois preencha *Configurar → Plugins → Assinatura digital*: URL do Nextclou
 
 ### Carimbo sem a marca do LibreSign (opcional)
 
+Por padrão o bloco de assinatura traz o logotipo do LibreSign como marca d'água e o texto "Assinado com LibreSign". Remover o fundo (`background_type: deleted`) **não** serve: nesse modo o LibreSign usa a assinatura desenhada como fundo do bloco e escreve o texto por cima. O jeito certo é um fundo personalizado **transparente**, que mantém o layout desenho | descrição:
+
+```bash
+cd /var/www/nextcloud
+sudo -u www-data php occ config:app:set libresign signature_text --value='{"template":"Assinado digitalmente\n{{SignerCommonName}}\nEmissor: {{IssuerCommonName}}\nData: {{ServerSignatureDate}}"}'
+sudo -u www-data php occ config:app:set libresign footer_signed_by --value='Documento assinado digitalmente.'
+cat > /tmp/bg.php <<'PHP'
+<?php
+require '/var/www/nextcloud/lib/base.php';
+$img = new Imagick(); $img->newImage(1050, 300, new ImagickPixel('transparent')); $img->setImageFormat('png32');
+$tmp = tempnam(sys_get_temp_dir(), 'bg') . '.png'; $img->writeImage('png32:' . $tmp);
+\OCP\Server::get(\OCA\Libresign\Service\SignatureBackgroundService::class)->updateImage($tmp); unlink($tmp);
+PHP
+sudo -u www-data php /tmp/bg.php && rm /tmp/bg.php
+```
+
+### E-mail de assinatura com a identidade da empresa (opcional)
+
+- **Logotipo, nome e cor** do topo dos e-mails vêm do Tema do Nextcloud: `occ theming:config logo /caminho/logo.png`, `occ theming:config name "…"`, `occ theming:config primary_color "#2b3d47"`.
+- **Idioma**: `occ config:system:set default_language --value=pt_BR` (o assinante sem conta recebe o e-mail no idioma padrão).
+- **Título e assunto**: o app [`nextcloud-app/oakmail`](nextcloud-app/oakmail) troca o título dos e-mails do LibreSign por "RELATÓRIO DE ATENDIMENTO TÉCNICO" e o prefixo do assunto. Copie para `/var/www/nextcloud/apps/`, rode `occ app:enable oakmail` e `occ config:system:set mail_template_class --value='\OCA\OakMail\EMailTemplate'`.
+
+Depois preencha *Configurar → Plugins → Assinatura digital*: URL do Nextcloud, usuário de serviço e senha de aplicativo (gravada criptografada). O botão **Testar conexão** valida as credenciais. Os assinantes precisam ter e-mail cadastrado no GLPI.
+
+### Carimbo sem a marca do LibreSign (opcional)
+
 O bloco de assinatura visível vem, por padrão, com o logotipo do LibreSign como marca d'água e o texto "Assinado com LibreSign". Para um carimbo neutro e um rodapé sem a marca (o QR code e o link de validação continuam):
 
 ```bash
@@ -187,6 +213,7 @@ Para voltar ao padrão: `occ config:app:delete libresign signature_text` e `occ 
 | `topologia.html`, `topologia.css`, `topologia.js` | Topologia animada da rede |
 | `glpi-theme/datacenter360.scss` | Paleta do GLPI com as cores do painel |
 | `glpi-plugin/assinatura/` | Plugin do GLPI: assinatura digital no chamado via LibreSign |
+| `nextcloud-app/oakmail/` | App do Nextcloud: título e assunto próprios nos e-mails do LibreSign |
 | `glpi-plugin/datacenter360/` | Plugin do GLPI: seção Dashboard no menu lateral |
 | `logos.js` | Logotipos dos ativos (Simple Icons), gerado por `tools/gerar_logos.sh` |
 | `api.php` | Backend somente leitura (Zabbix + GLPI) |

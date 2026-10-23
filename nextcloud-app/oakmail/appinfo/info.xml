@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+    <id>oakmail</id>
+    <name>Oakmont - e-mails de assinatura</name>
+    <summary>Título e assunto próprios nos e-mails do LibreSign</summary>
+    <description>Modelo de e-mail (mail_template_class) que troca o título dos e-mails do LibreSign por "RELATÓRIO DE ATENDIMENTO TÉCNICO" e o prefixo do assunto. Os demais e-mails do Nextcloud não mudam.</description>
+    <version>1.0.0</version>
+    <licence>agpl</licence>
+    <author>Evandro Evangelista</author>
+    <namespace>OakMail</namespace>
+    <category>tools</category>
+    <dependencies>
+        <nextcloud min-version="35" max-version="35"/>
+    </dependencies>
+</info>
