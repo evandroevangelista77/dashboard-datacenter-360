@@ -169,6 +169,20 @@ sudo -u www-data php occ config:app:set libresign footer_signed_by --value='Docu
 
 Para voltar ao padrão: `occ config:app:delete libresign signature_text` e `occ config:app:delete libresign footer_signed_by`.
 
+## Campos extras no cadastro de Projeto (plugin Fields)
+
+[`glpi-projetos/criar_campos.py`](glpi-projetos/criar_campos.py) prepara o cadastro de **Projeto** do GLPI 12 com as colunas da planilha de controle de projetos, usando os campos nativos onde eles existem e o plugin [Fields](https://github.com/pluginsGLPI/fields) 1.25+ para o resto:
+
+- **Nativos**: tipos de projeto (Projeto, Manutenção, Atividade Controlada) e estados (Iniciação, Planejamento, Execução, Pendente Cliente, Pendente OAK, Encerramento, Fechado). Nome, Descrição, Código (centro de custo), Gerente (GP) e Data de término planejada (prazo contratual) já existem no Projeto.
+- **Bloco "Dados do projeto"** dentro do formulário, com 18 campos em 3 seções: *Comercial e financeiro* (Cliente, Horas GP, Receita, Receita de Serviço, Margem Venda, Margem EAC), *Manutenção e prazos* (Data do Aviso de Fechamento, Prazo EAC, Previsão Conclusão GP, Possui Manutenção, Período Manutenção) e *Acompanhamento* (Líder Técnico, Status Atual, Ponto de Atenção, Descrição do Ponto de Atenção, Esforço, Complexidade, Classificação).
+- **Listas** preenchidas: Ponto de Atenção, Esforço, Complexidade, Classificação e, se existir `glpi-projetos/clientes.txt` (um cliente por linha; veja `clientes.exemplo.txt`), a lista de clientes. O arquivo real de clientes não vai para o repositório.
+
+O script é idempotente (o que já existe é mantido):
+
+```bash
+GLPI_URL=http://<glpi>/apirest.php GLPI_APP_TOKEN=... GLPI_USER_TOKEN=... python3 glpi-projetos/criar_campos.py
+```
+
 ## Requisitos
 
 - Zabbix 7.x com API habilitada.
@@ -214,6 +228,7 @@ Para voltar ao padrão: `occ config:app:delete libresign signature_text` e `occ 
 | `glpi-theme/datacenter360.scss` | Paleta do GLPI com as cores do painel |
 | `glpi-plugin/assinatura/` | Plugin do GLPI: assinatura digital no chamado via LibreSign |
 | `nextcloud-app/oakmail/` | App do Nextcloud: título e assunto próprios nos e-mails do LibreSign |
+| `glpi-projetos/criar_campos.py` | Campos extras do cadastro de Projeto (plugin Fields) |
 | `glpi-plugin/datacenter360/` | Plugin do GLPI: seção Dashboard no menu lateral |
 | `logos.js` | Logotipos dos ativos (Simple Icons), gerado por `tools/gerar_logos.sh` |
 | `api.php` | Backend somente leitura (Zabbix + GLPI) |
