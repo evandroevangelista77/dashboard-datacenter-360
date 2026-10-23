@@ -58,7 +58,6 @@ class Importer
 
         $parents = [0 => 0];  // nível → id da última tarefa naquele nível
         $seen = [];
-        $task = new ProjectTask();
         foreach ($data['tasks'] as $t) {
             if ($t['level'] === 0) {
                 // tarefa-resumo do projeto: vira datas do próprio projeto, se pedido
@@ -68,6 +67,9 @@ class Importer
                 continue;
             }
             $parent = $parents[$t['level'] - 1] ?? 0;
+            // objeto novo a cada tarefa: o GLPI completa datas reais ausentes com $this->fields,
+            // e um objeto reaproveitado traria as datas da tarefa anterior
+            $task = new ProjectTask();
             $input = [
                 'name'               => mb_substr($t['name'], 0, 255),
                 'content'            => $t['notes'] !== '' ? nl2br(htmlspecialchars($t['notes'])) : '',
@@ -81,6 +83,7 @@ class Importer
                 'real_start_date'    => $t['actual_start'],
                 'real_end_date'      => $t['actual_finish'],
                 'planned_duration'   => $t['duration'],
+                'effective_duration' => 0, // o GLPI recalcula quando há início e fim reais
                 'percent_done'       => $t['percent'],
                 'auto_percent_done'  => 0,
                 'is_milestone'       => $t['milestone'] ? 1 : 0,
@@ -120,6 +123,7 @@ class Importer
         }
 
         if (!empty($opts['remove_missing'])) {
+            $task = new ProjectTask();
             foreach (array_diff_key($previous, $seen) as $uid => $taskId) {
                 if ($task->getFromDB($taskId)) {
                     $task->delete(['id' => $taskId]); // vai para a lixeira, dá para restaurar
