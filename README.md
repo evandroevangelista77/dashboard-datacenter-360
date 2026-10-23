@@ -98,6 +98,39 @@ sudo -u www-data php bin/console cache:clear
 
 Cada usuário ainda pode escolher outra paleta em *Minhas configurações → Personalização*. Quem já estava logado passa a ver o tema novo depois de sair e entrar de novo.
 
+## Plugin de assinatura digital no chamado (LibreSign)
+
+[`glpi-plugin/assinatura`](glpi-plugin/assinatura) adiciona a aba **Assinatura digital** aos chamados do GLPI 12, integrada ao [LibreSign](https://libresign.coop) 15 (app do Nextcloud):
+
+1. Na aba, escolha o **assinante** (padrão: requerente do chamado) e o **documento**: o PDF do chamado (gerado pelo plugin [PDF](https://github.com/pluginsGLPI/pdf) 4.2+) ou um PDF anexado.
+2. O LibreSign envia ao assinante um e-mail com o link; ele assina com um clique e recebe um certificado emitido pela CA do LibreSign (assinatura PAdES válida).
+3. O GLPI consulta o status ao abrir a aba e numa ação automática a cada 5 minutos. Quando assinado: anexa o **PDF assinado** ao chamado, registra um acompanhamento e, se configurado, **aprova a validação pendente** do assinante.
+
+Solicitações pendentes podem ser canceladas na própria aba.
+
+### Instalação
+
+No Nextcloud, crie uma conta de serviço que possa solicitar assinaturas e uma senha de aplicativo:
+
+```bash
+cd /var/www/nextcloud
+sudo -u www-data php occ group:add libresign-glpi
+sudo -u www-data env OC_PASS='<senha aleatória>' php occ user:add --password-from-env --group libresign-glpi glpi-libresign
+sudo -u www-data php occ config:app:set libresign groups_request_sign --value='["admin","libresign-glpi"]'
+sudo -u www-data env OC_PASS='<mesma senha>' php occ user:auth-tokens:add --password-from-env glpi-libresign
+```
+
+No GLPI (com o plugin PDF instalado e ativo):
+
+```bash
+sudo cp -r glpi-plugin/assinatura /var/www/glpi/plugins/ && sudo chown -R www-data:www-data /var/www/glpi/plugins/assinatura
+cd /var/www/glpi
+sudo -u www-data php bin/console plugin:install --username=glpi assinatura
+sudo -u www-data php bin/console plugin:activate assinatura
+```
+
+Depois preencha *Configurar → Plugins → Assinatura digital*: URL do Nextcloud, usuário de serviço e senha de aplicativo (gravada criptografada). O botão **Testar conexão** valida as credenciais. Os assinantes precisam ter e-mail cadastrado no GLPI.
+
 ## Requisitos
 
 - Zabbix 7.x com API habilitada.
@@ -141,6 +174,7 @@ Cada usuário ainda pode escolher outra paleta em *Minhas configurações → Pe
 | `index.html`, `app.css`, `app.js` | Painel |
 | `topologia.html`, `topologia.css`, `topologia.js` | Topologia animada da rede |
 | `glpi-theme/datacenter360.scss` | Paleta do GLPI com as cores do painel |
+| `glpi-plugin/assinatura/` | Plugin do GLPI: assinatura digital no chamado via LibreSign |
 | `glpi-plugin/datacenter360/` | Plugin do GLPI: seção Dashboard no menu lateral |
 | `logos.js` | Logotipos dos ativos (Simple Icons), gerado por `tools/gerar_logos.sh` |
 | `api.php` | Backend somente leitura (Zabbix + GLPI) |
