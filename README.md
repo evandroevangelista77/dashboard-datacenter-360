@@ -297,6 +297,10 @@ Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](gl
 | `logo-zabbix.svg`, `logo-glpi.svg` | Logotipos dos sistemas integrados |
 | `echarts.min.js` | Apache ECharts 5.5.1 (gráficos e gauges) |
 
+## Licença
+
+O código deste repositório (painel, plugins do GLPI, tema e scripts) é distribuído sob a [GNU General Public License versão 3](LICENSE) ou posterior (GPLv3+), a mesma licença do GLPI. Os componentes de terceiros abaixo mantêm as próprias licenças.
+
 ## Créditos e licenças de terceiros
 
 - [Apache ECharts](https://echarts.apache.org/) 5.5.1, licença Apache 2.0, incluído sem alterações.

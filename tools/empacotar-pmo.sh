@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Gera o pacote da release do plugin PMO: oak-pmo-completo-<versão>.zip
-# (pmo/ + instalar.sh + LEIA-ME.txt), com a versão lida do setup.php.
+# (pmo/ + instalar.sh + LEIA-ME.txt + LICENSE), com a versão lida do setup.php.
 #
 # Uso: bash tools/empacotar-pmo.sh [pasta de saída]   (padrão: pasta atual)
 set -euo pipefail
@@ -16,6 +16,7 @@ PKG="$TMP/oak-pmo-completo"
 mkdir -p "$PKG"
 rsync -a --exclude '.DS_Store' "$RAIZ/glpi-plugin/pmo/" "$PKG/pmo/"
 cp "$RAIZ/tools/pmo-pacote/instalar.sh" "$PKG/instalar.sh"
+cp "$RAIZ/LICENSE" "$PKG/LICENSE"
 sed "s/@VERSAO@/$VERSAO/g" "$RAIZ/tools/pmo-pacote/LEIA-ME.txt" > "$PKG/LEIA-ME.txt"
 chmod 755 "$PKG/instalar.sh"
 

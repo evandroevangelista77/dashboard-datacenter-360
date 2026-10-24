@@ -82,6 +82,7 @@ function plugin_version_pmo(): array
         'name'         => 'PMO',
         'version'      => PLUGIN_PMO_VERSION,
         'author'       => 'Evandro Evangelista',
+        'license'      => 'GPLv3+',
         'homepage'     => 'https://github.com/evandroevangelista77/dashboard-datacenter-360',
         'requirements' => [
             'glpi' => ['min' => PLUGIN_PMO_MIN_GLPI, 'max' => PLUGIN_PMO_MAX_GLPI],

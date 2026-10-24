@@ -96,3 +96,7 @@ Tabelas criadas: `glpi_plugin_pmo_projects`, `_columns`, `_items`, `_sprints`, `
 | Gráficos ou quadro em branco depois de atualizar | Cache do navegador: recarregue com Ctrl+Shift+R (Cmd+Shift+R no Mac). Os arquivos do plugin já são versionados pela data de modificação. |
 | Não consigo arrastar cartões | O usuário tem só leitura: é preciso o direito PMO "Atualizar" e poder editar o projeto ou as tarefas. |
 | Curva S ou CFD vazios | Ainda não há dias suficientes de fotografias. Confira se a ação automática *pmosnapshot* está ativa. |
+
+## Licença
+
+[GNU GPL versão 3 ou posterior](../../LICENSE) (GPLv3+), a mesma do GLPI.

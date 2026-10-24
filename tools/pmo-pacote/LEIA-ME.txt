@@ -22,6 +22,7 @@ CONTEÚDO
   pmo/          o plugin (a pasta precisa se chamar "pmo")
   instalar.sh   instala ou atualiza tudo de uma vez
   LEIA-ME.txt   este arquivo
+  LICENSE       GNU GPL versão 3
 
 REQUISITOS
 ----------
@@ -69,3 +70,8 @@ PROBLEMAS COMUNS
 
 Documentação completa: README.md dentro da pasta pmo/ e
 https://github.com/evandroevangelista77/dashboard-datacenter-360
+
+LICENÇA
+-------
+GNU General Public License, versão 3 ou posterior (GPLv3+), a mesma do GLPI.
+Texto completo no arquivo LICENSE.
