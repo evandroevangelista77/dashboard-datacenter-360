@@ -268,6 +268,18 @@ class View
             echo "</div>";
         }
         echo "</div>";
+        // avisos por e-mail: dependem das notificações do GLPI estarem ligadas
+        global $CFG_GLPI;
+        $on = $CFG_GLPI['use_notifications'] && $CFG_GLPI['notifications_mailing'];
+        $notifUrl = self::e(\Notification::getSearchURL());
+        echo "<div class='card mb-3'><div class='card-header'><h3 class='card-title'><i class='ti ti-bell me-2'></i>Avisos por e-mail</h3></div><div class='card-body'>";
+        echo $on
+            ? "<div class='text-success mb-2'><i class='ti ti-circle-check me-1'></i>As notificações por e-mail do GLPI estão ligadas.</div>"
+            : "<div class='alert alert-warning mb-2'>As notificações por e-mail do GLPI estão <b>desligadas</b>: nenhum aviso é enviado. Ligue em <i>Configurar → Notificações</i> (acompanhamento e e-mail) e configure o servidor SMTP.</div>";
+        echo "<div class='small text-secondary'>O PMO avisa <b>sprint iniciada</b> e <b>sprint concluída</b> e <b>risco crítico</b> (P×I ≥ " . Risk::CRITICAL . ") ao gerente e à equipe do projeto, "
+            . "e <b>tarefa atrasada</b> (uma vez por prazo vencido, conferido de hora em hora) à equipe da tarefa. As mudanças de tarefa (mover cartão, %, datas) usam a notificação nativa <i>Atualização de tarefa de projeto</i>. "
+            . "Modelos e destinatários: <a href='$notifUrl'>Configurar → Notificações</a>.</div></div></div>";
+
         if ($canEdit) {
             echo "<button class='btn btn-primary' name='save' value='1'><i class='ti ti-device-floppy me-1'></i>Salvar configuração</button>";
             echo " <button class='btn btn-ghost-danger ms-2' name='disable' value='1' onclick=\"return confirm('Desativar o PMO neste projeto? Quadro, sprints, pontos, documentação e riscos do PMO deste projeto serão apagados. As tarefas do GLPI ficam.')\"><i class='ti ti-power me-1'></i>Desativar PMO no projeto</button>";

@@ -108,8 +108,9 @@ class Sprint
             throw new RuntimeException('Já existe uma sprint em andamento. Encerre-a antes de iniciar outra.');
         }
         self::update($projectId, $sprintId, $in);
-        [$total] = self::totals($projectId, $sprintId);
+        [$total, , $ids] = self::totals($projectId, $sprintId);
         $DB->update('glpi_plugin_pmo_sprints', ['state' => 'active', 'committed' => $total], ['id' => $sprintId]);
+        Notifications::sprintStarted($projectId, self::find($projectId, $sprintId), $total, count($ids), self::unit($projectId));
     }
 
     /**
@@ -142,7 +143,9 @@ class Sprint
         if ($pending) {
             $DB->update('glpi_plugin_pmo_items', ['sprints_id' => max(0, $target)], ['projecttasks_id' => $pending]);
         }
-        return ['done' => $done, 'total' => $total, 'moved' => count($pending), 'target' => $target];
+        $result = ['done' => $done, 'total' => $total, 'moved' => count($pending), 'target' => $target];
+        Notifications::sprintClosed($projectId, $sprint, $result, self::unit($projectId), $target > 0 ? self::find($projectId, $target)['name'] : 'o backlog');
+        return $result;
     }
 
     public static function delete(int $projectId, int $sprintId): void
@@ -178,6 +181,12 @@ class Sprint
             }
         }
         return [$total, $done, $ids, $pending];
+    }
+
+    /** Unidade da estimativa do projeto, para os avisos. */
+    private static function unit(int $projectId): string
+    {
+        return (ProjectConfig::get($projectId)['estimation'] ?? 'points') === 'hours' ? 'horas' : 'pontos';
     }
 
     private static function date($v): ?string

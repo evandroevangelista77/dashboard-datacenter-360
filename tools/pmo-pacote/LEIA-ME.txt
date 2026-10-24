@@ -13,6 +13,8 @@ Projetos e Tarefas nativos do GLPI 12.0.x:
 - Portfólio do PMO (com os campos do plugin Fields, se houver) e "Meu trabalho"
 - Documentação com modelos (TAP, EAP, RACI, comunicação, ata, status, lições,
   retrospectiva) e registro de riscos com matriz 5×5
+- Avisos por e-mail: sprint iniciada, sprint concluída, risco crítico e tarefa
+  atrasada (notificações do GLPI, editáveis em Configurar > Notificações)
 
 Nada é duplicado: as tarefas continuam sendo tarefas do GLPI. Desinstalar o plugin
 apaga só os dados do PMO (colunas, sprints, pontos, páginas, riscos).
@@ -59,6 +61,9 @@ PRIMEIROS PASSOS
 3) Aba "PMO" do projeto > "Ativar o PMO neste projeto" > escolha a metodologia.
 4) Menu lateral > PMO > "Portfólio de projetos" e "Meu trabalho".
 
+Avisos por e-mail: ligue as notificações do GLPI (Configurar > Notificações >
+acompanhamento e e-mail, com SMTP) e defina gerente/equipe nos projetos.
+
 O fluxo cumulativo e a curva S real usam uma fotografia diária (gravada a cada
 mudança e pela ação automática "pmosnapshot"); ganham forma com alguns dias de uso.
 
@@ -66,6 +71,7 @@ PROBLEMAS COMUNS
 ----------------
 - Menu PMO não aparece: direito PMO no perfil, ou sair e entrar de novo.
 - Tela em branco depois de atualizar: Ctrl+Shift+R (cache do navegador).
+- Avisos não chegam: notificações/SMTP do GLPI desligados ou projeto sem gerente/equipe.
 - Não consigo arrastar cartões: falta o direito PMO "Atualizar" ou editar o projeto.
 
 Documentação completa: README.md dentro da pasta pmo/ e

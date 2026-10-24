@@ -1,6 +1,7 @@
 <?php
 
 use GlpiPlugin\Pmo\Menu;
+use GlpiPlugin\Pmo\Notifications;
 use GlpiPlugin\Pmo\Snapshot;
 
 function plugin_pmo_install(): bool
@@ -47,6 +48,7 @@ function plugin_pmo_install(): bool
             `story_points` decimal(6,1) NOT NULL DEFAULT 0,
             `priority` tinyint NOT NULL DEFAULT 3,
             `date_done` timestamp NULL DEFAULT NULL,
+            `late_notified` timestamp NULL DEFAULT NULL,
             `date_creation` timestamp NULL DEFAULT NULL,
             PRIMARY KEY (`id`),
             UNIQUE KEY `projecttasks_id` (`projecttasks_id`),
@@ -118,8 +120,16 @@ function plugin_pmo_install(): bool
         }
     }
 
+    // 1.1.0: fim planejado já avisado como atrasado (para não repetir o e-mail)
+    if (!$DB->fieldExists('glpi_plugin_pmo_items', 'late_notified')) {
+        $DB->doQuery("ALTER TABLE `glpi_plugin_pmo_items` ADD `late_notified` timestamp NULL DEFAULT NULL AFTER `date_done`");
+    }
+
     // direito do plugin: leitura para perfis da interface padrão, edição para quem edita projetos
-    ProfileRight::addProfileRights([Menu::$rightname]);
+    // (na atualização o direito já existe: criar de novo daria chave duplicada)
+    if (!countElementsInTable(ProfileRight::getTable(), ['name' => Menu::$rightname])) {
+        ProfileRight::addProfileRights([Menu::$rightname]);
+    }
     foreach ($DB->request(['SELECT' => ['id'], 'FROM' => Profile::getTable(), 'WHERE' => ['interface' => 'central']]) as $row) {
         $project = ProfileRight::getProfileRights($row['id'], ['project'])['project'] ?? 0;
         $DB->update(
@@ -147,6 +157,14 @@ function plugin_pmo_install(): bool
         'mode'    => CronTask::MODE_INTERNAL,
         'state'   => CronTask::STATE_WAITING,
     ]);
+    CronTask::register(Notifications::class, 'pmolatetasks', HOUR_TIMESTAMP, [
+        'comment' => 'PMO: avisa as tarefas que passaram do fim planejado',
+        'mode'    => CronTask::MODE_INTERNAL,
+        'state'   => CronTask::STATE_WAITING,
+    ]);
+
+    // modelos e notificações (sprint iniciada/concluída, risco crítico, tarefa atrasada)
+    Notifications::install();
 
     return true;
 }
@@ -161,6 +179,7 @@ function plugin_pmo_uninstall(): bool
     }
     ProfileRight::deleteProfileRights([Menu::$rightname]);
     CronTask::unregister('pmo');
+    Notifications::uninstall();
     unset($_SESSION['glpimenu']);
 
     return true;

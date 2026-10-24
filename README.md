@@ -226,13 +226,14 @@ Os caminhos do Java e do MPXJ ficam em `glpi_configs` (contexto `plugin:cronogra
 - **Painéis**: saúde, % real × planejado, SPI, burndown, burnup com previsão de término, curva S, fluxo cumulativo e carga da equipe.
 - **Portfólio do PMO** (com os campos do bloco "Dados do projeto" do plugin Fields) e **Meu trabalho**.
 - **Documentação** com modelos (TAP, EAP, RACI, comunicação, ata, status report, lições aprendidas, retrospectiva) e **registro de riscos** com matriz 5×5.
+- **Avisos por e-mail** pelas notificações do GLPI: sprint iniciada, sprint concluída, risco crítico e tarefa atrasada.
 
 ### Instalação
 
 Baixe `oak-pmo-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
 
 ```bash
-unzip oak-pmo-completo-1.0.0.zip && cd oak-pmo-completo
+unzip oak-pmo-completo-1.1.0.zip && cd oak-pmo-completo
 sudo bash instalar.sh
 ```
 

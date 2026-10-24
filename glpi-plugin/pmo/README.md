@@ -14,6 +14,7 @@ Plugin do GLPI 12.0.x para gerenciar projetos ágeis (Scrum e Kanban), waterfall
 | **Meu trabalho** | As tarefas abertas do usuário em todos os projetos, agrupadas pelo prazo. |
 | **Documentação** | Páginas em texto rico com modelos: Termo de Abertura (TAP), Escopo/EAP, Matriz RACI, Plano de Comunicação, Ata de Reunião, Status Report, Lições Aprendidas e Retrospectiva. Também lista os arquivos anexados ao projeto. |
 | **Riscos e pendências** | Registro com probabilidade × impacto (matriz 5×5), nível, responsável, prazo e plano de resposta. |
+| **Avisos por e-mail** | Sprint iniciada, sprint concluída, risco crítico e tarefa atrasada, pelo sistema de notificações do próprio GLPI (modelos e destinatários editáveis). |
 
 Metodologias: **Scrum**, **Kanban**, **Waterfall** e **Híbrido** (cronograma no Gantt e execução em sprints). Cada uma cria um modelo de colunas, que pode ser mudado depois.
 
@@ -32,7 +33,7 @@ Metodologias: **Scrum**, **Kanban**, **Waterfall** e **Híbrido** (cronograma no
 Baixe `oak-pmo-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
 
 ```bash
-unzip oak-pmo-completo-1.0.0.zip
+unzip oak-pmo-completo-1.1.0.zip
 cd oak-pmo-completo
 sudo bash instalar.sh
 # GLPI em outro caminho ou outro administrador:
@@ -70,6 +71,26 @@ A pasta precisa se chamar `pmo`, porque é o nome técnico do plugin.
 - **Cartão:** clique para editar título, tipo, prioridade, pontos, datas, horas, sprint e responsáveis. O botão **Abrir tarefa completa** leva ao formulário nativo.
 - **Histórico:** o fluxo cumulativo e a curva S real dependem de uma fotografia diária. Ela é gravada a cada mudança no quadro e pela ação automática **pmosnapshot** (uma vez por dia; Configurar → Ações automáticas). Os gráficos ganham forma com alguns dias de uso.
 
+## Avisos por e-mail (notificações)
+
+O PMO acrescenta quatro eventos às notificações nativas do GLPI. Eles aparecem em **Configurar → Notificações** como *PMO - Sprint iniciada*, *PMO - Sprint concluída*, *PMO - Risco crítico* e *PMO - Tarefa atrasada*, cada um com seu modelo (*Configurar → Modelos de notificação*), que pode ser editado como qualquer outro.
+
+| Aviso | Quando | Para quem (padrão) |
+|---|---|---|
+| Sprint iniciada | Ao clicar em *Iniciar sprint* | Gerente e grupo gerente do projeto, usuários e grupos da equipe do projeto |
+| Sprint concluída | Ao concluir a sprint (entregue × comprometido e para onde foram as pendentes) | Os mesmos |
+| Risco crítico | Quando um risco ou pendência passa a ter P×I ≥ 15: novo, com nível aumentado ou reaberto. Salvar de novo não reenvia. | Os mesmos |
+| Tarefa atrasada | Tarefa aberta que passou do fim planejado. A ação automática *pmolatetasks* confere de hora em hora e avisa uma vez por prazo; se o prazo mudar e vencer de novo, avisa de novo. | Usuários e grupos da equipe da tarefa |
+
+As mudanças comuns de tarefa (mover cartão, %, datas, responsáveis) continuam usando a notificação nativa *Atualização de tarefa de projeto*.
+
+**Para os e-mails saírem**, as notificações do GLPI precisam estar ligadas:
+1. *Configurar → Notificações*: ative o acompanhamento e as notificações por e-mail.
+2. Configure o envio (SMTP) e use *Enviar um e-mail de teste*.
+3. Os destinatários precisam ter e-mail cadastrado. Para o projeto, defina o gerente e/ou a equipe do projeto (aba *Equipe do projeto*).
+
+A tela **Configuração** do PMO mostra se as notificações estão ligadas. Nos modelos, os dados do PMO usam as tags `##pmo.*##` (por exemplo `##pmo.sprint##`, `##pmo.goal##`, `##pmo.committed##`, `##pmo.completed##`, `##pmo.rate##`, `##pmo.risk##`, `##pmo.score##`, `##pmo.level##`, `##pmo.days##` e `##pmo.url##`), junto com as tags nativas `##project.*##` e `##projecttask.*##`.
+
 ## Como os números são calculados
 
 - **% real**: em cronogramas com datas (waterfall), é a média do % das tarefas ponderada pela duração planejada. Em projetos ágeis sem datas, é o que foi concluído (pontos, horas ou quantidade de cartões) dividido pelo total.
@@ -83,9 +104,9 @@ A pasta precisa se chamar `pmo`, porque é o nome técnico do plugin.
 
 ## Dados e desinstalação
 
-Tabelas criadas: `glpi_plugin_pmo_projects`, `_columns`, `_items`, `_sprints`, `_snapshots`, `_pages` e `_risks`. Também são criados o direito `plugin_pmo`, a ação automática `pmosnapshot` e, se faltarem, os tipos de tarefa *História*, *Tarefa*, *Bug* e *Melhoria*.
+Tabelas criadas: `glpi_plugin_pmo_projects`, `_columns`, `_items`, `_sprints`, `_snapshots`, `_pages` e `_risks`. Também são criados o direito `plugin_pmo`, as ações automáticas `pmosnapshot` e `pmolatetasks`, as quatro notificações com seus modelos e, se faltarem, os tipos de tarefa *História*, *Tarefa*, *Bug* e *Melhoria*.
 
-**Desinstalar** apaga só esses dados do PMO. Projetos, tarefas, dependências e equipes do GLPI ficam. Para tirar o PMO de um único projeto, use **Configuração → Desativar PMO no projeto**.
+**Desinstalar** apaga só esses dados do PMO (inclusive as quatro notificações e os modelos). Projetos, tarefas, dependências e equipes do GLPI ficam. Para tirar o PMO de um único projeto, use **Configuração → Desativar PMO no projeto**.
 
 ## Problemas comuns
 
@@ -95,7 +116,13 @@ Tabelas criadas: `glpi_plugin_pmo_projects`, `_columns`, `_items`, `_sprints`, `
 | "Versão do GLPI incompatível" | O plugin é para GLPI 12.0.x. |
 | Gráficos ou quadro em branco depois de atualizar | Cache do navegador: recarregue com Ctrl+Shift+R (Cmd+Shift+R no Mac). Os arquivos do plugin já são versionados pela data de modificação. |
 | Não consigo arrastar cartões | O usuário tem só leitura: é preciso o direito PMO "Atualizar" e poder editar o projeto ou as tarefas. |
+| Os avisos do PMO não chegam | As notificações por e-mail do GLPI estão desligadas ou sem SMTP (a tela Configuração do PMO mostra), ou o projeto não tem gerente nem equipe com e-mail. |
 | Curva S ou CFD vazios | Ainda não há dias suficientes de fotografias. Confira se a ação automática *pmosnapshot* está ativa. |
+
+## Versões
+
+- **1.1.0**: avisos por e-mail (sprint iniciada e concluída, risco crítico, tarefa atrasada). Corrige a reinstalação por cima de uma versão já instalada.
+- **1.0.0**: primeira versão.
 
 ## Licença
 

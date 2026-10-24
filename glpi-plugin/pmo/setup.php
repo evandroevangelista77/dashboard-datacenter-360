@@ -13,11 +13,12 @@
 
 use Glpi\Plugin\Hooks;
 use GlpiPlugin\Pmo\Menu;
+use GlpiPlugin\Pmo\Notifications;
 use GlpiPlugin\Pmo\ProfileTab;
 use GlpiPlugin\Pmo\ProjectTab;
 use GlpiPlugin\Pmo\Snapshot;
 
-define('PLUGIN_PMO_VERSION', '1.0.0');
+define('PLUGIN_PMO_VERSION', '1.1.0');
 define('PLUGIN_PMO_MIN_GLPI', '12.0.0');
 define('PLUGIN_PMO_MAX_GLPI', '12.0.99');
 
@@ -28,6 +29,7 @@ function plugin_init_pmo(): void
     Plugin::registerClass(ProfileTab::class, ['addtabon' => [Profile::class]]);
     Plugin::registerClass(ProjectTab::class, ['addtabon' => [Project::class]]);
     Plugin::registerClass(Snapshot::class);
+    Plugin::registerClass(Notifications::class);
 
     // sessões abertas antes da instalação ainda não têm o direito do plugin
     if (isset($_SESSION['glpiactiveprofile']['id']) && !isset($_SESSION['glpiactiveprofile'][Menu::$rightname])) {
@@ -41,6 +43,16 @@ function plugin_init_pmo(): void
 
     // Gantt das atividades na tela principal do projeto, abaixo do formulário
     $PLUGIN_HOOKS[Hooks::POST_ITEM_FORM]['pmo'] = [ProjectTab::class, 'showGanttOnForm'];
+
+    // avisos do PMO nas notificações nativas de Projeto e de Tarefa de projeto
+    $PLUGIN_HOOKS[Hooks::ITEM_GET_EVENTS]['pmo'] = [
+        NotificationTargetProject::class     => [Notifications::class, 'addEvents'],
+        NotificationTargetProjectTask::class => [Notifications::class, 'addEvents'],
+    ];
+    $PLUGIN_HOOKS[Hooks::ITEM_GET_DATA]['pmo'] = [
+        NotificationTargetProject::class     => [Notifications::class, 'addData'],
+        NotificationTargetProjectTask::class => [Notifications::class, 'addData'],
+    ];
 
     // tarefa ou projeto apagado de vez: os dados do PMO saem junto
     $PLUGIN_HOOKS[Hooks::ITEM_PURGE]['pmo'] = [

@@ -44,7 +44,14 @@ find "$GLPI_DIR/plugins/pmo" -type d -exec chmod 755 {} + && find "$GLPI_DIR/plu
 console plugin:install --username="$GLPI_ADMIN" pmo || aviso "plugin:install avisou algo acima (normal se já estava instalado)"
 console plugin:activate pmo || aviso "plugin:activate avisou algo acima (normal se já estava ativo)"
 console cache:clear >/dev/null 2>&1 || true
-ok "Plugin instalado e ativado"
+# confere de verdade: o plugin precisa estar ativo e na versão do pacote
+VERSAO_PACOTE="$(grep -oE "PLUGIN_PMO_VERSION', '[^']+" "$AQUI/pmo/setup.php" | cut -d"'" -f3)"
+LINHA="$(console plugin:list 2>/dev/null | grep -E "^\| pmo " || true)"
+if echo "$LINHA" | grep -q "$VERSAO_PACOTE" && echo "$LINHA" | grep -qi -E "habilitado|enabled"; then
+  ok "Plugin PMO $VERSAO_PACOTE instalado e ativo"
+else
+  erro "O plugin não ficou ativo: ${LINHA:-não aparece na lista}. Veja a mensagem acima ou ative em Configurar > Plugins."
+fi
 
 # integrações opcionais
 for p in fields cronograma; do

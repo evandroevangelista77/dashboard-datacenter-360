@@ -23,11 +23,14 @@ class Risk
         return $rows;
     }
 
+    /** Pontuação P×I a partir da qual o item é crítico (e gera aviso). */
+    public const CRITICAL = 15;
+
     /** Nível pela pontuação P×I (1–25). */
     public static function level(int $score): array
     {
         return match (true) {
-            $score >= 15 => ['Crítico', 'danger'],
+            $score >= self::CRITICAL => ['Crítico', 'danger'],
             $score >= 8  => ['Alto', 'orange'],
             $score >= 4  => ['Moderado', 'warning'],
             default      => ['Baixo', 'success'],
@@ -50,12 +53,23 @@ class Risk
             'date_mod'    => $_SESSION['glpi_currenttime'],
         ];
         $id = (int) ($in['id'] ?? 0);
-        if ($id && count($DB->request(['FROM' => 'glpi_plugin_pmo_risks', 'WHERE' => ['id' => $id, 'projects_id' => $projectId]]))) {
+        $before = $id ? $DB->request(['FROM' => 'glpi_plugin_pmo_risks', 'WHERE' => ['id' => $id, 'projects_id' => $projectId]])->current() : null;
+        if ($before) {
             $DB->update('glpi_plugin_pmo_risks', $data, ['id' => $id]);
-            return $id;
+        } else {
+            $DB->insert('glpi_plugin_pmo_risks', $data + ['projects_id' => $projectId, 'date_creation' => $_SESSION['glpi_currenttime']]);
+            $id = (int) $DB->insertId();
         }
-        $DB->insert('glpi_plugin_pmo_risks', $data + ['projects_id' => $projectId, 'date_creation' => $_SESSION['glpi_currenttime']]);
-        return (int) $DB->insertId();
+        // avisa quando o item passa a ser crítico (novo, subiu de nível ou foi reaberto)
+        if (self::isCritical($data) && !($before && self::isCritical($before))) {
+            Notifications::riskCritical($projectId, $data + ['id' => $id]);
+        }
+        return $id;
+    }
+
+    public static function isCritical(array $r): bool
+    {
+        return $r['status'] !== 'closed' && (int) $r['probability'] * (int) $r['impact'] >= self::CRITICAL;
     }
 
     public static function delete(int $projectId, int $id): void
