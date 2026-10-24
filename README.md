@@ -98,6 +98,13 @@ sudo -u www-data php bin/console cache:clear
 
 Cada usuário ainda pode escolher outra paleta em *Minhas configurações → Personalização*. Quem já estava logado passa a ver o tema novo depois de sair e entrar de novo.
 
+Dentro do editor de texto (TinyMCE) a paleta usa fundo liso, sem a imagem do corredor. O editor carrega o CSS da paleta por um endereço sem versão, que o GLPI manda guardar por 30 dias; para mudanças na paleta chegarem ao editor sem limpar o cache do navegador, ative [`glpi-theme/apache-tema-editor.conf`](glpi-theme/apache-tema-editor.conf), que faz só esse endereço ser revalidado:
+
+```bash
+sudo cp glpi-theme/apache-tema-editor.conf /etc/apache2/conf-available/glpi-tema-editor.conf
+sudo a2enmod headers && sudo a2enconf glpi-tema-editor && sudo systemctl reload apache2
+```
+
 ## Plugin de assinatura digital no chamado (LibreSign)
 
 [`glpi-plugin/assinatura`](glpi-plugin/assinatura) adiciona a aba **Assinatura digital** aos chamados do GLPI 12, integrada ao [LibreSign](https://libresign.coop) 15 (app do Nextcloud):
@@ -283,10 +290,12 @@ Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](gl
 | `index.html`, `app.css`, `app.js` | Painel |
 | `topologia.html`, `topologia.css`, `topologia.js` | Topologia animada da rede |
 | `glpi-theme/datacenter360.scss` | Paleta do GLPI com as cores do painel |
+| `glpi-theme/apache-tema-editor.conf` | Apache: paleta sempre atualizada dentro do editor de texto |
 | `glpi-plugin/assinatura/` | Plugin do GLPI: assinatura digital no chamado via LibreSign |
 | `nextcloud-app/oakmail/` | App do Nextcloud: título e assunto próprios nos e-mails do LibreSign |
 | `glpi-plugin/cronograma/` | Plugin do GLPI: importação de cronograma do MS Project nas tarefas do projeto |
 | `glpi-plugin/pmo/` | Plugin do GLPI: PMO com Gantt, Kanban, sprints, painéis, documentação e riscos |
+| `tools/vigia-glpi.sh`, `tools/com.evandro.vigia-glpi.plist` | Vigia que religa a rede da VM do GLPI no VirtualBox (macOS) |
 | `tools/empacotar-pmo.sh`, `tools/pmo-pacote/` | Geração do pacote de release do PMO (instalador e LEIA-ME) |
 | `glpi-projetos/criar_campos.py` | Campos extras do cadastro de Projeto (plugin Fields) |
 | `glpi-plugin/datacenter360/` | Plugin do GLPI: seção Dashboard no menu lateral |
@@ -296,6 +305,18 @@ Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](gl
 | `bg-datacenter.svg` | Fundo do corredor de datacenter, gerado por `tools/gerar_fundo.py` |
 | `logo-zabbix.svg`, `logo-glpi.svg` | Logotipos dos sistemas integrados |
 | `echarts.min.js` | Apache ECharts 5.5.1 (gráficos e gauges) |
+
+## Vigia da VM do GLPI (VirtualBox no macOS)
+
+[`tools/vigia-glpi.sh`](tools/vigia-glpi.sh) é para um laboratório em que o GLPI roda numa VM do VirtualBox no Mac, em ponte com o Wi-Fi. Sem o driver de kernel do VirtualBox (modo *driverless*), essa ponte às vezes para de entregar pacotes à VM, que continua ligada mas some da rede. A cada 20 s o vigia testa o GLPI; se cair (com o Mac e o roteador respondendo), desliga e religa o cabo virtual da VM (`VBoxManage controlvm … setlinkstate1`), o que traz a rede de volta em segundos, e registra em `~/Library/Logs/vigia-glpi.log`.
+
+```bash
+install -m 755 tools/vigia-glpi.sh ~/.local/bin/vigia-glpi.sh
+sed "s#SEU_USUARIO#$USER#g" tools/com.evandro.vigia-glpi.plist > ~/Library/LaunchAgents/com.evandro.vigia-glpi.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.evandro.vigia-glpi.plist
+```
+
+Nome da VM, IP e gateway vêm das variáveis `VIGIA_VM`, `VIGIA_IP` e `VIGIA_GATEWAY` (os padrões são os do laboratório). A solução definitiva é liberar o driver do VirtualBox em *Ajustes do Sistema → Privacidade e Segurança* ou ligar o Mac por cabo.
 
 ## Licença
 

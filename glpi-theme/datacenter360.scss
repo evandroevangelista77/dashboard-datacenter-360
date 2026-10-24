@@ -83,7 +83,12 @@ $is-dark: true;
         background-color: var(--dc-page);
     }
 
-    body::before {
+    // o editor de texto (TinyMCE) carrega este CSS dentro do iframe: lá o fundo é liso
+    body.mce-content-body {
+        background: var(--dc-surface);
+    }
+
+    body:not(.mce-content-body)::before {
         content: "";
         position: fixed;
         inset: 0;
