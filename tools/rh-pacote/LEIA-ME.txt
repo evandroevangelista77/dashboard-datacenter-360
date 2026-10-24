@@ -1,0 +1,78 @@
+PLUGIN RH PARA GLPI 12 · versão @VERSAO@
+========================================
+
+Recrutamento e seleção, admissão e férias dentro do GLPI 12.0.x
+(seção "RH" do menu lateral):
+
+- Requisição de vaga com aprovação em dois níveis: gestor da área e diretoria,
+  com linha do tempo de quem decidiu, quando e por quê
+- Minhas aprovações: vagas e férias esperando a decisão do usuário, com
+  aprovar e reprovar ali mesmo e o número de pendências no menu
+- Cadastro de Cargos com CBO e job description (15 modelos prontos)
+- Banco de Currículo: foto, contato, origem, cargo pretendido, pretensão
+  salarial e currículo anexado (PDF, Word, ODT ou RTF)
+- Funil de seleção (Kanban) por vaga: triagem > entrevista RH > teste técnico >
+  entrevista com gestor > proposta > contratado, arrastando os candidatos, com
+  nota, parecer, entrevista agendada, proposta e histórico
+- Admissão (onboarding) com checklist por área e abertura do chamado de TI
+- Férias com regras (mínimo de 5 dias, abono até 10, sem sobreposição) e
+  aprovação pelo Responsável do usuário
+- Calendário de férias por mês e por ano
+- Dashboard RH: indicadores, funil de conversão, origem dos candidatos,
+  contratações por mês, vagas por situação e por departamento
+- 6 avisos por e-mail pelas notificações do GLPI (modelos editáveis)
+
+O pacote não traz dados de exemplo: a instalação cria só os 8 departamentos
+e os 15 cargos padrão (com job description), que podem ser editados ou apagados.
+
+CONTEÚDO
+--------
+  rh/           o plugin (a pasta precisa se chamar "rh")
+  instalar.sh   instala ou atualiza tudo de uma vez
+  LEIA-ME.txt   este arquivo
+  LICENSE       GNU GPL versão 3
+
+REQUISITOS
+----------
+- GLPI 12.0.x (Linux), com a extensão PHP gd (já exigida pelo GLPI).
+- Opcional: extensão PHP exif (corrige fotos de celular deitadas).
+- Para os e-mails: notificações do GLPI ativas e SMTP configurado.
+
+INSTALAÇÃO AUTOMÁTICA (no servidor do GLPI)
+-------------------------------------------
+   unzip oak-rh-completo-@VERSAO@.zip
+   cd oak-rh-completo
+   sudo bash instalar.sh
+
+   GLPI em outro caminho ou com outro administrador:
+   sudo GLPI_DIR=/caminho/do/glpi GLPI_ADMIN=usuario bash instalar.sh
+
+INSTALAÇÃO MANUAL
+-----------------
+   sudo cp -r rh /var/www/glpi/plugins/
+   sudo chown -R www-data:www-data /var/www/glpi/plugins/rh
+   sudo -u www-data php /var/www/glpi/bin/console plugin:install --username=glpi rh
+   sudo -u www-data php /var/www/glpi/bin/console plugin:activate rh
+
+PRIMEIROS PASSOS
+----------------
+1) Permissões: Administração > Perfis > (perfil) > aba "RH".
+   Todos os perfis da interface padrão podem ver as próprias vagas, solicitar
+   vaga e pedir férias; quem administra a configuração recebe tudo.
+   Dê ao RH "Conduzir seleção" e "Ver todas", e à diretoria "Aprovar como diretoria".
+2) Configurar > Listas suspensas > Departamentos: informe o gestor de cada um
+   (ele aprova a 1ª etapa das vagas do departamento).
+3) No cadastro de cada usuário, preencha o Responsável (ele aprova as férias).
+4) RH > Vagas abertas > "+" para a primeira requisição.
+
+ATENÇÃO
+-------
+Desinstalar o plugin apaga vagas, candidatos, admissões, férias e as
+notificações do plugin. Faça backup do banco antes.
+
+Documentação completa: README.md dentro da pasta rh/ e
+https://github.com/evandroevangelista77/dashboard-datacenter-360
+
+LICENÇA
+-------
+GNU General Public License, versão 3 ou posterior (GPLv3+), a mesma do GLPI.

@@ -297,9 +297,11 @@ Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](gl
 | `glpi-plugin/cronograma/` | Plugin do GLPI: importação de cronograma do MS Project nas tarefas do projeto |
 | `glpi-plugin/pmo/` | Plugin do GLPI: PMO com Gantt, Kanban, sprints, painéis, documentação e riscos |
 | `glpi-plugin/reembolso/` | Plugin do GLPI: reembolso de despesas de técnicos (KM por rota ou odômetro, aprovação, dashboard e XLSX) |
+| `glpi-plugin/rh/` | Plugin do GLPI: RH com recrutamento e seleção (vagas com aprovação, banco de currículo, funil Kanban), admissão, férias e dashboard |
 | `tools/vigia-glpi.sh`, `tools/com.evandro.vigia-glpi.plist` | Vigia que religa a rede da VM do GLPI no VirtualBox (macOS) |
 | `tools/empacotar-pmo.sh`, `tools/pmo-pacote/` | Geração do pacote de release do PMO (instalador e LEIA-ME) |
 | `tools/empacotar-reembolso.sh`, `tools/reembolso-pacote/` | Geração do pacote de release do Reembolso (instalador e LEIA-ME) |
+| `tools/empacotar-rh.sh`, `tools/rh-pacote/` | Geração do pacote de release do RH (instalador e LEIA-ME) |
 | `glpi-projetos/criar_campos.py` | Campos extras do cadastro de Projeto (plugin Fields) |
 | `glpi-plugin/datacenter360/` | Plugin do GLPI: seção Dashboard no menu lateral |
 | `logos.js` | Logotipos dos ativos (Simple Icons), gerado por `tools/gerar_logos.sh` |
@@ -330,6 +332,29 @@ sudo bash instalar.sh
 ```
 
 Uso, configuração e permissões: [`glpi-plugin/reembolso/README.md`](glpi-plugin/reembolso/README.md). O pacote da release é gerado por `tools/empacotar-reembolso.sh`.
+
+## RH (plugin)
+
+[`glpi-plugin/rh`](glpi-plugin/rh) traz para o GLPI 12 o recrutamento e seleção, a admissão e as férias, numa seção **RH** do menu lateral:
+
+- **Vagas** com requisição completa e **aprovação em dois níveis** (gestor da área e diretoria), linha do tempo das decisões e **Minhas aprovações** com o número de pendências no menu.
+- **Cadastro de Cargos** com CBO e **job description** (15 modelos prontos); a vaga nova já vem com a descrição e os requisitos do cargo, para editar.
+- **Banco de Currículo** com foto, origem, cargo pretendido, pretensão salarial e currículo anexado.
+- **Funil de seleção (Kanban)** por vaga, arrastando os candidatos de triagem até contratado, com nota, parecer, entrevista e proposta.
+- **Admissão** com checklist por área e chamado de TI; **férias** com regras e aprovação pelo responsável; **calendário** por mês e por ano.
+- **Dashboard RH** com indicadores, funil de conversão, origem dos candidatos, contratações por mês e vagas por situação e departamento.
+- **6 avisos por e-mail** pelas notificações do GLPI.
+
+### Instalação
+
+Baixe `oak-rh-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
+
+```bash
+unzip oak-rh-completo-1.0.3.zip && cd oak-rh-completo
+sudo bash instalar.sh
+```
+
+O pacote não traz dados de exemplo. Uso, permissões e primeiros passos: [`glpi-plugin/rh/README.md`](glpi-plugin/rh/README.md). O pacote da release é gerado por `tools/empacotar-rh.sh`.
 
 ## Vigia da VM do GLPI (VirtualBox no macOS)
 
