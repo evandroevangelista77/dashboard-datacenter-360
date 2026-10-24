@@ -296,8 +296,10 @@ Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](gl
 | `nextcloud-app/oakmail/` | App do Nextcloud: título e assunto próprios nos e-mails do LibreSign |
 | `glpi-plugin/cronograma/` | Plugin do GLPI: importação de cronograma do MS Project nas tarefas do projeto |
 | `glpi-plugin/pmo/` | Plugin do GLPI: PMO com Gantt, Kanban, sprints, painéis, documentação e riscos |
+| `glpi-plugin/reembolso/` | Plugin do GLPI: reembolso de despesas de técnicos (KM por rota ou odômetro, aprovação, dashboard e XLSX) |
 | `tools/vigia-glpi.sh`, `tools/com.evandro.vigia-glpi.plist` | Vigia que religa a rede da VM do GLPI no VirtualBox (macOS) |
 | `tools/empacotar-pmo.sh`, `tools/pmo-pacote/` | Geração do pacote de release do PMO (instalador e LEIA-ME) |
+| `tools/empacotar-reembolso.sh`, `tools/reembolso-pacote/` | Geração do pacote de release do Reembolso (instalador e LEIA-ME) |
 | `glpi-projetos/criar_campos.py` | Campos extras do cadastro de Projeto (plugin Fields) |
 | `glpi-plugin/datacenter360/` | Plugin do GLPI: seção Dashboard no menu lateral |
 | `logos.js` | Logotipos dos ativos (Simple Icons), gerado por `tools/gerar_logos.sh` |
@@ -306,6 +308,28 @@ Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](gl
 | `bg-datacenter.svg` | Fundo do corredor de datacenter, gerado por `tools/gerar_fundo.py` |
 | `logo-zabbix.svg`, `logo-glpi.svg` | Logotipos dos sistemas integrados |
 | `echarts.min.js` | Apache ECharts 5.5.1 (gráficos e gauges) |
+
+## Reembolso de despesas (plugin)
+
+[`glpi-plugin/reembolso`](glpi-plugin/reembolso) traz para o GLPI 12 o lançamento e a aprovação das despesas de técnicos em atendimentos externos, numa seção **Financeiro** do menu lateral:
+
+- **Solicitação de reembolso** com técnico, centro de custo, chamado do atendimento, localização, local do atendimento, período e justificativa (código `RB-00001`).
+- **30 tipos de despesa** já cadastrados, cada um com limite por lançamento e exigência de comprovante: quilometragem, combustível, pedágio, estacionamento, refeições, hospedagem, táxi ou aplicativo, passagens, locação de veículo, peças, ferramentas, frete, diária etc.
+- **Quilometragem** pela **rota entre origem e destino** (OpenStreetMap, com ida e volta) ou pelo **odômetro**, multiplicada pelo valor por KM configurado.
+- **Fluxo** rascunho → enviar para aprovação → aprovar ou recusar (com motivo) → pago, com comprovantes na aba *Documentos* e histórico completo.
+- **Dashboard** com filtros, indicadores e gráficos, e **exportação para Excel (XLSX)**.
+- Aba **Reembolsos** nos chamados e permissões por perfil (ver os próprios, ver todos, aprovar e registrar pagamento).
+
+### Instalação
+
+Baixe `oak-reembolso-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
+
+```bash
+unzip oak-reembolso-completo-1.0.0.zip && cd oak-reembolso-completo
+sudo bash instalar.sh
+```
+
+Uso, configuração e permissões: [`glpi-plugin/reembolso/README.md`](glpi-plugin/reembolso/README.md). O pacote da release é gerado por `tools/empacotar-reembolso.sh`.
 
 ## Vigia da VM do GLPI (VirtualBox no macOS)
 

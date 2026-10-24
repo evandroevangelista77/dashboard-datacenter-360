@@ -1,0 +1,70 @@
+PLUGIN REEMBOLSO DE DESPESAS PARA GLPI 12 · versão @VERSAO@
+==============================================
+
+Lançamento e aprovação das despesas de técnicos em atendimentos externos,
+dentro do GLPI 12.0.x (seção "Financeiro" do menu lateral):
+
+- Solicitação de reembolso: técnico, centro de custo, chamado do atendimento,
+  localização, local do atendimento, período e justificativa (código RB-00001)
+- 30 tipos de despesa cadastrados (quilometragem, combustível, pedágio,
+  estacionamento, refeições, hospedagem, táxi/aplicativo, passagens, locação,
+  peças, ferramentas, frete, diária, outros…), com limite e exigência de comprovante
+- Quilometragem pela rota entre origem e destino (OpenStreetMap, ida e volta)
+  ou pelo odômetro (KM final - KM inicial), multiplicada pelo valor por KM
+- Fluxo: rascunho > enviar para aprovação > aprovar / recusar (com motivo) > pago
+- Comprovantes na aba Documentos e histórico completo de cada solicitação
+- Dashboard com filtros, indicadores e gráficos, e exportação para Excel (XLSX)
+- Aba "Reembolsos" nos chamados e permissões por perfil (ver os próprios,
+  ver todos, aprovar e registrar pagamento)
+
+CONTEÚDO
+--------
+  reembolso/    o plugin (a pasta precisa se chamar "reembolso")
+  instalar.sh   instala ou atualiza tudo de uma vez
+  LEIA-ME.txt   este arquivo
+  LICENSE       GNU GPL versão 3
+
+REQUISITOS
+----------
+- GLPI 12.0.x (Linux), com a extensão PHP zip (já exigida pelo GLPI).
+- Para calcular o KM pela rota: o servidor do GLPI acessando a internet
+  (Nominatim e OSRM, do OpenStreetMap). Sem internet, usa-se o odômetro.
+
+INSTALAÇÃO AUTOMÁTICA (no servidor do GLPI)
+-------------------------------------------
+   unzip oak-reembolso-completo-@VERSAO@.zip
+   cd oak-reembolso-completo
+   sudo bash instalar.sh
+
+   GLPI em outro caminho ou com outro administrador:
+   sudo GLPI_DIR=/caminho/do/glpi GLPI_ADMIN=usuario bash instalar.sh
+
+INSTALAÇÃO MANUAL
+-----------------
+   sudo cp -r reembolso /var/www/glpi/plugins/
+   sudo chown -R www-data:www-data /var/www/glpi/plugins/reembolso
+   sudo -u www-data php /var/www/glpi/bin/console plugin:install --username=glpi reembolso
+   sudo -u www-data php /var/www/glpi/bin/console plugin:activate reembolso
+
+PRIMEIROS PASSOS
+----------------
+1) Permissões: Administração > Perfis > (perfil) > aba "Reembolsos".
+   A instalação dá "ver os próprios, criar e editar" aos perfis da interface
+   padrão, e tudo (inclusive ver todos e aprovar) a quem administra a configuração.
+2) Configurar > Plugins > Reembolso de despesas: valor por KM (padrão R$ 1,20),
+   rota automática e exigência de comprovante.
+3) Configurar > Listas suspensas: Tipos de despesa e Centros de custo.
+4) Financeiro > Reembolsos > "+" para lançar; Financeiro > Dashboard de reembolsos
+   para acompanhar e exportar.
+
+ATENÇÃO
+-------
+Desinstalar o plugin apaga as solicitações e despesas. Exporte o XLSX ou faça
+backup do banco antes.
+
+Documentação completa: README.md dentro da pasta reembolso/ e
+https://github.com/evandroevangelista77/dashboard-datacenter-360
+
+LICENÇA
+-------
+GNU General Public License, versão 3 ou posterior (GPLv3+), a mesma do GLPI.

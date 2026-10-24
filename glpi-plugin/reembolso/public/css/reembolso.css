@@ -1,0 +1,42 @@
+/* Reembolso de despesas — usa as variáveis do Tabler (segue a paleta ativa) */
+.rb { --rb-border: var(--tblr-border-color, #e6e7e9); --rb-muted: var(--tblr-secondary-color, #6c7a91); --rb-surface-2: var(--tblr-bg-surface-secondary, #f6f8fb); }
+.rb-status { background: color-mix(in srgb, var(--c) 20%, transparent); color: var(--c); border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); font-weight: 600; }
+.rb-head-icon { width: 52px; height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.7rem;
+    background: color-mix(in srgb, var(--tblr-primary, #206bc4) 16%, transparent); color: var(--tblr-primary, #206bc4); }
+.rb-total { font-size: 1.9rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.rb-total-sm { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.rb-steps { display: flex; border-top: 1px solid var(--rb-border); }
+.rb-step { flex: 1; display: flex; align-items: center; gap: .45rem; padding: .55rem .9rem; font-size: .8rem; color: var(--rb-muted); position: relative; }
+.rb-step span { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--rb-border); flex: none; }
+.rb-step.done { color: var(--tblr-body-color); }
+.rb-step.done span { background: #22c55e; border-color: #22c55e; }
+.rb-step.current { color: var(--tblr-body-color); font-weight: 700; }
+.rb-step.current span { background: var(--tblr-primary, #206bc4); border-color: var(--tblr-primary, #206bc4); box-shadow: 0 0 0 4px color-mix(in srgb, var(--tblr-primary, #206bc4) 25%, transparent); }
+.rb-step.refused { color: #ef4444; font-weight: 700; }
+.rb-step.refused span { background: #ef4444; border-color: #ef4444; }
+.rb-table td, .rb-table th { vertical-align: middle; }
+.rb-approve textarea { max-width: 560px; }
+
+/* janela de despesa */
+.rb-modal-back { position: fixed; inset: 0; background: rgb(0 0 0 / .55); z-index: 1990; display: flex; align-items: flex-start; justify-content: center; padding: 5vh 1rem; overflow-y: auto; }
+.rb-modal { background: var(--tblr-bg-surface, #fff); color: var(--tblr-body-color); border: 1px solid var(--tblr-border-color); border-radius: 12px; width: 100%; max-width: 760px; box-shadow: 0 20px 50px rgb(0 0 0 / .45); }
+.rb-modal-h { display: flex; align-items: center; gap: .6rem; padding: .85rem 1.1rem; border-bottom: 1px solid var(--tblr-border-color); }
+.rb-modal-h i { font-size: 1.4rem; color: var(--tblr-primary); }
+.rb-modal-h h3 { margin: 0; flex: 1; font-size: 1.1rem; }
+.rb-modal-b { padding: 1.1rem; }
+.rb-modal-f { display: flex; gap: .5rem; padding: .8rem 1.1rem; border-top: 1px solid var(--tblr-border-color); }
+.rb-km { border: 1px solid var(--tblr-border-color); border-radius: 10px; padding: .85rem; background: var(--tblr-bg-surface-secondary); }
+.rb-km-title { font-weight: 700; font-size: .85rem; text-transform: uppercase; letter-spacing: .03em; margin-bottom: .5rem; color: var(--tblr-secondary-color); }
+.rb-or { text-align: center; position: relative; margin: .2rem 0; }
+.rb-preview { display: flex; align-items: center; justify-content: space-between; padding: .7rem 1rem; border-radius: 10px;
+    background: color-mix(in srgb, var(--tblr-primary, #206bc4) 12%, transparent); border: 1px solid color-mix(in srgb, var(--tblr-primary, #206bc4) 35%, transparent); }
+.rb-preview span { text-transform: uppercase; font-size: .78rem; font-weight: 700; color: var(--tblr-secondary-color); }
+.rb-preview b { font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+
+/* dashboard */
+.rb-kpi { --c: var(--tblr-primary); background: var(--tblr-bg-surface); border: 1px solid var(--tblr-border-color); border-left: 4px solid var(--c); border-radius: 10px; padding: .7rem .9rem; height: 100%; }
+.rb-kpi-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--tblr-secondary-color); font-weight: 700; }
+.rb-kpi-value { font-size: 1.35rem; font-weight: 800; margin-top: .15rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rb-kpi-sub { font-size: .76rem; color: var(--tblr-secondary-color); }
+.rb-chart { height: 300px; }
+.rb-empty { height: 100%; display: flex; align-items: center; justify-content: center; color: var(--tblr-secondary-color); font-size: .9rem; }
