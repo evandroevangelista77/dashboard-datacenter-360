@@ -209,6 +209,37 @@ sudo -u www-data php /var/www/glpi/bin/console plugin:activate cronograma
 
 Os caminhos do Java e do MPXJ ficam em `glpi_configs` (contexto `plugin:cronograma`, chaves `java` e `classpath`).
 
+## PMO: gerenciamento de projetos ágeis e waterfall (plugin)
+
+[`glpi-plugin/pmo`](glpi-plugin/pmo) transforma os **Projetos e Tarefas nativos** do GLPI 12 num ambiente de PMO, sem duplicar nada (cada tarefa do projeto é um cartão):
+
+- **Gantt das atividades** logo abaixo do formulário do Projeto, na aba **Gantt** e em tela cheia: fases recolhíveis, % concluído, marcos, dependências (as mesmas importadas pelo plugin Cronograma), linha de hoje, zoom e arrastar para mudar datas. Funciona mesmo sem ativar o PMO no projeto.
+- **Quadro Kanban** estilo Jira: colunas configuráveis com WIP, arrastar e soltar, raias por fase ou responsável, filtros e criação rápida.
+- **Backlog e sprints** (Scrum): planejar, iniciar e concluir sprints, com velocidade.
+- **Painéis**: saúde, % real × planejado, SPI, burndown, burnup com previsão de término, curva S, fluxo cumulativo e carga da equipe.
+- **Portfólio do PMO** (com os campos do bloco "Dados do projeto" do plugin Fields) e **Meu trabalho**.
+- **Documentação** com modelos (TAP, EAP, RACI, comunicação, ata, status report, lições aprendidas, retrospectiva) e **registro de riscos** com matriz 5×5.
+
+### Instalação
+
+Baixe `oak-pmo-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
+
+```bash
+unzip oak-pmo-completo-1.0.0.zip && cd oak-pmo-completo
+sudo bash instalar.sh
+```
+
+Ou manualmente, a partir deste repositório:
+
+```bash
+sudo cp -r glpi-plugin/pmo /var/www/glpi/plugins/
+sudo chown -R www-data:www-data /var/www/glpi/plugins/pmo
+sudo -u www-data php /var/www/glpi/bin/console plugin:install --username=glpi pmo
+sudo -u www-data php /var/www/glpi/bin/console plugin:activate pmo
+```
+
+Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](glpi-plugin/pmo/README.md). O pacote da release é gerado por `tools/empacotar-pmo.sh`.
+
 ## Requisitos
 
 - Zabbix 7.x com API habilitada.
@@ -255,6 +286,8 @@ Os caminhos do Java e do MPXJ ficam em `glpi_configs` (contexto `plugin:cronogra
 | `glpi-plugin/assinatura/` | Plugin do GLPI: assinatura digital no chamado via LibreSign |
 | `nextcloud-app/oakmail/` | App do Nextcloud: título e assunto próprios nos e-mails do LibreSign |
 | `glpi-plugin/cronograma/` | Plugin do GLPI: importação de cronograma do MS Project nas tarefas do projeto |
+| `glpi-plugin/pmo/` | Plugin do GLPI: PMO com Gantt, Kanban, sprints, painéis, documentação e riscos |
+| `tools/empacotar-pmo.sh`, `tools/pmo-pacote/` | Geração do pacote de release do PMO (instalador e LEIA-ME) |
 | `glpi-projetos/criar_campos.py` | Campos extras do cadastro de Projeto (plugin Fields) |
 | `glpi-plugin/datacenter360/` | Plugin do GLPI: seção Dashboard no menu lateral |
 | `logos.js` | Logotipos dos ativos (Simple Icons), gerado por `tools/gerar_logos.sh` |

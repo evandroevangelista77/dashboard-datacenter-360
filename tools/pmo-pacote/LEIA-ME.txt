@@ -1,0 +1,71 @@
+PLUGIN PMO PARA GLPI 12 · versão @VERSAO@
+================================
+
+Gerenciamento de projetos ágeis (Scrum/Kanban), waterfall e híbridos sobre os
+Projetos e Tarefas nativos do GLPI 12.0.x:
+
+- Gantt das atividades (também logo abaixo do formulário do Projeto), com fases,
+  % concluído, marcos, dependências, linha de hoje, zoom e arrastar para mudar datas
+- Quadro Kanban estilo Jira: colunas configuráveis, WIP, arrastar e soltar, raias, filtros
+- Backlog priorizado e sprints (planejar, iniciar, concluir)
+- Painéis: saúde, SPI, burndown, burnup com previsão, curva S, fluxo cumulativo,
+  velocidade e carga da equipe
+- Portfólio do PMO (com os campos do plugin Fields, se houver) e "Meu trabalho"
+- Documentação com modelos (TAP, EAP, RACI, comunicação, ata, status, lições,
+  retrospectiva) e registro de riscos com matriz 5×5
+
+Nada é duplicado: as tarefas continuam sendo tarefas do GLPI. Desinstalar o plugin
+apaga só os dados do PMO (colunas, sprints, pontos, páginas, riscos).
+
+CONTEÚDO
+--------
+  pmo/          o plugin (a pasta precisa se chamar "pmo")
+  instalar.sh   instala ou atualiza tudo de uma vez
+  LEIA-ME.txt   este arquivo
+
+REQUISITOS
+----------
+- GLPI 12.0.x (Linux). Nada além do que o GLPI já exige.
+- Opcionais: plugin Fields com um bloco "Dados do projeto" (aparece no portfólio) e
+  plugin Cronograma (MS Project) para importar cronogramas do Project.
+
+INSTALAÇÃO AUTOMÁTICA (no servidor do GLPI)
+-------------------------------------------
+   unzip oak-pmo-completo-@VERSAO@.zip
+   cd oak-pmo-completo
+   sudo bash instalar.sh
+
+   GLPI em outro caminho ou com outro administrador:
+   sudo GLPI_DIR=/caminho/do/glpi GLPI_ADMIN=usuario bash instalar.sh
+
+Para atualizar, rode o mesmo script com o pacote novo (os dados são mantidos).
+
+INSTALAÇÃO MANUAL
+-----------------
+   sudo cp -r pmo /var/www/glpi/plugins/
+   sudo chown -R www-data:www-data /var/www/glpi/plugins/pmo
+   sudo -u www-data php /var/www/glpi/bin/console plugin:install --username=glpi pmo
+   sudo -u www-data php /var/www/glpi/bin/console plugin:activate pmo
+
+   (ou pela interface: Configurar > Plugins > PMO > Instalar e Ativar)
+
+PRIMEIROS PASSOS
+----------------
+1) Permissões: Administração > Perfis > (perfil) > aba "PMO" (Ler / Atualizar).
+   A instalação já dá leitura aos perfis da interface padrão e atualização a quem
+   edita projetos. Quem já estava logado: sair e entrar de novo.
+2) Abra um Projeto: o Gantt das atividades aparece abaixo do formulário.
+3) Aba "PMO" do projeto > "Ativar o PMO neste projeto" > escolha a metodologia.
+4) Menu lateral > PMO > "Portfólio de projetos" e "Meu trabalho".
+
+O fluxo cumulativo e a curva S real usam uma fotografia diária (gravada a cada
+mudança e pela ação automática "pmosnapshot"); ganham forma com alguns dias de uso.
+
+PROBLEMAS COMUNS
+----------------
+- Menu PMO não aparece: direito PMO no perfil, ou sair e entrar de novo.
+- Tela em branco depois de atualizar: Ctrl+Shift+R (cache do navegador).
+- Não consigo arrastar cartões: falta o direito PMO "Atualizar" ou editar o projeto.
+
+Documentação completa: README.md dentro da pasta pmo/ e
+https://github.com/evandroevangelista77/dashboard-datacenter-360
