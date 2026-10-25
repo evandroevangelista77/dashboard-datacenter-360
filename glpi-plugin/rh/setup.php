@@ -22,7 +22,7 @@ use GlpiPlugin\Rh\Menu;
 use GlpiPlugin\Rh\ProfileTab;
 use GlpiPlugin\Rh\Vaga;
 
-define('PLUGIN_RH_VERSION', '1.0.4');
+define('PLUGIN_RH_VERSION', '1.0.5');
 define('PLUGIN_RH_MIN_GLPI', '12.0.0');
 define('PLUGIN_RH_MAX_GLPI', '12.0.99');
 

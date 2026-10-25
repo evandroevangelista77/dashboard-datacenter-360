@@ -25,7 +25,7 @@ class Pagina
 
         echo "<div class='avisos-page'>";
         echo "<div class='avisos-title'><div><div class='avisos-crumb'>Avisos</div><h2>Meus avisos</h2>"
-            . "<div class='text-secondary small'>Tudo o que os módulos de RH, PMO e Financeiro avisaram a você: aprovações pendentes, andamento de vagas, férias, reembolsos, sprints, riscos e tarefas atrasadas. Clique num aviso para abrir o item.</div></div>";
+            . "<div class='text-secondary small'>Tudo o que os módulos de RH, PMO, Financeiro e Ciclo Financeiro avisaram a você: aprovações pendentes, andamento de vagas, férias, reembolsos, fases do Ciclo, sprints, riscos e tarefas atrasadas. Clique num aviso para abrir o item.</div></div>";
         if ($count) {
             echo "<form method='post' class='m-0'><input type='hidden' name='action' value='read_all'>"
                 . "<button class='btn btn-outline-secondary'><i class='ti ti-checks me-1'></i>Marcar todos como lidos ($count)</button>" . Html::closeForm(false);

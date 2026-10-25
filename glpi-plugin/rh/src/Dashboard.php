@@ -259,8 +259,8 @@ class Dashboard extends CommonGLPI
         $vacPending = countElementsInTable(Feria::getTable(), $fw + ['status' => Feria::PENDING]);
         $next30 = countElementsInTable(Feria::getTable(), $fw + ['status' => Feria::APPROVED, 'date_begin' => ['>', $today], ['date_begin' => ['<=', date('Y-m-d', strtotime('+30 days'))]]]);
 
-        $kpi = fn ($label, $value, $sub, $color, $url = '') => "<div class='col-6 col-md-4 col-xl'>" . ($url ? "<a class='text-reset text-decoration-none' href='" . $e($url) . "'>" : '')
-            . "<div class='rh-kpi' style='--c:$color'><div class='rh-kpi-label'>$label</div><div class='rh-kpi-value'>$value</div><div class='rh-kpi-sub'>$sub</div></div>" . ($url ? '</a>' : '') . "</div>";
+        $kpi = fn ($label, $value, $sub, $color, $drawer) => "<div class='col-6 col-md-4 col-xl'>"
+            . "<div class='rh-kpi oak-kpi-click' role='button' tabindex='0' data-drawer='$drawer' style='--c:$color'><div class='rh-kpi-label'>$label</div><div class='rh-kpi-value'>$value</div><div class='rh-kpi-sub'>$sub</div></div></div>";
 
         $filter = "<form method='get' class='d-flex gap-2 align-items-center m-0'><span class='small text-secondary'>Contratações dos últimos</span>"
             . (!empty($get['funil']) ? "<input type='hidden' name='funil' value='" . $e($get['funil']) . "'>" : '')
@@ -271,13 +271,13 @@ class Dashboard extends CommonGLPI
         $filter .= "</select>" . \Html::closeForm(false);
         echo "<div class='rh'>" . Menu::title('Dashboard RH', 'dashboard', $filter);
         echo "<div class='row g-2 mb-3'>";
-        echo $kpi('Vagas abertas', $byStatus[Vaga::OPEN], 'em seleção', '#3b82f6', Menu::url('/front/vaga.php'));
-        echo $kpi('Aguardando aprovação', $byStatus[Vaga::WAIT_MANAGER] + $byStatus[Vaga::WAIT_BOARD], $byStatus[Vaga::WAIT_MANAGER] . ' no gestor · ' . $byStatus[Vaga::WAIT_BOARD] . ' na diretoria', '#f59e0b', Menu::url('/front/aprovacoes.php'));
-        echo $kpi('Candidatos em processo', array_sum($funnel) - $funnel['contratado'], $closed['rejected'] . ' reprovados · ' . $closed['withdrew'] . ' desistências', '#a855f7');
-        echo $kpi('Contratações', array_sum($hires), "nos últimos $months meses", '#22c55e');
-        echo $kpi('Tempo médio de contratação', $ttf ? round(array_sum($ttf) / count($ttf)) . ' dias' : '—', 'da abertura da vaga à contratação', '#0ea5e9');
-        echo $kpi('Admissões em andamento', $admissions, 'checklists de onboarding', '#ec4899', Menu::url('/front/admissao.php'));
-        echo $kpi('Férias', $onVacation . ' hoje', $vacPending . ' aguardando · ' . $next30 . ' nos próximos 30 dias', '#14b8a6', Menu::url('/front/calendario.php'));
+        echo $kpi('Vagas abertas', $byStatus[Vaga::OPEN], 'em seleção', '#3b82f6', 'rh-abertas');
+        echo $kpi('Aguardando aprovação', $byStatus[Vaga::WAIT_MANAGER] + $byStatus[Vaga::WAIT_BOARD], $byStatus[Vaga::WAIT_MANAGER] . ' no gestor · ' . $byStatus[Vaga::WAIT_BOARD] . ' na diretoria', '#f59e0b', 'rh-aprovacao');
+        echo $kpi('Candidatos em processo', array_sum($funnel) - $funnel['contratado'], $closed['rejected'] . ' reprovados · ' . $closed['withdrew'] . ' desistências', '#a855f7', 'rh-candidatos');
+        echo $kpi('Contratações', array_sum($hires), "nos últimos $months meses", '#22c55e', 'rh-contratacoes');
+        echo $kpi('Tempo médio de contratação', $ttf ? round(array_sum($ttf) / count($ttf)) . ' dias' : '—', 'da abertura da vaga à contratação', '#0ea5e9', 'rh-tempo');
+        echo $kpi('Admissões em andamento', $admissions, 'checklists de onboarding', '#ec4899', 'rh-admissoes');
+        echo $kpi('Férias', $onVacation . ' hoje', $vacPending . ' aguardando · ' . $next30 . ' nos próximos 30 dias', '#14b8a6', 'rh-ferias');
         echo "</div>";
 
         $data = [
@@ -298,6 +298,142 @@ class Dashboard extends CommonGLPI
             'col-xl-12', max(220, count($depts) * 70 + 70));
         echo "</div></div>";
         echo "<script type='application/json' id='rh-dash'>" . json_encode($data, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) . "</script>";
+        echo self::drawers($vw, $from, $months, $admWhere, $fw);
+        echo Menu::script('drawer.js');
         echo Menu::script('dashboard.js');
+    }
+
+    // ------------------------------------------------------------------ resumos dos cartões (painel lateral)
+
+    /** Um <template> por cartão; o drawer.js abre o escolhido no painel lateral. */
+    private static function drawers(array $vw, string $from, int $months, array $admWhere, array $fw): string
+    {
+        global $DB;
+        $e = [Menu::class, 'e'];
+        $now = time();
+        $days = fn ($d) => $d ? max(0, (int) floor(($now - strtotime($d)) / 86400)) : 0;
+        $date = fn ($d) => $d ? date('d/m/Y', strtotime($d)) : '—';
+        $vaga = fn ($id, $name) => "<a href='" . $e(Vaga::getFormURLWithID((int) $id)) . "'><b>VG-" . (int) $id . "</b></a><span class='oak-dr-name'>" . $e($name) . "</span>";
+        $item = fn ($cls, $row, $sub, $extra = '') => "<div class='oak-dr-item $cls'><div class='oak-dr-row'>$row</div>" . ($sub !== '' ? "<div class='oak-dr-sub'>$sub</div>" : '') . "$extra</div>";
+        $empty = fn ($t) => "<div class='oak-dr-empty'>$t</div>";
+        $foot = fn ($label, $url, $icon = 'ti-list') => "<div class='oak-dr-foot'><a class='btn btn-outline-primary' href='" . $e($url) . "'><i class='ti $icon me-1'></i>$label</a></div>";
+        $stats = fn (array $s) => "<div class='oak-dr-stats'>" . implode('', array_map(fn ($k, $v) => "<div><small>$k</small><b>$v</b></div>", array_keys($s), $s)) . "</div>";
+        $out = [];
+
+        // vagas abertas
+        $rows = iterator_to_array($DB->request([
+            'SELECT' => ['v.id', 'v.name', 'v.positions', 'v.date_open', 'v.deadline', 'v.users_id_recruiter', 'd.name AS dept'], 'FROM' => Vaga::getTable() . ' AS v',
+            'LEFT JOIN' => [Departamento::getTable() . ' AS d' => ['ON' => ['d' => 'id', 'v' => 'plugin_rh_departamentos_id']]],
+            'WHERE' => $vw + ['v.status' => Vaga::OPEN], 'ORDER' => 'v.date_open',
+        ]), false);
+        $h = '';
+        foreach ($rows as $r) {
+            $c = array_count_values(array_column(iterator_to_array($DB->request(['SELECT' => 'status', 'FROM' => Candidatura::getTable(), 'WHERE' => ['plugin_rh_vagas_id' => $r['id']]]), false), 'status'));
+            $hired = $c['hired'] ?? 0;
+            $late = $r['deadline'] && strtotime($r['deadline']) < $now;
+            $h .= $item($late ? 'bad' : '', $vaga($r['id'], $r['name']) . "<span class='oak-dr-val'>$hired/" . (int) $r['positions'] . "</span>",
+                $e($r['dept'] ?: 'Sem departamento') . ' · aberta há ' . $days($r['date_open']) . ' dia(s) · ' . (int) ($c['active'] ?? 0) . ' em processo' . ($r['deadline'] ? ' · prazo ' . $date($r['deadline']) . ($late ? ' <b class="text-danger">vencido</b>' : '') : '')
+                . ($r['users_id_recruiter'] ? ' · recrutador ' . $e(getUserName((int) $r['users_id_recruiter'])) : '') . " · <a href='" . $e(Menu::url('/front/pipeline.php?vaga=' . $r['id'])) . "'>funil</a>",
+                "<div class='oak-dr-bar'><i style='width:" . ($r['positions'] ? min(100, round(100 * $hired / $r['positions'])) : 0) . "%;--oc:#22c55e'></i></div>");
+        }
+        $out['rh-abertas'] = ['Vagas abertas', 'ti-briefcase', '#3b82f6', "<p class='oak-dr-lead'>" . count($rows) . " vaga(s) em seleção, da mais antiga para a mais nova. A barra mostra contratados sobre posições.</p><div class='oak-dr-list'>" . ($h ?: $empty('Nenhuma vaga aberta.')) . "</div>" . $foot('Ver todas as vagas', Menu::url('/front/vaga.php'))];
+
+        // aguardando aprovação
+        $rows = iterator_to_array($DB->request(['FROM' => Vaga::getTable() . ' AS v', 'WHERE' => $vw + ['v.status' => [Vaga::WAIT_MANAGER, Vaga::WAIT_BOARD]], 'ORDER' => 'v.date_submit']), false);
+        $h = '';
+        foreach ($rows as $r) {
+            $d = $days($r['date_submit']);
+            $who = (int) $r['status'] === Vaga::WAIT_MANAGER ? 'gestor ' . getUserName((int) $r['users_id_manager']) : 'diretoria';
+            $h .= $item($d > 3 ? 'bad' : 'warn', $vaga($r['id'], $r['name']) . "<span class='oak-dr-val'>$d d</span>",
+                'Com <b>' . $e($who) . '</b> · enviada em ' . $date($r['date_submit']) . ' · solicitante ' . $e(getUserName((int) $r['users_id_requester'])));
+        }
+        $out['rh-aprovacao'] = ['Aguardando aprovação', 'ti-hourglass', '#f59e0b', "<p class='oak-dr-lead'>Requisições paradas esperando decisão, há quantos dias e com quem. Mais de 3 dias aparece em vermelho.</p><div class='oak-dr-list'>" . ($h ?: $empty('Nada esperando aprovação.')) . "</div>" . $foot('Minhas aprovações', Menu::url('/front/aprovacoes.php'), 'ti-checklist')];
+
+        // candidatos em processo
+        $rows = iterator_to_array($DB->request([
+            'SELECT' => ['c.stage', 'c.date_stage', 'c.rating', 'c.plugin_rh_vagas_id', 'p.name', 'v.name AS vaga'], 'FROM' => Candidatura::getTable() . ' AS c',
+            'INNER JOIN' => [Vaga::getTable() . ' AS v' => ['ON' => ['v' => 'id', 'c' => 'plugin_rh_vagas_id']], Candidato::getTable() . ' AS p' => ['ON' => ['p' => 'id', 'c' => 'plugin_rh_candidatos_id']]],
+            'WHERE' => $vw + ['c.status' => 'active', 'v.status' => Vaga::OPEN], 'ORDER' => 'c.date_stage',
+        ]), false);
+        $byStage = array_count_values(array_column($rows, 'stage'));
+        $perStage = [];
+        foreach (Candidatura::STAGES as $k => [$label]) {
+            if (!empty($byStage[$k])) {
+                $perStage[$label] = $byStage[$k];
+            }
+        }
+        $h = $stats($perStage) . "<div class='oak-dr-title'>Parados há mais tempo na etapa</div><div class='oak-dr-list'>";
+        foreach (array_slice($rows, 0, 30) as $r) {
+            $d = $days($r['date_stage']);
+            $h .= $item($d > 10 ? 'bad' : ($d > 5 ? 'warn' : ''), "<span class='oak-dr-name'><b>" . $e($r['name']) . "</b> · " . $e($r['vaga']) . "</span><span class='oak-dr-val'>$d d</span>",
+                $e(Candidatura::STAGES[$r['stage']][0] ?? $r['stage']) . ((int) $r['rating'] ? ' · ' . str_repeat('★', (int) $r['rating']) : '') . " · <a href='" . $e(Menu::url('/front/pipeline.php?vaga=' . $r['plugin_rh_vagas_id'])) . "'>funil</a>");
+        }
+        $out['rh-candidatos'] = ['Candidatos em processo', 'ti-users', '#a855f7', "<p class='oak-dr-lead'>" . count($rows) . " candidato(s) nas vagas abertas, por etapa. Mais de 10 dias na mesma etapa aparece em vermelho.</p>" . ($rows ? $h . "</div>" : $empty('Nenhum candidato em processo.'))];
+
+        // contratações e tempo de contratação
+        $rows = iterator_to_array($DB->request([
+            'SELECT' => ['c.date_hired', 'c.plugin_rh_vagas_id', 'p.name', 'v.name AS vaga', 'v.date_open'], 'FROM' => Candidatura::getTable() . ' AS c',
+            'INNER JOIN' => [Vaga::getTable() . ' AS v' => ['ON' => ['v' => 'id', 'c' => 'plugin_rh_vagas_id']], Candidato::getTable() . ' AS p' => ['ON' => ['p' => 'id', 'c' => 'plugin_rh_candidatos_id']]],
+            'WHERE' => $vw + ['c.status' => 'hired', 'c.date_hired' => ['>=', $from]], 'ORDER' => 'c.date_hired DESC',
+        ]), false);
+        $h = '';
+        $ttf = [];
+        foreach ($rows as $r) {
+            $t = $r['date_open'] ? max(0, (int) round((strtotime($r['date_hired']) - strtotime($r['date_open'])) / 86400)) : null;
+            $t !== null && $ttf[] = $t;
+            $h .= $item('good', "<span class='oak-dr-name'><b>" . $e($r['name']) . "</b> · " . $e($r['vaga']) . "</span><span class='oak-dr-val'>" . $date($r['date_hired']) . "</span>",
+                $t !== null ? "contratado(a) $t dia(s) depois da abertura da vaga" : '');
+        }
+        $out['rh-contratacoes'] = ['Contratações', 'ti-user-plus', '#22c55e', "<p class='oak-dr-lead'>" . count($rows) . " contratação(ões) nos últimos $months meses, da mais recente.</p><div class='oak-dr-list'>" . ($h ?: $empty('Nenhuma contratação no período.')) . "</div>"];
+
+        sort($ttf);
+        $max = max(1, ...($ttf ?: [1]));
+        $h = $ttf ? $stats(['Média' => round(array_sum($ttf) / count($ttf)) . ' d', 'Mediana' => $ttf[intdiv(count($ttf), 2)] . ' d', 'Mais rápida' => $ttf[0] . ' d', 'Mais lenta' => end($ttf) . ' d']) : '';
+        $h .= "<div class='oak-dr-list'>";
+        foreach ($rows as $r) {
+            if (!$r['date_open']) {
+                continue;
+            }
+            $t = max(0, (int) round((strtotime($r['date_hired']) - strtotime($r['date_open'])) / 86400));
+            $h .= $item('', "<span class='oak-dr-name'><b>" . $e($r['name']) . "</b> · " . $e($r['vaga']) . "</span><span class='oak-dr-val'>$t d</span>", '', "<div class='oak-dr-bar'><i style='width:" . round(100 * $t / $max) . "%;--oc:#0ea5e9'></i></div>");
+        }
+        $out['rh-tempo'] = ['Tempo médio de contratação', 'ti-clock', '#0ea5e9', "<p class='oak-dr-lead'>Dias entre a abertura da vaga (aprovação da diretoria) e a contratação, nos últimos $months meses.</p>" . ($ttf ? $h . "</div>" : $empty('Sem contratações no período.'))];
+
+        // admissões
+        $h = '';
+        $n = 0;
+        foreach ($DB->request(['FROM' => Admissao::getTable(), 'WHERE' => $admWhere, 'ORDER' => 'start_date']) as $a) {
+            $n++;
+            $items = iterator_to_array($DB->request(['SELECT' => 'is_done', 'FROM' => 'glpi_plugin_rh_checklists', 'WHERE' => ['plugin_rh_admissaos_id' => $a['id']]]), false);
+            $done = count(array_filter($items, fn ($x) => (int) $x['is_done']));
+            $pct = $items ? round(100 * $done / count($items)) : 0;
+            $soon = $a['start_date'] && strtotime($a['start_date']) - $now < 7 * 86400 && $pct < 100;
+            $h .= $item($soon ? 'warn' : '', "<a href='" . $e(Admissao::getFormURLWithID((int) $a['id'])) . "'><b>" . $e($a['name']) . "</b></a><span class='oak-dr-name'></span><span class='oak-dr-val'>$pct%</span>",
+                'Início ' . $date($a['start_date']) . " · $done de " . count($items) . ' itens do checklist' . ($a['tickets_id'] ? ' · chamado de TI #' . (int) $a['tickets_id'] : ' · chamado de TI não aberto') . ' · gestor ' . $e(getUserName((int) $a['users_id_manager'])),
+                "<div class='oak-dr-bar'><i style='width:$pct%;--oc:#ec4899'></i></div>");
+        }
+        $out['rh-admissoes'] = ['Admissões em andamento', 'ti-id-badge-2', '#ec4899', "<p class='oak-dr-lead'>$n onboarding(s) em andamento. Começa em menos de 7 dias e o checklist não terminou: laranja.</p><div class='oak-dr-list'>" . ($h ?: $empty('Nenhuma admissão em andamento.')) . "</div>" . $foot('Ver admissões', Menu::url('/front/admissao.php'))];
+
+        // férias: hoje, aguardando e próximos 30 dias
+        $today = date('Y-m-d');
+        $list = function (array $where, string $cls) use ($DB, $e, $item, $date) {
+            $h = '';
+            foreach ($DB->request(['FROM' => Feria::getTable(), 'WHERE' => $where, 'ORDER' => 'date_begin']) as $f) {
+                $h .= $item($cls, "<a href='" . $e(Feria::getFormURLWithID((int) $f['id'])) . "'><b>" . $e(getUserName((int) $f['users_id'])) . "</b></a><span class='oak-dr-name'></span><span class='oak-dr-val'>" . (int) $f['days'] . " d</span>",
+                    $date($f['date_begin']) . ' a ' . $date($f['date_end']) . ' · gestor ' . $e(getUserName((int) $f['users_id_manager'])));
+            }
+            return $h ?: "<div class='oak-dr-empty'>Ninguém.</div>";
+        };
+        $out['rh-ferias'] = ['Férias', 'ti-sun', '#14b8a6',
+            "<div class='oak-dr-title'>De férias hoje</div><div class='oak-dr-list'>" . $list($fw + ['status' => Feria::APPROVED, 'date_begin' => ['<=', $today], 'date_end' => ['>=', $today]], 'good') . "</div>"
+            . "<div class='oak-dr-title'>Aguardando o gestor</div><div class='oak-dr-list'>" . $list($fw + ['status' => Feria::PENDING], 'warn') . "</div>"
+            . "<div class='oak-dr-title'>Começam nos próximos 30 dias</div><div class='oak-dr-list'>" . $list($fw + ['status' => Feria::APPROVED, 'date_begin' => ['>', $today], ['date_begin' => ['<=', date('Y-m-d', strtotime('+30 days'))]]], '') . "</div>"
+            . $foot('Calendário de férias', Menu::url('/front/calendario.php'), 'ti-calendar-event')];
+
+        $html = '';
+        foreach ($out as $key => [$title, $icon, $color, $body]) {
+            $html .= "<template id='dr-$key' data-title='" . $e($title) . "' data-icon='$icon' data-color='$color'>$body</template>";
+        }
+        return $html;
     }
 }

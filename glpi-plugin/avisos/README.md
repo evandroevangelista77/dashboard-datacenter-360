@@ -1,6 +1,6 @@
 # Avisos para GLPI 12
 
-Central de avisos dos plugins **RH**, **PMO** e **Reembolso**. Quem precisa agir ou acompanhar recebe o aviso de três formas, além do e-mail das notificações do GLPI:
+Central de avisos dos plugins **RH**, **PMO**, **Reembolso** e **Ciclo Financeiro**. Quem precisa agir ou acompanhar recebe o aviso de três formas, além do e-mail das notificações do GLPI:
 
 | Onde | Como |
 |---|---|
@@ -24,10 +24,12 @@ A página **Meus avisos** lista tudo o que o usuário recebeu, com filtro por pl
 | PMO | Tarefa atrasada | Equipe da tarefa e gerente do projeto |
 | PMO | Risco crítico | Gerente do projeto e responsável pelo risco |
 | PMO | Sprint iniciada · concluída | Gerente e equipe do projeto |
+| Ciclo Financeiro | Nova fase · devolução · fase atrasada | Grupo da fase, GP e OTC |
+| Ciclo Financeiro | Ciclo concluído · cancelado | GP, OTC e Comercial |
 
 ## Teams
 
-Um canal por plugin (RH, PMO e Financeiro). Em **Configurar → Plugins → Avisos**:
+Um canal por plugin (RH, PMO, Financeiro e Ciclo Financeiro). Em **Configurar → Plugins → Avisos**:
 
 1. No canal do Teams: **⋯ → Workflows → "Postar em um canal quando uma solicitação de webhook for recebida"** e copie a URL gerada (webhooks de entrada também funcionam).
 2. Cole a URL na linha do plugin, ligue e salve.
@@ -49,6 +51,11 @@ Funciona com qualquer combinação de RH (1.0.4+), PMO (1.2.0+) e Reembolso (1.1
 ## Dados e desinstalação
 
 Tabelas `glpi_plugin_avisos_avisos`, `_canals` e `_filas`. Avisos lidos são apagados depois do prazo de retenção (180 dias por padrão). Desinstalar apaga os avisos e a configuração dos canais.
+
+## Versões
+
+- **1.1.0**: canal do Ciclo Financeiro; corrige o link “Ver todos os avisos” do sino.
+- **1.0.0**: primeira versão.
 
 ## Licença
 

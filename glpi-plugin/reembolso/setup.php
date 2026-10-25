@@ -19,7 +19,7 @@ use GlpiPlugin\Reembolso\Reembolso;
 use GlpiPlugin\Reembolso\TicketTab;
 use GlpiPlugin\Reembolso\Tipodespesa;
 
-define('PLUGIN_REEMBOLSO_VERSION', '1.1.0');
+define('PLUGIN_REEMBOLSO_VERSION', '1.1.1');
 define('PLUGIN_REEMBOLSO_MIN_GLPI', '12.0.0');
 define('PLUGIN_REEMBOLSO_MAX_GLPI', '12.0.99');
 

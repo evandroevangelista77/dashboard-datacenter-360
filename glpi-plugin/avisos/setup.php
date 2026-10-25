@@ -12,7 +12,7 @@ use Glpi\Plugin\Hooks;
 use GlpiPlugin\Avisos\Aviso;
 use GlpiPlugin\Avisos\Canal;
 
-define('PLUGIN_AVISOS_VERSION', '1.0.0');
+define('PLUGIN_AVISOS_VERSION', '1.1.0');
 define('PLUGIN_AVISOS_MIN_GLPI', '12.0.0');
 define('PLUGIN_AVISOS_MAX_GLPI', '12.0.99');
 

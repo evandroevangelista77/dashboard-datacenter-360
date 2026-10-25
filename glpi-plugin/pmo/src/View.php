@@ -512,6 +512,7 @@ JS;
             'fields' => FieldsData::SHOWN,
         ]);
         echo self::script('pmo.js');
+        echo self::script('drawer.js');
         echo self::script('portfolio.js');
         echo "</div>";
     }

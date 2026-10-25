@@ -18,6 +18,7 @@ class Canal extends CommonDBTM
         'rh'        => ['RH', 'ti-users-group', '#ec4899'],
         'pmo'       => ['PMO', 'ti-briefcase', '#3b82f6'],
         'reembolso' => ['Financeiro (Reembolso)', 'ti-receipt-2', '#22c55e'],
+        'ciclo'     => ['Ciclo Financeiro', 'ti-recycle', '#14b8a6'],
     ];
 
     public static function getTypeName($nb = 0)

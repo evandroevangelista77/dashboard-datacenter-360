@@ -81,14 +81,14 @@ class Dashboard extends CommonGLPI
         Html::closeForm();
 
         // indicadores
-        $kpi = fn ($label, $value, $sub, $color = '') => "<div class='col-6 col-md-4 col-xl'><div class='rb-kpi' " . ($color ? "style='--c:$color'" : '') . "><div class='rb-kpi-label'>$label</div><div class='rb-kpi-value'>$value</div><div class='rb-kpi-sub'>$sub</div></div></div>";
+        $kpi = fn ($label, $value, $sub, $color, $drawer) => "<div class='col-6 col-md-4 col-xl'><div class='rb-kpi oak-kpi-click' role='button' tabindex='0' data-drawer='$drawer' style='--c:$color'><div class='rb-kpi-label'>$label</div><div class='rb-kpi-value'>$value</div><div class='rb-kpi-sub'>$sub</div></div></div>";
         echo "<div class='row g-2 mb-3'>";
-        echo $kpi('Total lançado', Money::format($k['total']), $k['expenses'] . ' despesa(s) em ' . $k['requests'] . ' solicitação(ões)', '#22d3ee');
-        echo $kpi('Aguardando aprovação', Money::format($k['pending']), 'enviados ao aprovador', '#f59e0b');
-        echo $kpi('Aprovado a pagar', Money::format($k['approved']), 'aprovado, sem pagamento', '#3b82f6');
-        echo $kpi('Pago', Money::format($k['paid']), 'pagamento registrado', '#22c55e');
-        echo $kpi('KM rodados', Money::km($k['km']), 'em despesas por quilometragem', '#a855f7');
-        echo $kpi('Média por solicitação', Money::format($k['average']), $k['techs'] . ' técnico(s)' . ($k['over'] ? " · <span class='text-warning'>{$k['over']} acima do limite</span>" : ''), '#94a3b8');
+        echo $kpi('Total lançado', Money::format($k['total']), $k['expenses'] . ' despesa(s) em ' . $k['requests'] . ' solicitação(ões)', '#22d3ee', 'rb-total');
+        echo $kpi('Aguardando aprovação', Money::format($k['pending']), 'enviados ao aprovador', '#f59e0b', 'rb-pendente');
+        echo $kpi('Aprovado a pagar', Money::format($k['approved']), 'aprovado, sem pagamento', '#3b82f6', 'rb-apagar');
+        echo $kpi('Pago', Money::format($k['paid']), 'pagamento registrado', '#22c55e', 'rb-pago');
+        echo $kpi('KM rodados', Money::km($k['km']), 'em despesas por quilometragem', '#a855f7', 'rb-km');
+        echo $kpi('Média por solicitação', Money::format($k['average']), $k['techs'] . ' técnico(s)' . ($k['over'] ? " · <span class='text-warning'>{$k['over']} acima do limite</span>" : ''), '#94a3b8', 'rb-media');
         echo "</div>";
         if ($k['draft'] > 0 || $k['refused'] > 0) {
             echo "<div class='small text-secondary mb-3'>Fora dos totais acima: " . ($k['draft'] > 0 ? Money::format($k['draft']) . ' em rascunho' : '')
@@ -116,6 +116,8 @@ class Dashboard extends CommonGLPI
         echo $card('rb-c-centro', '<i class="ti ti-building-bank me-2"></i>Por centro de custo');
         echo "</div>";
         echo "<script type='application/json' id='rb-dash'>" . json_encode($charts, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) . "</script>";
+        echo self::drawers($rows);
+        echo Html::script(Menu::url('/js/drawer.js'), ['version' => Menu::fileVersion('js/drawer.js')], false);
         echo Html::script(Menu::url('/js/dashboard.js'), ['version' => Menu::fileVersion('js/dashboard.js')], false);
 
         // detalhamento
@@ -139,5 +141,136 @@ class Dashboard extends CommonGLPI
                 . "<td class='text-end text-nowrap fw-bold'>" . Money::format($r['amount']) . ($r['over'] ? " <i class='ti ti-alert-triangle text-warning' title='Acima do limite do tipo'></i>" : '') . "</td></tr>";
         }
         echo "</tbody></table></div></div></div>";
+    }
+
+    // ------------------------------------------------------------------ resumos dos cartões (painel lateral)
+
+    /** Um <template> por cartão, com as mesmas despesas (e filtros) dos indicadores. */
+    private static function drawers(array $rows): string
+    {
+        global $DB;
+        $e = fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);
+        $date = fn ($d) => $d ? date('d/m/Y', strtotime($d)) : '—';
+        $days = fn ($d) => $d ? max(0, (int) floor((time() - strtotime($d)) / 86400)) : 0;
+        $item = fn ($cls, $row, $sub, $extra = '') => "<div class='oak-dr-item $cls'><div class='oak-dr-row'>$row</div>" . ($sub !== '' ? "<div class='oak-dr-sub'>$sub</div>" : '') . "$extra</div>";
+        $empty = fn ($t) => "<div class='oak-dr-empty'>$t</div>";
+        $stats = fn (array $s) => "<div class='oak-dr-stats'>" . implode('', array_map(fn ($k, $v) => "<div><small>$k</small><b>$v</b></div>", array_keys($s), $s)) . "</div>";
+
+        // solicitações (cabeçalho) das despesas do filtro
+        $req = [];
+        foreach ($rows as $r) {
+            if ($r['status'] === Reembolso::REFUSED) {
+                continue;
+            }
+            $id = (int) $r['reembolso'];
+            $req[$id] ??= ['id' => $id, 'tecnico' => $r['tecnico'], 'status' => $r['status'], 'amount' => 0.0, 'n' => 0, 'centro' => $r['centro_label'], 'over' => 0];
+            $req[$id]['amount'] += $r['amount'];
+            $req[$id]['n']++;
+            $req[$id]['over'] += $r['over'] ? 1 : 0;
+        }
+        if ($req) {
+            foreach ($DB->request(['SELECT' => ['id', 'name', 'date_submit', 'date_approval', 'date_payment', 'payment_reference', 'users_id_approver'], 'FROM' => Reembolso::getTable(), 'WHERE' => ['id' => array_keys($req)]]) as $h) {
+                $req[(int) $h['id']] += $h;
+            }
+        }
+        $link = fn ($r) => "<a href='" . $e(Reembolso::getFormURLWithID($r['id'])) . "'><b>" . $e(Reembolso::code($r['id'])) . "</b></a><span class='oak-dr-name'>" . $e($r['tecnico']) . "</span><span class='oak-dr-val'>" . Money::format($r['amount']) . "</span>";
+        $byStatus = fn ($st) => array_values(array_filter($req, fn ($r) => $r['status'] === $st));
+        $out = [];
+
+        // total lançado
+        $sum = fn ($st) => array_sum(array_column($byStatus($st), 'amount'));
+        $h = "<div class='oak-dr-stats' style='grid-template-columns:repeat(2,1fr)'>" . implode('', array_map(fn ($l, $st) => "<div style='--sc:" . Reembolso::STATUSES[$st][1] . "'><small>$l</small><b>" . Money::format($sum($st)) . "</b></div>",
+            ['Rascunho', 'Aguardando aprovação', 'Aprovado a pagar', 'Pago'], [Reembolso::DRAFT, Reembolso::SUBMITTED, Reembolso::APPROVED, Reembolso::PAID])) . "</div>"
+            . "<div class='oak-dr-title'>Maiores solicitações do período</div><div class='oak-dr-list'>";
+        $top = array_values($req);
+        usort($top, fn ($a, $b) => $b['amount'] <=> $a['amount']);
+        foreach (array_slice($top, 0, 15) as $r) {
+            [$label, $color] = Reembolso::STATUSES[$r['status']];
+            $h .= "<div class='oak-dr-item' style='--oc:$color'><div class='oak-dr-row'>" . $link($r) . "</div><div class='oak-dr-sub'>" . $e($label) . ' · ' . $r['n'] . ' despesa(s) · ' . $e($r['centro'] ?: 'sem centro de custo') . "</div></div>";
+        }
+        $out['rb-total'] = ['Total lançado', 'ti-receipt-2', '#22d3ee', ($req ? $h . "</div>" : $empty('Nenhuma despesa no período.'))];
+
+        // aguardando aprovação
+        $list = $byStatus(Reembolso::SUBMITTED);
+        usort($list, fn ($a, $b) => strcmp((string) $a['date_submit'], (string) $b['date_submit']));
+        $h = '';
+        foreach ($list as $r) {
+            $d = $days($r['date_submit']);
+            $h .= $item($d > 5 ? 'bad' : 'warn', $link($r), 'Enviada em ' . $date($r['date_submit']) . " · esperando há <b>$d dia(s)</b> · " . $r['n'] . ' despesa(s)' . ($r['over'] ? " · <span class='text-warning'>{$r['over']} acima do limite</span>" : ''));
+        }
+        $out['rb-pendente'] = ['Aguardando aprovação', 'ti-hourglass', '#f59e0b', "<p class='oak-dr-lead'>Solicitações enviadas e ainda sem decisão, da mais antiga. Mais de 5 dias aparece em vermelho.</p><div class='oak-dr-list'>" . ($h ?: $empty('Nada aguardando aprovação.')) . "</div>"];
+
+        // aprovado a pagar
+        $list = $byStatus(Reembolso::APPROVED);
+        usort($list, fn ($a, $b) => strcmp((string) $a['date_approval'], (string) $b['date_approval']));
+        $h = '';
+        foreach ($list as $r) {
+            $d = $days($r['date_approval']);
+            $h .= $item($d > 10 ? 'bad' : '', $link($r), 'Aprovada em ' . $date($r['date_approval']) . ' por ' . $e(getUserName((int) ($r['users_id_approver'] ?? 0))) . " · a pagar há <b>$d dia(s)</b>");
+        }
+        $out['rb-apagar'] = ['Aprovado a pagar', 'ti-cash', '#3b82f6', "<p class='oak-dr-lead'>Aprovados sem pagamento registrado. Mais de 10 dias aparece em vermelho.</p><div class='oak-dr-list'>" . ($h ?: $empty('Nada a pagar.')) . "</div>"];
+
+        // pago
+        $list = $byStatus(Reembolso::PAID);
+        usort($list, fn ($a, $b) => strcmp((string) $b['date_payment'], (string) $a['date_payment']));
+        $h = '';
+        foreach ($list as $r) {
+            $h .= $item('good', $link($r), 'Pago em ' . $date($r['date_payment']) . ($r['payment_reference'] ? ' · ' . $e($r['payment_reference']) : ''));
+        }
+        $out['rb-pago'] = ['Pago', 'ti-circle-check', '#22c55e', "<p class='oak-dr-lead'>Pagamentos registrados no período, do mais recente.</p><div class='oak-dr-list'>" . ($h ?: $empty('Nenhum pagamento no período.')) . "</div>"];
+
+        // KM rodados: por técnico e os maiores trajetos
+        $km = [];
+        $trips = [];
+        foreach ($rows as $r) {
+            if (!$r['is_mileage'] || $r['status'] === Reembolso::REFUSED) {
+                continue;
+            }
+            $km[$r['tecnico']]['km'] = ($km[$r['tecnico']]['km'] ?? 0) + $r['distance'];
+            $km[$r['tecnico']]['amount'] = ($km[$r['tecnico']]['amount'] ?? 0) + $r['amount'];
+            $trips[] = $r;
+        }
+        uasort($km, fn ($a, $b) => $b['km'] <=> $a['km']);
+        usort($trips, fn ($a, $b) => $b['distance'] <=> $a['distance']);
+        $max = max(1, ...array_column($km, 'km') ?: [1]);
+        $h = "<div class='oak-dr-title'>Por técnico</div><div class='oak-dr-list'>";
+        foreach ($km as $name => $x) {
+            $h .= $item('', "<span class='oak-dr-name'><b>" . $e($name) . "</b></span><span class='oak-dr-val'>" . Money::km($x['km']) . "</span>", Money::format($x['amount']) . ' em quilometragem', "<div class='oak-dr-bar'><i style='width:" . round(100 * $x['km'] / $max) . "%;--oc:#a855f7'></i></div>");
+        }
+        $h .= "</div><div class='oak-dr-title'>Maiores trajetos</div><div class='oak-dr-list'>";
+        foreach (array_slice($trips, 0, 10) as $t) {
+            $h .= $item('', "<span class='oak-dr-name'>" . $e($t['origin'] || $t['destination'] ? ($t['origin'] ?: '?') . ' → ' . ($t['destination'] ?: '?') : 'Pelo odômetro' . ($t['km_end'] ? ': ' . number_format((float) $t['km_start'], 0, ',', '.') . ' → ' . number_format((float) $t['km_end'], 0, ',', '.') . ' km' : '')) . "</span><span class='oak-dr-val'>" . Money::km($t['distance']) . "</span>",
+                $e($t['tecnico']) . ' · ' . $date($t['date']) . ($t['round_trip'] ? ' · ida e volta' : '') . ' · ' . Money::format($t['amount']));
+        }
+        $out['rb-km'] = ['KM rodados', 'ti-road', '#a855f7', ($km ? $h . "</div>" : $empty('Nenhuma despesa por quilometragem no período.'))];
+
+        // média por solicitação: por técnico e despesas acima do limite
+        $tec = [];
+        foreach ($req as $r) {
+            $tec[$r['tecnico']]['n'] = ($tec[$r['tecnico']]['n'] ?? 0) + 1;
+            $tec[$r['tecnico']]['amount'] = ($tec[$r['tecnico']]['amount'] ?? 0) + $r['amount'];
+        }
+        uasort($tec, fn ($a, $b) => ($b['amount'] / $b['n']) <=> ($a['amount'] / $a['n']));
+        $h = "<div class='oak-dr-title'>Média por técnico</div><table class='table table-sm oak-dr-table'><thead><tr><th>Técnico</th><th class='text-end'>Solicitações</th><th class='text-end'>Total</th><th class='text-end'>Média</th></tr></thead><tbody>";
+        foreach ($tec as $name => $x) {
+            $h .= "<tr><td>" . $e($name) . "</td><td class='text-end'>{$x['n']}</td><td class='text-end'>" . Money::format($x['amount']) . "</td><td class='text-end fw-bold'>" . Money::format($x['amount'] / $x['n']) . "</td></tr>";
+        }
+        $h .= "</tbody></table>";
+        $over = array_filter($rows, fn ($r) => $r['over'] && $r['status'] !== Reembolso::REFUSED);
+        if ($over) {
+            $h .= "<div class='oak-dr-title'>Despesas acima do limite do tipo</div><div class='oak-dr-list'>";
+            foreach ($over as $r) {
+                $h .= $item('warn', "<span class='oak-dr-name'><b>" . $e($r['tipo']) . "</b> · " . $e($r['tecnico']) . "</span><span class='oak-dr-val'>" . Money::format($r['amount']) . "</span>",
+                    'Limite ' . Money::format((float) $r['max_amount']) . ' · ' . $date($r['date']) . " · <a href='" . $e(Reembolso::getFormURLWithID((int) $r['reembolso'])) . "'>" . $e(Reembolso::code((int) $r['reembolso'])) . "</a>");
+            }
+            $h .= "</div>";
+        }
+        $out['rb-media'] = ['Média por solicitação', 'ti-calculator', '#94a3b8', ($tec ? $h : $empty('Nenhuma solicitação no período.'))];
+
+        $html = '';
+        foreach ($out as $key => [$title, $icon, $color, $body]) {
+            $html .= "<template id='dr-$key' data-title='" . $e($title) . "' data-icon='$icon' data-color='$color'>$body</template>";
+        }
+        return $html;
     }
 }

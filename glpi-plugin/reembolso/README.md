@@ -70,6 +70,7 @@ Tabelas: `glpi_plugin_reembolso_reembolsos`, `_despesas`, `_tipodespesas`, `_cen
 
 ## Versões
 
+- **1.1.1**: os cartões do Dashboard abrem um resumo no painel lateral (solicitações por situação, aguardando há quantos dias, a pagar, pagos, KM por técnico e trajetos, média por técnico e despesas acima do limite).
 - **1.1.0**: e-mails do fluxo (enviado para aprovação, aprovado, recusado e pago) em Configurar → Notificações, e avisos no sino, pop-up e Teams com o plugin Avisos.
 - **1.0.1**: título e subtítulo nas telas (Reembolsos, Dashboard, Configuração e solicitação), explicando para que serve a página; atalhos para o Dashboard e Nova solicitação na lista.
 - **1.0.0**: primeira versão.

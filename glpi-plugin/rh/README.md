@@ -66,6 +66,7 @@ Tabelas: `glpi_plugin_rh_vagas`, `_candidatos`, `_candidaturas`, `_admissaos`, `
 
 ## Versões
 
+- **1.0.5**: os cartões do Dashboard RH abrem um resumo no painel lateral (vagas abertas, aprovações paradas, candidatos por etapa, contratações, tempo de contratação, admissões e férias).
 - **1.0.4**: avisos de cada etapa para o solicitante (envio, aprovações, andamento dos candidatos, contratação, encerramento) e das férias, no sino, pop-up e Teams com o plugin Avisos; novos e-mails “Andamento da vaga” e “Férias canceladas”.
 - **1.0.3**: cargo pretendido no banco de currículo (campo, coluna da lista e filtro de busca); envio do currículo no cadastro do candidato; vaga nova preenchida com o job description do cargo; calendário de férias com visão anual.
 - **1.0.2**: foto do candidato.

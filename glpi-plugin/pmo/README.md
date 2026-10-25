@@ -122,6 +122,7 @@ Tabelas criadas: `glpi_plugin_pmo_projects`, `_columns`, `_items`, `_sprints`, `
 
 ## Versões
 
+- **1.2.1**: os cartões do Portfólio abrem um resumo no painel lateral (projetos por saúde, com filtro da tabela, tarefas atrasadas e riscos por projeto).
 - **1.2.0**: avisos no sino, pop-up e Teams (com o plugin Avisos) para tarefa atrasada, risco crítico e início e fim de sprint; o aviso de tarefa atrasada sai mesmo com o e-mail do GLPI desligado.
 - **1.1.1**: título e subtítulo em todas as telas (Portfólio, Meu trabalho e cada aba do projeto), explicando para que serve a página.
 - **1.1.0**: avisos por e-mail (sprint iniciada e concluída, risco crítico, tarefa atrasada). Corrige a reinstalação por cima de uma versão já instalada.

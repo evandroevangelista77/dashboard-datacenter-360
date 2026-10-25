@@ -10,6 +10,8 @@ use GlpiPlugin\Avisos\Aviso;
 
 Session::checkLoginUser();
 
+global $CFG_GLPI;
+
 header('Content-Type: application/json; charset=UTF-8');
 $uid = (int) Session::getLoginUserID();
 $cfg = Config::getConfigurationValues('plugin:avisos', ['popup', 'poll_seconds']);

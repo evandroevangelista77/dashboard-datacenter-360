@@ -1,0 +1,71 @@
+PLUGIN CICLO FINANCEIRO PARA GLPI 12 · versão @VERSAO@
+======================================================
+
+Acompanha cada venda do aviso de fechamento no CRM até o recebimento dos
+valores, dentro do GLPI 12.0.x (seção "Ciclo Financeiro" do menu lateral),
+e mede quanto tempo isso leva fase a fase.
+
+- 16 fases (aviso, validação, centro de custo, divulgação, transfermeeting,
+  RM, pedido ao fornecedor, recebimento, entrada fiscal, separação e
+  transporte, faturamento do hardware, entrega, implantação, aceite,
+  faturamento de serviço/licença e recebimento dos valores), conforme o tipo
+  de venda (hardware, software, serviço ou misto)
+- Cada fase com grupo responsável, SLO e o que ela exige para concluir;
+  devolução para uma fase anterior com motivo (retrabalho)
+- Chamado para o grupo da fase quando ela começa (resolvido quando termina)
+- Itens da venda: pedidos do Power Automate, RMs, pedidos a fornecedores,
+  NFs de entrada (OK/NOK), NFs de saída e parcelas a receber
+- Linha do tempo em Gantt com o SLO de cada fase
+- Painel: ciclo médio contra a meta, tempo de cada fase × SLO, onde os
+  Ciclos estão agora, fases atrasadas, devoluções e valores a receber; cada
+  cartão abre um resumo num painel lateral
+- Aviso de fase atrasada (ação automática "cicloatrasos") e, com o plugin
+  Avisos, sino, pop-up e canal do Teams
+
+Esta é a fase 1 (piloto): tudo é informado no GLPI. As integrações (CRM,
+TOTVS RM, Power Automate) entram nas próximas versões. O pacote não traz
+dados de exemplo: só as 16 fases com SLOs sugeridos.
+
+CONTEÚDO
+--------
+  ciclo/        o plugin (a pasta precisa se chamar "ciclo")
+  instalar.sh   instala ou atualiza tudo de uma vez
+  LEIA-ME.txt   este arquivo
+  LICENSE       GNU GPL versão 3
+
+INSTALAÇÃO AUTOMÁTICA (no servidor do GLPI)
+-------------------------------------------
+   unzip oak-ciclo-completo-@VERSAO@.zip
+   cd oak-ciclo-completo
+   sudo bash instalar.sh
+
+   GLPI em outro caminho ou com outro administrador:
+   sudo GLPI_DIR=/caminho/do/glpi GLPI_ADMIN=usuario bash instalar.sh
+
+INSTALAÇÃO MANUAL
+-----------------
+   sudo cp -r ciclo /var/www/glpi/plugins/
+   sudo chown -R www-data:www-data /var/www/glpi/plugins/ciclo
+   sudo -u www-data php /var/www/glpi/bin/console plugin:install --username=glpi ciclo
+   sudo -u www-data php /var/www/glpi/bin/console plugin:activate ciclo
+
+PRIMEIROS PASSOS
+----------------
+1) Crie os grupos das áreas (Comercial, OTC, Gestão de custos, GP, Compras,
+   Logística, Faturamento) com as pessoas de cada uma.
+2) Ciclo Financeiro > Fases e SLOs: escolha o grupo de cada fase e ajuste os
+   SLOs (os de fábrica são uma sugestão inicial).
+3) Permissões: Administração > Perfis > (perfil) > aba "Ciclo Financeiro".
+4) Ciclo Financeiro > Ciclos > "+" para abrir o primeiro Ciclo.
+
+ATENÇÃO
+-------
+Desinstalar o plugin apaga os Ciclos, as fases, os itens e a linha do tempo.
+Os chamados das fases continuam no GLPI.
+
+Documentação completa: README.md dentro da pasta ciclo/ e
+https://github.com/evandroevangelista77/dashboard-datacenter-360
+
+LICENÇA
+-------
+GNU General Public License, versão 3 ou posterior (GPLv3+), a mesma do GLPI.

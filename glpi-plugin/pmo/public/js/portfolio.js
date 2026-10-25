@@ -52,14 +52,14 @@
         const hasFields = rows.some((r) => Object.keys(r.fields).length);
         const avg = rows.length ? Math.round(rows.reduce((a, r) => a + r.actual, 0) / rows.length) : 0;
 
-        const kpi = (label, value, sub, code) => `<div class="col-6 col-md-4 col-xl-2"><div class="pmo-kpi" ${code ? `style="cursor:pointer" data-hf="${code}"` : ''}><div class="pmo-kpi-label">${label}</div><div class="pmo-kpi-value">${value}</div><div class="pmo-kpi-sub">${sub}</div></div></div>`;
+        const kpi = (label, value, sub, key, color) => `<div class="col-6 col-md-4 col-xl-2"><div class="pmo-kpi oak-kpi-click" role="button" tabindex="0" data-dr="${key}" style="--c:${color}"><div class="pmo-kpi-label">${label}</div><div class="pmo-kpi-value">${value}</div><div class="pmo-kpi-sub">${sub}</div></div></div>`;
         let html = `<div class="row g-2 mb-3">
-            ${kpi(state.closed ? 'Projetos' : 'Projetos ativos', rows.length, `% médio concluído: ${avg}%`)}
-            ${kpi('<span class="pmo-health pmo-health-green"></span>No prazo', count('green'), 'clique para filtrar', 'green')}
-            ${kpi('<span class="pmo-health pmo-health-yellow"></span>Atenção', count('yellow'), 'desvio 5–15 p.p. ou tarefas atrasadas', 'yellow')}
-            ${kpi('<span class="pmo-health pmo-health-red"></span>Atrasados', count('red'), 'desvio > 15 p.p. ou prazo vencido', 'red')}
-            ${kpi('Tarefas atrasadas', rows.reduce((a, r) => a + r.overdue, 0), 'em todos os projetos')}
-            ${kpi('Riscos abertos', rows.reduce((a, r) => a + r.risks, 0), 'registro de riscos do PMO')}
+            ${kpi(state.closed ? 'Projetos' : 'Projetos ativos', rows.length, `% médio concluído: ${avg}%`, 'all', '#3b82f6')}
+            ${kpi('<span class="pmo-health pmo-health-green"></span>No prazo', count('green'), state.health === 'green' ? 'filtrando a tabela' : 'real em dia com o planejado', 'green', '#22c55e')}
+            ${kpi('<span class="pmo-health pmo-health-yellow"></span>Atenção', count('yellow'), 'desvio 5–15 p.p. ou tarefas atrasadas', 'yellow', '#f59e0b')}
+            ${kpi('<span class="pmo-health pmo-health-red"></span>Atrasados', count('red'), 'desvio > 15 p.p. ou prazo vencido', 'red', '#ef4444')}
+            ${kpi('Tarefas atrasadas', rows.reduce((a, r) => a + r.overdue, 0), 'em todos os projetos', 'overdue', '#ef4444')}
+            ${kpi('Riscos abertos', rows.reduce((a, r) => a + r.risks, 0), 'registro de riscos do PMO', 'risks', '#f97316')}
         </div>
         <div class="row g-3 mb-3">
             <div class="col-md-4"><div class="card h-100"><div class="card-header"><h3 class="card-title">Por estado</h3></div><div class="card-body"><div class="pmo-chart" style="height:220px" id="p-state"></div></div></div></div>
@@ -99,6 +99,50 @@
         draw();
     }
 
+    // resumo de um cartão no painel lateral (drawer.js)
+    function summary(key) {
+        if (!window.OakDrawer) return;
+        const today = new Date().toISOString().slice(0, 10);
+        const health = (r) => `<span class="pmo-health pmo-health-${r.health.code}"></span>`;
+        const item = (r, val, sub, cls = '') => `<div class="oak-dr-item ${cls}" style="--oc:${HEALTH_COLORS[r.health.code]}"><div class="oak-dr-row">${health(r)}<a href="${r.pmo}"><b>${esc(r.code || '')}</b></a><span class="oak-dr-name">${esc(r.name)}</span><span class="oak-dr-val">${val}</span></div><div class="oak-dr-sub">${sub}</div>
+            <div class="oak-dr-bar"><i style="width:${Math.min(100, r.actual)}%"></i>${r.planned !== null ? `<em style="left:${Math.min(100, r.planned)}%"></em>` : ''}</div></div>`;
+        const base = (r) => `${esc(r.health.label)} · ${esc(r.manager || 'sem gerente')} · real ${Math.round(r.actual)}%${r.planned !== null ? ` / planejado ${Math.round(r.planned)}%` : ''} · fim ${fmt(r.end)}${r.end && r.end < today && r.health.code !== 'done' ? ' <b class="text-danger">vencido</b>' : ''}`;
+        const filterBtn = (code) => `<div class="oak-dr-foot"><button type="button" class="btn btn-outline-primary" data-apply="${code}"><i class="ti ti-filter me-1"></i>${state.health === code ? 'Tirar o filtro da tabela' : 'Filtrar a tabela por esta saúde'}</button></div>`;
+        const lead = (t) => `<p class="oak-dr-lead">${t}</p>`;
+        const empty = '<div class="oak-dr-empty">Nenhum projeto.</div>';
+        let title, icon, color, html;
+        if (['green', 'yellow', 'red'].includes(key)) {
+            const list = rows.filter((r) => r.health.code === key).sort((a, b) => (a.actual - (a.planned ?? a.actual)) - (b.actual - (b.planned ?? b.actual)));
+            [title, icon, color] = [{green: 'No prazo', yellow: 'Atenção', red: 'Atrasados'}[key], {green: 'ti-circle-check', yellow: 'ti-alert-triangle', red: 'ti-alarm'}[key], HEALTH_COLORS[key]];
+            html = lead(`${list.length} projeto(s). A barra é o % real; o traço amarelo é o planejado para hoje.`) + `<div class="oak-dr-list">${list.map((r) => item(r, `${r.overdue}/${r.tasks}`, base(r) + (r.risks ? ` · ${r.risks} risco(s)` : ''))).join('') || empty}</div>` + filterBtn(key);
+        } else if (key === 'overdue') {
+            const list = rows.filter((r) => r.overdue).sort((a, b) => b.overdue - a.overdue);
+            [title, icon, color] = ['Tarefas atrasadas', 'ti-clock-exclamation', '#ef4444'];
+            html = lead(`${list.reduce((a, r) => a + r.overdue, 0)} tarefa(s) atrasada(s) em ${list.length} projeto(s), do que tem mais para o que tem menos.`)
+                + `<div class="oak-dr-list">${list.map((r) => item(r, `${r.overdue} de ${r.tasks}`, base(r), 'bad')).join('') || empty}</div>`;
+        } else if (key === 'risks') {
+            const list = rows.filter((r) => r.risks).sort((a, b) => b.risks - a.risks);
+            [title, icon, color] = ['Riscos abertos', 'ti-alert-triangle', '#f97316'];
+            html = lead(`${list.reduce((a, r) => a + r.risks, 0)} risco(s) aberto(s) em ${list.length} projeto(s). Clique no projeto e abra a aba Riscos.`)
+                + `<div class="oak-dr-list">${list.map((r) => item(r, `${r.risks}`, base(r), 'warn')).join('') || empty}</div>`;
+        } else {
+            const list = [...rows].sort((a, b) => HEALTH[a.health.code][1] - HEALTH[b.health.code][1]);
+            const by = (c) => rows.filter((r) => r.health.code === c).length;
+            [title, icon, color] = [state.closed ? 'Projetos' : 'Projetos ativos', 'ti-briefcase', '#3b82f6'];
+            html = `<div class="oak-dr-stats"><div style="--sc:#22c55e"><small>No prazo</small><b>${by('green')}</b></div><div style="--sc:#f59e0b"><small>Atenção</small><b>${by('yellow')}</b></div><div style="--sc:#ef4444"><small>Atrasados</small><b>${by('red')}</b></div><div style="--sc:#64748b"><small>Concluídos</small><b>${by('done')}</b></div></div>`
+                + lead('Do mais crítico para o mais tranquilo.') + `<div class="oak-dr-list">${list.map((r) => item(r, `${Math.round(r.actual)}%`, base(r))).join('') || empty}</div>`;
+        }
+        const wrap = document.createElement('div');
+        wrap.innerHTML = html;
+        wrap.querySelector('[data-apply]')?.addEventListener('click', (ev) => {
+            const code = ev.currentTarget.dataset.apply;
+            state.health = state.health === code ? '' : code;
+            OakDrawer.close();
+            render();
+        });
+        OakDrawer.open({title, icon, color, node: wrap});
+    }
+
     const th = (k, label) => `<th style="cursor:pointer" data-sort="${k}">${label}${state.sort === k ? ` <i class="ti ti-arrow-${state.dir > 0 ? 'down' : 'up'}"></i>` : ''}</th>`;
 
     function bind(list) {
@@ -109,7 +153,10 @@
             const n = app.querySelector('[data-q]'); n.focus(); n.setSelectionRange(n.value.length, n.value.length);
         });
         app.querySelectorAll('[data-f]').forEach((s) => s.addEventListener('change', () => { state[s.dataset.f] = s.value; render(); }));
-        app.querySelectorAll('[data-hf]').forEach((k) => k.addEventListener('click', () => { state.health = state.health === k.dataset.hf ? '' : k.dataset.hf; render(); }));
+        app.querySelectorAll('[data-dr]').forEach((k) => {
+            k.addEventListener('click', () => summary(k.dataset.dr));
+            k.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); summary(k.dataset.dr); } });
+        });
         app.querySelector('[data-closed]').addEventListener('change', (e) => { state.closed = e.target.checked; load(); });
         app.querySelectorAll('[data-sort]').forEach((h) => h.addEventListener('click', () => {
             state.dir = state.sort === h.dataset.sort ? -state.dir : 1;
