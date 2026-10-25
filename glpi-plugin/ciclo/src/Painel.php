@@ -127,7 +127,7 @@ class Painel
             . "<div class='card-body'><div class='cf-chart' id='$id' style='height:{$h}px'></div></div></div></div>";
         echo "<div class='row g-3 mb-3'>";
         echo $card('cf-c-phase', 'ti-hourglass', 'Tempo médio por fase × SLO', 'Dias de cada fase concluída no período. A faixa clara é o prazo (SLO); vermelho passou do prazo.', 'col-xl-7', max(420, count($phase['names']) * 34 + 80));
-        echo $card('cf-c-now', 'ti-map-pin', 'Onde os Ciclos estão agora', count($open) . ' em andamento, por fase atual · vermelho = parado além do SLO', 'col-xl-5', max(420, count($phase['names']) * 34 + 80));
+        echo "<div class='col-xl-5'>" . self::pipeline($etapas, $active, count($open), count($late)) . "</div>";
         echo $card('cf-c-month', 'ti-chart-line', 'Ciclo médio por mês de conclusão', "Dias do aviso de fechamento ao recebimento, contra a meta de $meta dias", 'col-12', 300);
         echo "</div>";
 
@@ -243,5 +243,61 @@ class Painel
         echo "<script type='application/json' id='cf-data'>" . json_encode(['phase' => $phase, 'now' => $now, 'month' => $month], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) . "</script>";
         echo Menu::script('painel.js');
         echo "</div>";
+    }
+
+    /**
+     * Onde os Ciclos estão agora: a esteira das fases (cada marca é uma fase; o número
+     * em cima é quantos Ciclos estão nela) e, embaixo, cada Ciclo na sua fase com os
+     * dias na fase contra o SLO. Atrasados em vermelho.
+     */
+    private static function pipeline(array $etapas, array $active, int $open, int $late): string
+    {
+        $e = [Menu::class, 'e'];
+        $steps = array_values(array_filter($etapas, fn ($et) => $et['code'] !== 'aviso' && $et['is_active']));
+        $byCode = [];
+        foreach ($active as $f) {
+            $byCode[$f['code']][] = $f;
+        }
+        $h = "<div class='card h-100 cf-chart-card'><div class='card-header'><div><h3 class='card-title'><i class='ti ti-route me-2'></i>Onde os Ciclos estão agora</h3>"
+            . "<div class='small text-secondary'>$open em andamento · " . ($late ? "<span class='text-danger fw-bold'>$late parado(s) além do SLO</span>" : 'todos dentro do SLO') . "</div></div></div><div class='card-body'>";
+        if (!$active) {
+            return $h . "<div class='cf-empty' style='height:240px'><i class='ti ti-route'></i>Nenhum Ciclo em andamento.</div></div></div>";
+        }
+
+        // esteira: uma marca por fase, com o número de Ciclos e a cor do pior caso
+        $h .= "<div class='cf-pipe'><div class='cf-pipe-track'>";
+        $n = count($steps);
+        foreach ($steps as $i => $et) {
+            $here = $byCode[$et['code']] ?? [];
+            $bad = array_filter($here, fn ($f) => Fase::isLate($f));
+            $cls = $here ? ($bad ? 'bad' : 'ok') : '';
+            $h .= "<div class='cf-pipe-step $cls' title='" . $e(($i + 1) . '. ' . $et['name'] . ($here ? ' · ' . count($here) . ' Ciclo(s)' : '')) . "' style='left:" . round(100 * $i / max(1, $n - 1), 2) . "%'>"
+                . ($here ? "<b>" . count($here) . "</b>" : '') . "<i></i></div>";
+        }
+        $h .= "</div><div class='cf-pipe-ends'><span>Validação</span><span>Compra e entrega</span><span>Recebimento</span></div></div>";
+
+        // Ciclos agrupados pela fase, na ordem do processo
+        $h .= "<div class='cf-pipe-list'>";
+        foreach ($steps as $i => $et) {
+            $here = $byCode[$et['code']] ?? [];
+            if (!$here) {
+                continue;
+            }
+            usort($here, fn ($a, $b) => Fase::elapsed($b) <=> Fase::elapsed($a));
+            $h .= "<div class='cf-pipe-group'><div class='cf-pipe-phase'><span class='cf-pipe-num'>" . ($i + 1) . "</span><b>" . $e($et['name']) . "</b><span class='text-secondary'>" . $e(Fase::area($here[0])) . "</span></div>";
+            foreach ($here as $f) {
+                $isLate = Fase::isLate($f);
+                $slo = (int) $f['slo_days'];
+                $secs = Fase::elapsed($f);
+                $pct = $slo ? min(100, round(100 * $secs / ($slo * 86400))) : 0;
+                $over = $slo && $isLate ? '+' . Menu::days($secs - $slo * 86400) . 'd além' : ($slo ? 'faltam ' . Menu::days(max(0, $slo * 86400 - $secs)) . 'd' : 'sem SLO');
+                $h .= "<a class='cf-pipe-ciclo" . ($isLate ? ' bad' : '') . "' href='" . $e(Ciclo::getFormURLWithID((int) $f['ciclo']['id'])) . "'>"
+                    . "<span class='cf-pipe-code'>" . $e(Ciclo::code((int) $f['ciclo']['id'])) . "</span><span class='cf-pipe-name'>" . $e($f['ciclo']['name']) . "<small>" . $e($f['ciclo']['customer']) . "</small></span>"
+                    . "<span class='cf-pipe-time'><b>" . Menu::days($secs) . "d</b>" . ($slo ? " / $slo" : '') . "<small>$over</small></span>"
+                    . ($slo ? "<span class='cf-pipe-bar'><i style='width:$pct%'></i></span>" : '') . "</a>";
+            }
+            $h .= "</div>";
+        }
+        return $h . "</div></div></div>";
     }
 }

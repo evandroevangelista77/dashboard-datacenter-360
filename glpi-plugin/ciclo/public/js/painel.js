@@ -102,30 +102,6 @@
             ],
         }, p.count.some((v) => v), 'O tempo de cada fase aparece quando os primeiros Ciclos concluírem fases.');
 
-        // 2) onde estão agora: só as fases com Ciclos; azul no prazo, vermelho parado além do SLO
-        const n = d.now;
-        const maxNow = Math.max(3, ...n.ok.map((v, i) => v + n.late[i]));
-        // altura pela quantidade de fases com Ciclo, antes de desenhar
-        const nowNode = document.getElementById('cf-c-now');
-        if (nowNode && n.names.length) nowNode.style.height = `${Math.max(260, n.names.length * 52 + 70)}px`;
-        mk('cf-c-now', {
-            grid: {left: LABEL_W, right: 44, top: 42, bottom: 28},
-            legend,
-            tooltip: {...tip, trigger: 'axis', axisPointer: {type: 'shadow', shadowStyle: {color: 'rgba(148,163,184,.06)'}}, formatter: (ps) => {
-                const i = ps[0].dataIndex;
-                return head(n.names[i]) + n.list[i].map((c) => `<div style="display:flex;gap:10px;justify-content:space-between;margin:3px 0">${dot(c.late ? '#ef4444' : '#3b82f6')}<span style="flex:1"><b>${esc(c.code)}</b> <span style="color:${muted}">${esc(c.name)}</span></span><b style="color:${c.late ? '#ef4444' : text}">${esc(c.days)}d${c.slo ? ' / ' + c.slo : ''}</b></div>`).join('');
-            }},
-            xAxis: {type: 'value', minInterval: 1, max: maxNow, ...axis},
-            yAxis: {...catAxis, data: n.names},
-            series: [
-                {name: 'No prazo', type: 'bar', stack: 'x', barWidth: 20, data: n.ok.map((v) => v || null), itemStyle: {color: grad('#2563eb', '#60a5fa'), borderRadius: 8}},
-                {name: 'Além do SLO', type: 'bar', stack: 'x', barWidth: 20, data: n.late.map((v) => v || null), itemStyle: {color: grad('#dc2626', '#f87171'), borderRadius: 8},
-                    label: {show: false}},
-                {type: 'scatter', symbolSize: 0, silent: true, data: n.ok.map((v, i) => [v + n.late[i], i]),
-                    label: {show: true, position: 'right', distance: 10, color: text, fontWeight: 700, fontSize: 14, formatter: (x) => `${n.ok[x.dataIndex] + n.late[x.dataIndex]}`}},
-            ],
-        }, n.names.length, 'Nenhum Ciclo em andamento.');
-
         // 3) ciclo médio por mês × meta: linha com área, barras com a quantidade e a meta tracejada
         const m = d.month;
         mk('cf-c-month', {

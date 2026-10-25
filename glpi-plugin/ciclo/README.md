@@ -44,7 +44,7 @@ Um Ciclo tem quantos itens quiser de cada tipo, com valor e datas: **pedidos do 
 
 ## Painel do Ciclo
 
-**Cada cartão abre um resumo num painel lateral** (Ciclos em andamento com os atrasados primeiro, concluídos, ciclo médio contra a meta, % no SLO por fase, devoluções com o motivo e parcelas a receber). Indicadores (em andamento, concluídos, **ciclo médio**, **% de fases no SLO**, devoluções e **valores a receber**), **tempo médio de cada fase × SLO**, **onde os Ciclos estão agora**, **ciclo médio por mês contra a meta** (a soma dos SLOs), **fases atrasadas agora** e **o que está com a minha área** (ou comigo, como GP/OTC). Filtro de 3, 6, 12 ou 24 meses.
+**Cada cartão abre um resumo num painel lateral** (Ciclos em andamento com os atrasados primeiro, concluídos, ciclo médio contra a meta, % no SLO por fase, devoluções com o motivo e parcelas a receber). Indicadores (em andamento, concluídos, **ciclo médio**, **% de fases no SLO**, devoluções e **valores a receber**), **tempo médio de cada fase × SLO**, **onde os Ciclos estão agora** (uma esteira das fases com cada Ciclo e os dias na fase contra o SLO), **ciclo médio por mês contra a meta** (a soma dos SLOs), **fases atrasadas agora** e **o que está com a minha área** (ou comigo, como GP/OTC). Filtro de 3, 6, 12 ou 24 meses.
 
 ## Permissões (Administração → Perfis → aba Ciclo Financeiro)
 
@@ -78,6 +78,7 @@ No Ciclo, um **Gantt** mostra cada passagem pelas fases no tempo (verde no prazo
 
 ## Versões
 
+- **1.0.1**: “Onde os Ciclos estão agora” virou uma esteira do processo (cada Ciclo na sua fase, com dias contra o SLO); gráficos com texto maior e fases alinhadas à esquerda.
 - **1.0.0**: primeira versão (fase 1, piloto sem integrações).
 
 ## Licença

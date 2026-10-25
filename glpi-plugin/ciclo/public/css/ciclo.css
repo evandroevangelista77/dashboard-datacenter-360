@@ -149,6 +149,40 @@
 .cf-kpi-btn:hover .cf-kpi-more, .cf-kpi-btn:focus-visible .cf-kpi-more { opacity: 1; }
 .cf-chart-card .card-header { align-items: flex-start; }
 .cf-chart-card .card-title { margin-bottom: .15rem; }
+/* esteira: onde os Ciclos estão agora */
+.cf-pipe { padding: 1.6rem .6rem .2rem; }
+.cf-pipe-track { position: relative; height: 26px; margin: 0 6px; }
+.cf-pipe-track::before { content: ''; position: absolute; left: 0; right: 0; top: 12px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, #3b82f6, #14b8a6 55%, #22c55e); opacity: .35; }
+.cf-pipe-step { position: absolute; top: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
+.cf-pipe-step i { width: 12px; height: 12px; margin-top: 7px; border-radius: 50%; background: var(--tblr-bg-surface); border: 2px solid color-mix(in srgb, var(--tblr-secondary-color) 70%, transparent); }
+.cf-pipe-step.ok i, .cf-pipe-step.bad i { width: 18px; height: 18px; margin-top: 4px; border: 0; background: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, .25); }
+.cf-pipe-step.bad i { background: #ef4444; box-shadow: 0 0 0 4px rgba(239, 68, 68, .28); }
+.cf-pipe-step b { position: absolute; top: -20px; font-size: .78rem; font-weight: 800; color: #3b82f6; }
+.cf-pipe-step.bad b { color: #ef4444; }
+.cf-pipe-ends { display: flex; justify-content: space-between; font-size: .72rem; color: var(--tblr-secondary-color); margin-top: .3rem; text-transform: uppercase; letter-spacing: .04em; }
+.cf-pipe-list { display: flex; flex-direction: column; gap: .9rem; margin-top: 1.2rem; }
+.cf-pipe-phase { display: flex; align-items: center; gap: .5rem; font-size: .9rem; margin-bottom: .4rem; }
+.cf-pipe-phase .text-secondary { font-size: .78rem; margin-left: auto; }
+.cf-pipe-num { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: .72rem; font-weight: 700;
+    background: var(--tblr-bg-surface-secondary); border: 1px solid var(--tblr-border-color); color: var(--tblr-secondary-color); }
+.cf-pipe-ciclo { position: relative; display: grid; grid-template-columns: auto 1fr auto; gap: .2rem .8rem; align-items: center; padding: .55rem .8rem .7rem; margin-left: 30px; margin-bottom: .4rem;
+    border-radius: 10px; border: 1px solid var(--tblr-border-color); border-left: 4px solid #3b82f6; background: color-mix(in srgb, var(--tblr-bg-surface-secondary) 55%, transparent); color: inherit; text-decoration: none; transition: border-color .15s, transform .15s; }
+.cf-pipe-ciclo:hover { transform: translateX(3px); border-color: color-mix(in srgb, #3b82f6 60%, var(--tblr-border-color)); color: inherit; }
+.cf-pipe-ciclo.bad { border-left-color: #ef4444; }
+.cf-pipe-ciclo.bad:hover { border-color: color-mix(in srgb, #ef4444 60%, var(--tblr-border-color)); }
+.cf-pipe-code { font-weight: 800; font-size: .85rem; color: #60a5fa; }
+.cf-pipe-ciclo.bad .cf-pipe-code { color: #f87171; }
+.cf-pipe-name { min-width: 0; font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cf-pipe-name small { display: block; font-size: .74rem; color: var(--tblr-secondary-color); }
+.cf-pipe-time { text-align: right; font-size: .8rem; color: var(--tblr-secondary-color); white-space: nowrap; }
+.cf-pipe-time b { font-size: 1rem; color: var(--tblr-body-color); }
+.cf-pipe-ciclo.bad .cf-pipe-time b { color: #ef4444; }
+.cf-pipe-time small { display: block; font-size: .72rem; }
+.cf-pipe-ciclo.bad .cf-pipe-time small { color: #ef4444; font-weight: 600; }
+.cf-pipe-bar { position: absolute; left: .8rem; right: .8rem; bottom: .3rem; height: 3px; border-radius: 2px; background: color-mix(in srgb, var(--tblr-border-color) 70%, transparent); }
+.cf-pipe-bar i { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: #3b82f6; }
+.cf-pipe-ciclo.bad .cf-pipe-bar i { background: #ef4444; }
+
 /* painel lateral */
 .cf-drawer-backdrop { position: fixed; inset: 0; z-index: 1060; background: rgba(2, 6, 23, .55); backdrop-filter: blur(2px); opacity: 0; transition: opacity .25s; }
 .cf-drawer-backdrop.on { opacity: 1; }
