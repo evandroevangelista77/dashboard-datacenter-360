@@ -19,7 +19,7 @@ Plugin do GLPI 12.0.x para técnicos lançarem as despesas de atendimentos exter
 
 ## Onde fica
 
-Seção **Financeiro** do menu lateral, logo abaixo de PMO: *Reembolsos*, *Dashboard de reembolsos* e, para quem tem acesso, *Tipos de despesa*, *Centros de custo* e *Configuração de reembolsos*. Também há a aba **Reembolsos** em cada chamado.
+Seção **Reembolso** do menu lateral, logo abaixo de PMO: *Reembolsos*, *Dashboard de reembolsos* e, para quem tem acesso, *Tipos de despesa*, *Centros de custo* e *Configuração de reembolsos*. Também há a aba **Reembolsos** em cada chamado.
 
 ## Requisitos
 
@@ -44,11 +44,11 @@ A instalação cria os 30 tipos de despesa, 5 centros de custo de exemplo, o val
 
 ## Uso
 
-1. **Financeiro → Reembolsos → +** (ou pela aba *Reembolsos* de um chamado): preencha técnico, centro de custo, localização e período e clique em **Criar e lançar despesas**.
+1. **Reembolso → Reembolsos → +** (ou pela aba *Reembolsos* de um chamado): preencha técnico, centro de custo, localização e período e clique em **Criar e lançar despesas**.
 2. **Lançar despesa** para cada gasto. Na quilometragem, informe origem e destino e clique em **Calcular KM pela rota**, ou preencha o KM inicial e o final do odômetro.
 3. Anexe os comprovantes na aba **Documentos** e clique em **Enviar para aprovação**.
 4. O aprovador abre a solicitação, **aprova** ou **recusa** e, depois, **marca como pago**.
-5. **Financeiro → Dashboard de reembolsos** para acompanhar e **Exportar XLSX**.
+5. **Reembolso → Dashboard de reembolsos** para acompanhar e **Exportar XLSX**.
 
 ## Configuração
 
@@ -64,12 +64,13 @@ Tabelas: `glpi_plugin_reembolso_reembolsos`, `_despesas`, `_tipodespesas`, `_cen
 
 - **Aprovador definido por centro de custo** e tela **"Minhas aprovações"**.
 - **Avisos por e-mail** pelas notificações do GLPI: envio para quem aprova; aprovação, recusa e pagamento para o técnico e quem lançou.
-- **Sino, pop-up e Teams** com o plugin [Avisos](../avisos): os mesmos eventos no GLPI e no canal do Teams do Financeiro.
+- **Sino, pop-up e Teams** com o plugin [Avisos](../avisos): os mesmos eventos no GLPI e no canal do Teams do Reembolso.
 - **Geração opcional de um chamado** para cada reembolso, para o financeiro trabalhar pela fila da Assistência.
 - Pesquisa por **despesa** na lista (tipo de despesa, acima do limite).
 
 ## Versões
 
+- **1.1.2**: a seção do menu lateral passa a se chamar **Reembolso** (antes Financeiro).
 - **1.1.1**: os cartões do Dashboard abrem um resumo no painel lateral (solicitações por situação, aguardando há quantos dias, a pagar, pagos, KM por técnico e trajetos, média por técnico e despesas acima do limite).
 - **1.1.0**: e-mails do fluxo (enviado para aprovação, aprovado, recusado e pago) em Configurar → Notificações, e avisos no sino, pop-up e Teams com o plugin Avisos.
 - **1.0.1**: título e subtítulo nas telas (Reembolsos, Dashboard, Configuração e solicitação), explicando para que serve a página; atalhos para o Dashboard e Nova solicitação na lista.

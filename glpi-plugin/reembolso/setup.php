@@ -19,7 +19,7 @@ use GlpiPlugin\Reembolso\Reembolso;
 use GlpiPlugin\Reembolso\TicketTab;
 use GlpiPlugin\Reembolso\Tipodespesa;
 
-define('PLUGIN_REEMBOLSO_VERSION', '1.1.1');
+define('PLUGIN_REEMBOLSO_VERSION', '1.1.2');
 define('PLUGIN_REEMBOLSO_MIN_GLPI', '12.0.0');
 define('PLUGIN_REEMBOLSO_MAX_GLPI', '12.0.99');
 
@@ -41,7 +41,7 @@ function plugin_init_reembolso(): void
         $_SESSION['glpiactiveprofile'][Reembolso::$rightname] = (int) ($rights[Reembolso::$rightname] ?? 0);
     }
 
-    // seção "Financeiro" no menu lateral (abaixo de PMO): Reembolsos e Dashboard de reembolsos
+    // seção "Reembolso" no menu lateral (abaixo de PMO): Reembolsos e Dashboard de reembolsos
     $PLUGIN_HOOKS[Hooks::MENU_TOADD]['reembolso']     = [Menu::SECTOR => [Reembolso::class, Dashboard::class]];
     $PLUGIN_HOOKS[Hooks::REDEFINE_MENUS]['reembolso'] = 'plugin_reembolso_redefine_menus';
     $PLUGIN_HOOKS[Hooks::ADD_CSS]['reembolso']    = ['css/reembolso.css'];
@@ -49,7 +49,7 @@ function plugin_init_reembolso(): void
 }
 
 /**
- * Aplicado a cada desenho do menu: dá título e ícone à seção Financeiro, põe logo
+ * Aplicado a cada desenho do menu: dá título e ícone à seção Reembolso, põe logo
  * abaixo de PMO (ou de Dashboard), acrescenta os cadastros e a configuração e
  * funciona mesmo com o menu guardado na sessão antes do plugin (ou da versão antiga,
  * que ficava em Gerência).
@@ -67,7 +67,7 @@ function plugin_reembolso_redefine_menus(array $menu): array
         return $menu;
     }
     $section = [Menu::SECTOR => [
-        'title'   => 'Financeiro',
+        'title'   => 'Reembolso',
         'icon'    => 'ti ti-coin',
         'types'   => [Reembolso::class, Dashboard::class],
         'content' => $content,

@@ -17,7 +17,7 @@ class Canal extends CommonDBTM
     public const SOURCES = [
         'rh'        => ['RH', 'ti-users-group', '#ec4899'],
         'pmo'       => ['PMO', 'ti-briefcase', '#3b82f6'],
-        'reembolso' => ['Financeiro (Reembolso)', 'ti-receipt-2', '#22c55e'],
+        'reembolso' => ['Reembolso', 'ti-receipt-2', '#22c55e'],
         'ciclo'     => ['Ciclo Financeiro', 'ti-recycle', '#14b8a6'],
     ];
 

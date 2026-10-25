@@ -9,7 +9,7 @@ use Throwable;
 
 /**
  * Avisos do reembolso: e-mail pelas notificações do GLPI e, com o plugin "Avisos",
- * sino, pop-up e o canal do Teams do Financeiro.
+ * sino, pop-up e o canal do Teams do Reembolso.
  */
 class Avisos
 {

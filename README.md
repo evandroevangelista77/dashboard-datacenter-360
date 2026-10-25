@@ -317,7 +317,7 @@ Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](gl
 
 ## Reembolso de despesas (plugin)
 
-[`glpi-plugin/reembolso`](glpi-plugin/reembolso) traz para o GLPI 12 o lançamento e a aprovação das despesas de técnicos em atendimentos externos, numa seção **Financeiro** do menu lateral:
+[`glpi-plugin/reembolso`](glpi-plugin/reembolso) traz para o GLPI 12 o lançamento e a aprovação das despesas de técnicos em atendimentos externos, numa seção **Reembolso** do menu lateral:
 
 - **Solicitação de reembolso** com técnico, centro de custo, chamado do atendimento, localização, local do atendimento, período e justificativa (código `RB-00001`).
 - **30 tipos de despesa** já cadastrados, cada um com limite por lançamento e exigência de comprovante: quilometragem, combustível, pedágio, estacionamento, refeições, hospedagem, táxi ou aplicativo, passagens, locação de veículo, peças, ferramentas, frete, diária etc.
@@ -331,7 +331,7 @@ Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](gl
 Baixe `oak-reembolso-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
 
 ```bash
-unzip oak-reembolso-completo-1.1.1.zip && cd oak-reembolso-completo
+unzip oak-reembolso-completo-1.1.2.zip && cd oak-reembolso-completo
 sudo bash instalar.sh
 ```
 
@@ -389,7 +389,7 @@ O pacote não traz dados de exemplo. Fases, permissões e primeiros passos: [`gl
 
 - **Sino** no topo da tela, com os não lidos e os últimos avisos, e a página **Meus avisos**.
 - **Pop-up** no canto da tela em até 1 minuto; pendências (aprovar, atraso, risco) ficam até fechar.
-- **Microsoft Teams**: cartão no canal de cada plugin (RH, PMO e Financeiro) por webhook do Workflows, com os detalhes, quem precisa agir e o botão **Abrir no GLPI**; reenvio automático se o Teams não responder.
+- **Microsoft Teams**: cartão no canal de cada plugin (RH, PMO, Reembolso e Ciclo Financeiro) por webhook do Workflows, com os detalhes, quem precisa agir e o botão **Abrir no GLPI**; reenvio automático se o Teams não responder.
 
 Avisa cada etapa da vaga ao solicitante, aprovações pendentes, candidatos mudando de etapa, admissões, férias, reembolsos (enviado, aprovado, recusado, pago), tarefas atrasadas, riscos críticos e sprints.
 
@@ -398,7 +398,7 @@ Avisa cada etapa da vaga ao solicitante, aprovações pendentes, candidatos muda
 Baixe `oak-avisos-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
 
 ```bash
-unzip oak-avisos-completo-1.1.0.zip && cd oak-avisos-completo
+unzip oak-avisos-completo-1.1.1.zip && cd oak-avisos-completo
 sudo bash instalar.sh
 ```
 

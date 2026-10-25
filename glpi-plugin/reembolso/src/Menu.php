@@ -7,10 +7,10 @@ namespace GlpiPlugin\Reembolso;
  */
 class Menu
 {
-    /** Chave da seção "Financeiro" no menu lateral. */
+    /** Chave da seção "Reembolso" (chave interna: financeiro) no menu lateral. */
     public const SECTOR = 'financeiro';
 
-    /** Itens da seção Financeiro conforme os direitos do usuário. */
+    /** Itens da seção Reembolso conforme os direitos do usuário. */
     public static function content(): array
     {
         $items = [];
@@ -61,7 +61,7 @@ class Menu
     ];
 
     /** Cabeçalho das páginas: seção, título, subtítulo e botões à direita. */
-    public static function title(string $title, string $key, string $actions = '', string $crumb = 'Financeiro'): string
+    public static function title(string $title, string $key, string $actions = '', string $crumb = 'Reembolso'): string
     {
         $e = fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);
         return "<div class='rb-title'><div><div class='rb-crumb'>" . $e($crumb) . "</div><h2>" . $e($title) . "</h2>"

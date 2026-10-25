@@ -54,6 +54,7 @@ Tabelas `glpi_plugin_avisos_avisos`, `_canals` e `_filas`. Avisos lidos são apa
 
 ## Versões
 
+- **1.1.1**: o canal do Teams do reembolso passa a se chamar **Reembolso**.
 - **1.1.0**: canal do Ciclo Financeiro; corrige o link “Ver todos os avisos” do sino.
 - **1.0.0**: primeira versão.
 

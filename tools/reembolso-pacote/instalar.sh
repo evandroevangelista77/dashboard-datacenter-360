@@ -62,5 +62,5 @@ else
 fi
 
 echo
-ok "Pronto. No GLPI: menu lateral → Financeiro → Reembolsos (ou a aba \"Reembolsos\" de um chamado)."
+ok "Pronto. No GLPI: menu lateral → Reembolso → Reembolsos (ou a aba \"Reembolsos\" de um chamado)."
 echo "  Quem já estava logado precisa sair e entrar de novo para ver o menu."

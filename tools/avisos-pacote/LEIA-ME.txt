@@ -7,7 +7,7 @@ Quem precisa agir ou acompanhar recebe o aviso, além do e-mail do GLPI:
 - Sino no topo da tela: não lidos e os últimos avisos; clique abre o item
 - Pop-up no canto da tela em até 1 minuto (pendências ficam até fechar)
 - Página "Meus avisos", com filtro por plugin e por não lidos
-- Microsoft Teams: cartão no canal de cada plugin (RH, PMO e Financeiro),
+- Microsoft Teams: cartão no canal de cada plugin (RH, PMO, Reembolso e Ciclo Financeiro),
   com os detalhes, quem precisa agir e o botão "Abrir no GLPI"
 
 O que é avisado:
@@ -48,7 +48,7 @@ TEAMS
 1) No canal do Teams: ⋯ > Workflows > "Postar em um canal quando uma
    solicitação de webhook for recebida". Copie a URL gerada.
 2) GLPI: Configurar > Plugins > Avisos. Cole a URL na linha do plugin
-   (RH, PMO ou Financeiro), ligue e salve.
+   (RH, PMO, Reembolso ou Ciclo Financeiro), ligue e salve.
 3) Clique em "Testar": chega um cartão de teste no canal.
    Se o Teams não responder, a ação automática "avisosteams" tenta de novo
    a cada 5 minutos (até 5 vezes). O servidor precisa acessar a internet.

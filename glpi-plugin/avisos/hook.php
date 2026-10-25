@@ -44,6 +44,8 @@ function plugin_avisos_install(): bool
             $DB->insert(Canal::getTable(), ['source' => $source, 'name' => $name, 'is_active' => 0, 'date_mod' => $now]);
         }
     }
+    // 1.1.1: o canal "Financeiro (Reembolso)" passou a se chamar "Reembolso"
+    $DB->update(Canal::getTable(), ['name' => Canal::SOURCES['reembolso'][0]], ['source' => 'reembolso', 'name' => 'Financeiro (Reembolso)']);
 
     $current = Config::getConfigurationValues('plugin:avisos');
     Config::setConfigurationValues('plugin:avisos', array_diff_key([

@@ -2,7 +2,7 @@ PLUGIN REEMBOLSO DE DESPESAS PARA GLPI 12 · versão @VERSAO@
 ==============================================
 
 Lançamento e aprovação das despesas de técnicos em atendimentos externos,
-dentro do GLPI 12.0.x (seção "Financeiro" do menu lateral):
+dentro do GLPI 12.0.x (seção "Reembolso" do menu lateral):
 
 - Solicitação de reembolso: técnico, centro de custo, chamado do atendimento,
   localização, local do atendimento, período e justificativa (código RB-00001)
@@ -54,7 +54,7 @@ PRIMEIROS PASSOS
 2) Configurar > Plugins > Reembolso de despesas: valor por KM (padrão R$ 1,20),
    rota automática e exigência de comprovante.
 3) Configurar > Listas suspensas: Tipos de despesa e Centros de custo.
-4) Financeiro > Reembolsos > "+" para lançar; Financeiro > Dashboard de reembolsos
+4) Reembolso > Reembolsos > "+" para lançar; Reembolso > Dashboard de reembolsos
    para acompanhar e exportar.
 
 ATENÇÃO
