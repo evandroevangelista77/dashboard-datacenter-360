@@ -57,12 +57,9 @@ class Dashboard extends CommonGLPI
 
         echo Menu::css();
         echo "<div class='rb'>";
-        echo "<div class='d-flex flex-wrap align-items-end gap-2 mb-3'><div class='me-auto'><div class='text-secondary small text-uppercase fw-bold'>Reembolso de despesas</div><h2 class='m-0'>Dashboard</h2></div>";
-        echo "<a class='btn btn-success' href='" . $e(Menu::url('/front/export.php') . '?' . $query) . "'><i class='ti ti-file-spreadsheet me-1'></i>Exportar XLSX</a>";
-        if (Reembolso::canCreate()) {
-            echo "<a class='btn btn-primary' href='" . $e(Reembolso::getFormURL()) . "'><i class='ti ti-plus me-1'></i>Nova solicitação</a>";
-        }
-        echo "</div>";
+        $actions = "<a class='btn btn-success' href='" . $e(Menu::url('/front/export.php') . '?' . $query) . "'><i class='ti ti-file-spreadsheet me-1'></i>Exportar XLSX</a>"
+            . (Reembolso::canCreate() ? "<a class='btn btn-primary' href='" . $e(Reembolso::getFormURL()) . "'><i class='ti ti-plus me-1'></i>Nova solicitação</a>" : '');
+        echo Menu::title('Dashboard de reembolsos', 'dashboard', $actions);
 
         // filtros
         echo "<form method='get' class='card mb-3'><div class='card-body row g-2 align-items-end'>";

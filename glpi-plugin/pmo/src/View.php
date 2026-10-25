@@ -28,6 +28,25 @@ class View
         'config'    => ['Configuração', 'ti ti-settings'],
     ];
 
+    /** Subtítulo de cada página e de cada aba do projeto: para que serve a tela. */
+    public const SUBTITLES = [
+        'portfolio' => 'Todos os projetos num só lugar: situação, saúde do prazo, progresso e responsáveis. Filtre, ordene e clique num projeto para abrir o quadro, o Gantt e os painéis.',
+        'mywork'    => 'Tarefas abertas em que você está na equipe, em todos os projetos, separadas entre atrasadas, que vencem em 7 dias, próximas e sem prazo.',
+        'setup'     => 'Este projeto ainda não usa o PMO. Escolha a metodologia e as colunas do quadro para ativar o Kanban, o Gantt, as sprints, os painéis, a documentação e os riscos.',
+        'board'     => 'Quadro Kanban das tarefas do projeto: arraste os cartões entre as colunas para atualizar a situação e filtre pelos responsáveis.',
+        'backlog'   => 'Lista priorizada das tarefas ainda não iniciadas. Com sprints, planeje cada ciclo arrastando tarefas do backlog para a sprint, com início, fim e meta.',
+        'gantt'     => 'Cronograma das tarefas no tempo, com dependências e progresso. Arraste a divisória para ver mais nomes ou mais calendário.',
+        'dashboard' => 'Painéis do projeto: progresso, tarefas por situação e responsável, atrasos e, com sprints, burndown e velocidade.',
+        'docs'      => 'Documentação do projeto: páginas em texto rico (como o termo de abertura) e os arquivos anexados ao projeto.',
+        'risks'     => 'Registro de riscos e pendências, com probabilidade, impacto, responsável e plano de ação. A matriz mostra onde estão os riscos abertos.',
+        'config'    => 'Configuração do PMO neste projeto: metodologia, colunas do quadro e os avisos por e-mail de tarefa atrasada, sprint e risco crítico.',
+    ];
+
+    public static function subtitle(string $key): string
+    {
+        return isset(self::SUBTITLES[$key]) ? "<div class='text-secondary small pmo-subtitle'>" . self::e(self::SUBTITLES[$key]) . "</div>" : '';
+    }
+
     public static function e($v): string
     {
         return htmlspecialchars((string) $v, ENT_QUOTES);
@@ -90,7 +109,7 @@ class View
         echo "<div class='pmo'>";
         echo "<div class='pmo-head'>";
         echo "<div><div class='pmo-crumb'><a href='" . self::e(Menu::url('/front/portfolio.php')) . "'><i class='ti ti-briefcase me-1'></i>PMO</a> / projeto</div>";
-        echo "<h2 class='pmo-title'>$code" . self::e($project->getName()) . "</h2><div class='pmo-badges'>$state $method</div></div>";
+        echo "<h2 class='pmo-title'>$code" . self::e($project->getName()) . "</h2><div class='pmo-badges'>$state $method</div>" . self::subtitle($config ? $view : 'setup') . "</div>";
         echo "<div class='pmo-head-actions'><a class='btn btn-outline-secondary btn-sm' href='" . self::e($project->getLinkURL()) . "'><i class='ti ti-external-link me-1'></i>Abrir projeto no GLPI</a></div>";
         echo "</div>";
 
@@ -486,7 +505,7 @@ JS;
     public static function showPortfolio(): void
     {
         echo self::css();
-        echo "<div class='pmo'><div class='pmo-head'><div><div class='pmo-crumb'><i class='ti ti-briefcase me-1'></i>PMO</div><h2 class='pmo-title'>Portfólio de projetos</h2></div>";
+        echo "<div class='pmo'><div class='pmo-head'><div><div class='pmo-crumb'><i class='ti ti-briefcase me-1'></i>PMO</div><h2 class='pmo-title'>Portfólio de projetos</h2>" . self::subtitle('portfolio') . "</div>";
         echo "<div class='pmo-head-actions'><a class='btn btn-primary btn-sm' href='" . self::e(Project::getFormURL()) . "'><i class='ti ti-plus me-1'></i>Novo projeto</a></div></div>";
         self::boot('portfolio', [
             'urls' => ['ajax' => Menu::url('/front/ajax.php')],
@@ -501,8 +520,7 @@ JS;
     {
         $rows = Portfolio::myWork((int) Session::getLoginUserID());
         $groups = ['late' => ['Atrasadas', 'danger'], 'soon' => ['Vencem em 7 dias', 'warning'], 'later' => ['Próximas', 'primary'], 'none' => ['Sem prazo', 'secondary']];
-        echo "<div class='pmo'><div class='pmo-head'><div><div class='pmo-crumb'><i class='ti ti-briefcase me-1'></i>PMO</div><h2 class='pmo-title'>Meu trabalho</h2>"
-            . "<div class='text-secondary small'>Tarefas abertas em que você está na equipe, em todos os projetos.</div></div></div>";
+        echo "<div class='pmo'><div class='pmo-head'><div><div class='pmo-crumb'><i class='ti ti-briefcase me-1'></i>PMO</div><h2 class='pmo-title'>Meu trabalho</h2>" . self::subtitle('mywork') . "</div></div>";
         if (!$rows) {
             echo "<div class='card'><div class='card-body text-secondary'>Nenhuma tarefa aberta atribuída a você. 🎉</div></div></div>";
             return;

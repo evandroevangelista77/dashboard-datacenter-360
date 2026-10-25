@@ -40,3 +40,9 @@
 .rb-kpi-sub { font-size: .76rem; color: var(--tblr-secondary-color); }
 .rb-chart { height: 300px; }
 .rb-empty { height: 100%; display: flex; align-items: center; justify-content: center; color: var(--tblr-secondary-color); font-size: .9rem; }
+
+/* cabeçalho das páginas: seção, título e subtítulo */
+.rb-title { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.rb-title h2 { margin: .1rem 0; }
+.rb-subtitle { max-width: 900px; }
+.rb-crumb { font-size: .74rem; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; color: var(--tblr-secondary-color); }

@@ -233,7 +233,7 @@ Os caminhos do Java e do MPXJ ficam em `glpi_configs` (contexto `plugin:cronogra
 Baixe `oak-pmo-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
 
 ```bash
-unzip oak-pmo-completo-1.1.0.zip && cd oak-pmo-completo
+unzip oak-pmo-completo-1.1.1.zip && cd oak-pmo-completo
 sudo bash instalar.sh
 ```
 
@@ -327,7 +327,7 @@ Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](gl
 Baixe `oak-reembolso-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
 
 ```bash
-unzip oak-reembolso-completo-1.0.0.zip && cd oak-reembolso-completo
+unzip oak-reembolso-completo-1.0.1.zip && cd oak-reembolso-completo
 sudo bash instalar.sh
 ```
 

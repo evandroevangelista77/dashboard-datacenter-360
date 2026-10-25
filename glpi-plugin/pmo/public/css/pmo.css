@@ -224,3 +224,6 @@
     .pmo-g-c-d { display: none; }
     .pmo-col { flex-basis: 250px; }
 }
+
+/* subtítulo: para que serve a tela */
+.pmo-subtitle { max-width: 900px; margin-top: .2rem; }

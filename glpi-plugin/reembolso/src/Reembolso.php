@@ -374,6 +374,7 @@ class Reembolso extends CommonDBTM
         echo "<div class='rb-head-icon'><i class='ti ti-receipt-2'></i></div><div class='me-auto'>";
         echo "<div class='text-secondary small text-uppercase fw-bold'>Solicitação de reembolso</div>";
         echo "<h2 class='m-0'>" . ($new ? 'Nova solicitação' : $e($f['name'])) . "</h2>";
+        echo "<div class='text-secondary small rb-subtitle mt-1'>" . $e(Menu::SUBTITLES[$new ? 'form_new' : 'form']) . "</div>";
         if (!$new) {
             echo "<div class='mt-1'>" . self::statusBadge($status) . "</div>";
         }

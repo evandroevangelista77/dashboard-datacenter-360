@@ -67,6 +67,11 @@ Tabelas: `glpi_plugin_reembolso_reembolsos`, `_despesas`, `_tipodespesas`, `_cen
 - **Geração opcional de um chamado** para cada reembolso, para o financeiro trabalhar pela fila da Assistência.
 - Pesquisa por **despesa** na lista (tipo de despesa, acima do limite).
 
+## Versões
+
+- **1.0.1**: título e subtítulo nas telas (Reembolsos, Dashboard, Configuração e solicitação), explicando para que serve a página; atalhos para o Dashboard e Nova solicitação na lista.
+- **1.0.0**: primeira versão.
+
 ## Licença
 
 GPLv3+, a mesma do GLPI.

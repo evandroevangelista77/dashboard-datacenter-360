@@ -121,6 +121,7 @@ Tabelas criadas: `glpi_plugin_pmo_projects`, `_columns`, `_items`, `_sprints`, `
 
 ## Versões
 
+- **1.1.1**: título e subtítulo em todas as telas (Portfólio, Meu trabalho e cada aba do projeto), explicando para que serve a página.
 - **1.1.0**: avisos por e-mail (sprint iniciada e concluída, risco crítico, tarefa atrasada). Corrige a reinstalação por cima de uma versão já instalada.
 - **1.0.0**: primeira versão.
 
