@@ -63,12 +63,14 @@ Tabelas: `glpi_plugin_reembolso_reembolsos`, `_despesas`, `_tipodespesas`, `_cen
 ## Evoluções em estudo
 
 - **Aprovador definido por centro de custo** e tela **"Minhas aprovações"**.
-- **Avisos por e-mail** pelas notificações do GLPI: envio para o aprovador e aprovação, recusa e pagamento para o técnico.
+- **Avisos por e-mail** pelas notificações do GLPI: envio para quem aprova; aprovação, recusa e pagamento para o técnico e quem lançou.
+- **Sino, pop-up e Teams** com o plugin [Avisos](../avisos): os mesmos eventos no GLPI e no canal do Teams do Financeiro.
 - **Geração opcional de um chamado** para cada reembolso, para o financeiro trabalhar pela fila da Assistência.
 - Pesquisa por **despesa** na lista (tipo de despesa, acima do limite).
 
 ## Versões
 
+- **1.1.0**: e-mails do fluxo (enviado para aprovação, aprovado, recusado e pago) em Configurar → Notificações, e avisos no sino, pop-up e Teams com o plugin Avisos.
 - **1.0.1**: título e subtítulo nas telas (Reembolsos, Dashboard, Configuração e solicitação), explicando para que serve a página; atalhos para o Dashboard e Nova solicitação na lista.
 - **1.0.0**: primeira versão.
 

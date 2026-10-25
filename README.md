@@ -233,7 +233,7 @@ Os caminhos do Java e do MPXJ ficam em `glpi_configs` (contexto `plugin:cronogra
 Baixe `oak-pmo-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
 
 ```bash
-unzip oak-pmo-completo-1.1.1.zip && cd oak-pmo-completo
+unzip oak-pmo-completo-1.2.0.zip && cd oak-pmo-completo
 sudo bash instalar.sh
 ```
 
@@ -297,11 +297,13 @@ Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](gl
 | `glpi-plugin/cronograma/` | Plugin do GLPI: importação de cronograma do MS Project nas tarefas do projeto |
 | `glpi-plugin/pmo/` | Plugin do GLPI: PMO com Gantt, Kanban, sprints, painéis, documentação e riscos |
 | `glpi-plugin/reembolso/` | Plugin do GLPI: reembolso de despesas de técnicos (KM por rota ou odômetro, aprovação, dashboard e XLSX) |
+| `glpi-plugin/avisos/` | Plugin do GLPI: central de avisos (sino, pop-up e Teams) do RH, PMO e Reembolso |
 | `glpi-plugin/rh/` | Plugin do GLPI: RH com recrutamento e seleção (vagas com aprovação, banco de currículo, funil Kanban), admissão, férias e dashboard |
 | `tools/vigia-glpi.sh`, `tools/com.evandro.vigia-glpi.plist` | Vigia que religa a rede da VM do GLPI no VirtualBox (macOS) |
 | `tools/empacotar-pmo.sh`, `tools/pmo-pacote/` | Geração do pacote de release do PMO (instalador e LEIA-ME) |
 | `tools/empacotar-reembolso.sh`, `tools/reembolso-pacote/` | Geração do pacote de release do Reembolso (instalador e LEIA-ME) |
 | `tools/empacotar-rh.sh`, `tools/rh-pacote/` | Geração do pacote de release do RH (instalador e LEIA-ME) |
+| `tools/empacotar-avisos.sh`, `tools/avisos-pacote/` | Geração do pacote de release do Avisos (instalador e LEIA-ME) |
 | `glpi-projetos/criar_campos.py` | Campos extras do cadastro de Projeto (plugin Fields) |
 | `glpi-plugin/datacenter360/` | Plugin do GLPI: seção Dashboard no menu lateral |
 | `logos.js` | Logotipos dos ativos (Simple Icons), gerado por `tools/gerar_logos.sh` |
@@ -327,7 +329,7 @@ Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](gl
 Baixe `oak-reembolso-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
 
 ```bash
-unzip oak-reembolso-completo-1.0.1.zip && cd oak-reembolso-completo
+unzip oak-reembolso-completo-1.1.0.zip && cd oak-reembolso-completo
 sudo bash instalar.sh
 ```
 
@@ -350,11 +352,32 @@ Uso, configuração e permissões: [`glpi-plugin/reembolso/README.md`](glpi-plug
 Baixe `oak-rh-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
 
 ```bash
-unzip oak-rh-completo-1.0.3.zip && cd oak-rh-completo
+unzip oak-rh-completo-1.0.4.zip && cd oak-rh-completo
 sudo bash instalar.sh
 ```
 
 O pacote não traz dados de exemplo. Uso, permissões e primeiros passos: [`glpi-plugin/rh/README.md`](glpi-plugin/rh/README.md). O pacote da release é gerado por `tools/empacotar-rh.sh`.
+
+## Avisos (plugin)
+
+[`glpi-plugin/avisos`](glpi-plugin/avisos) é a central de avisos do RH, do PMO e do Reembolso. Além do e-mail do GLPI, quem precisa agir ou acompanhar recebe:
+
+- **Sino** no topo da tela, com os não lidos e os últimos avisos, e a página **Meus avisos**.
+- **Pop-up** no canto da tela em até 1 minuto; pendências (aprovar, atraso, risco) ficam até fechar.
+- **Microsoft Teams**: cartão no canal de cada plugin (RH, PMO e Financeiro) por webhook do Workflows, com os detalhes, quem precisa agir e o botão **Abrir no GLPI**; reenvio automático se o Teams não responder.
+
+Avisa cada etapa da vaga ao solicitante, aprovações pendentes, candidatos mudando de etapa, admissões, férias, reembolsos (enviado, aprovado, recusado, pago), tarefas atrasadas, riscos críticos e sprints.
+
+### Instalação
+
+Baixe `oak-avisos-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
+
+```bash
+unzip oak-avisos-completo-1.0.0.zip && cd oak-avisos-completo
+sudo bash instalar.sh
+```
+
+Use com RH 1.0.4+, PMO 1.2.0+ e Reembolso 1.1.0+. Configuração do Teams e detalhes: [`glpi-plugin/avisos/README.md`](glpi-plugin/avisos/README.md).
 
 ## Vigia da VM do GLPI (VirtualBox no macOS)
 

@@ -19,6 +19,7 @@ class NotificationTargetFeria extends NotificationTarget
         return [
             'rh_ferias_pendente' => 'RH: férias aguardando o gestor',
             'rh_ferias_decisao'  => 'RH: férias aprovadas ou reprovadas',
+            'rh_ferias_cancelada' => 'RH: férias canceladas',
         ];
     }
 

@@ -1,0 +1,65 @@
+PLUGIN AVISOS PARA GLPI 12 · versão @VERSAO@
+============================================
+
+Central de avisos dos plugins RH, PMO e Reembolso, dentro do GLPI 12.0.x.
+Quem precisa agir ou acompanhar recebe o aviso, além do e-mail do GLPI:
+
+- Sino no topo da tela: não lidos e os últimos avisos; clique abre o item
+- Pop-up no canto da tela em até 1 minuto (pendências ficam até fechar)
+- Página "Meus avisos", com filtro por plugin e por não lidos
+- Microsoft Teams: cartão no canal de cada plugin (RH, PMO e Financeiro),
+  com os detalhes, quem precisa agir e o botão "Abrir no GLPI"
+
+O que é avisado:
+- RH: cada etapa da vaga para o solicitante (envio, aprovações, candidatos
+  mudando de etapa, contratação, encerramento), aprovação pendente para o
+  gestor e a diretoria, admissão criada, férias pedidas / decididas / canceladas
+- Reembolso: enviado (para quem aprova), aprovado, recusado e pago
+- PMO: tarefa atrasada, risco crítico, sprint iniciada e concluída
+
+Versões que mandam avisos: RH 1.0.4+, PMO 1.2.0+ e Reembolso 1.1.0+.
+Sem o Avisos, esses plugins continuam só com o e-mail.
+
+CONTEÚDO
+--------
+  avisos/       o plugin (a pasta precisa se chamar "avisos")
+  instalar.sh   instala ou atualiza tudo de uma vez
+  LEIA-ME.txt   este arquivo
+  LICENSE       GNU GPL versão 3
+
+INSTALAÇÃO AUTOMÁTICA (no servidor do GLPI)
+-------------------------------------------
+   unzip oak-avisos-completo-@VERSAO@.zip
+   cd oak-avisos-completo
+   sudo bash instalar.sh
+
+   GLPI em outro caminho ou com outro administrador:
+   sudo GLPI_DIR=/caminho/do/glpi GLPI_ADMIN=usuario bash instalar.sh
+
+INSTALAÇÃO MANUAL
+-----------------
+   sudo cp -r avisos /var/www/glpi/plugins/
+   sudo chown -R www-data:www-data /var/www/glpi/plugins/avisos
+   sudo -u www-data php /var/www/glpi/bin/console plugin:install --username=glpi avisos
+   sudo -u www-data php /var/www/glpi/bin/console plugin:activate avisos
+
+TEAMS
+-----
+1) No canal do Teams: ⋯ > Workflows > "Postar em um canal quando uma
+   solicitação de webhook for recebida". Copie a URL gerada.
+2) GLPI: Configurar > Plugins > Avisos. Cole a URL na linha do plugin
+   (RH, PMO ou Financeiro), ligue e salve.
+3) Clique em "Testar": chega um cartão de teste no canal.
+   Se o Teams não responder, a ação automática "avisosteams" tenta de novo
+   a cada 5 minutos (até 5 vezes). O servidor precisa acessar a internet.
+
+ATENÇÃO
+-------
+Desinstalar o plugin apaga os avisos e a configuração dos canais.
+
+Documentação completa: README.md dentro da pasta avisos/ e
+https://github.com/evandroevangelista77/dashboard-datacenter-360
+
+LICENÇA
+-------
+GNU General Public License, versão 3 ou posterior (GPLv3+), a mesma do GLPI.

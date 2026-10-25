@@ -15,6 +15,7 @@ Plugin do GLPI 12.0.x para gerenciar projetos ágeis (Scrum e Kanban), waterfall
 | **Documentação** | Páginas em texto rico com modelos: Termo de Abertura (TAP), Escopo/EAP, Matriz RACI, Plano de Comunicação, Ata de Reunião, Status Report, Lições Aprendidas e Retrospectiva. Também lista os arquivos anexados ao projeto. |
 | **Riscos e pendências** | Registro com probabilidade × impacto (matriz 5×5), nível, responsável, prazo e plano de resposta. |
 | **Avisos por e-mail** | Sprint iniciada, sprint concluída, risco crítico e tarefa atrasada, pelo sistema de notificações do próprio GLPI (modelos e destinatários editáveis). |
+| **Sino, pop-up e Teams** | Com o plugin [Avisos](../avisos), os mesmos eventos aparecem no sino e como pop-up para o gerente, a equipe e o responsável pelo risco, e vão para o canal do Teams do PMO. |
 
 Metodologias: **Scrum**, **Kanban**, **Waterfall** e **Híbrido** (cronograma no Gantt e execução em sprints). Cada uma cria um modelo de colunas, que pode ser mudado depois.
 
@@ -121,6 +122,7 @@ Tabelas criadas: `glpi_plugin_pmo_projects`, `_columns`, `_items`, `_sprints`, `
 
 ## Versões
 
+- **1.2.0**: avisos no sino, pop-up e Teams (com o plugin Avisos) para tarefa atrasada, risco crítico e início e fim de sprint; o aviso de tarefa atrasada sai mesmo com o e-mail do GLPI desligado.
 - **1.1.1**: título e subtítulo em todas as telas (Portfólio, Meu trabalho e cada aba do projeto), explicando para que serve a página.
 - **1.1.0**: avisos por e-mail (sprint iniciada e concluída, risco crítico, tarefa atrasada). Corrige a reinstalação por cima de uma versão já instalada.
 - **1.0.0**: primeira versão.

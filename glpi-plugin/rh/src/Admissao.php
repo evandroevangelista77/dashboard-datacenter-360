@@ -170,6 +170,15 @@ class Admissao extends CommonDBTM
         foreach (self::CHECKLIST as $i => [$area, $label]) {
             $DB->insert('glpi_plugin_rh_checklists', ['plugin_rh_admissaos_id' => $id, 'area' => $area, 'label' => $label, 'rank' => $i]);
         }
+        $vaga = new Vaga();
+        if ($vaga->getFromDB((int) $c['plugin_rh_vagas_id'])) {
+            Avisos::send([
+                'event' => 'admissao_criada', 'users' => [(int) $c['users_id_manager'], (int) $vaga->fields['users_id_recruiter']],
+                'title' => 'Nova admissão: ' . $c['name'], 'level' => 'info', 'url' => self::getFormURLWithID($id), 'item' => [self::class, $id],
+                'message' => 'Checklist de onboarding criado' . ($c['start_date'] ? ', início em ' . date('d/m/Y', strtotime($c['start_date'])) : '') . '.',
+                'facts' => ['Vaga' => Avisos::code($vaga) . ' · ' . $vaga->fields['name'], 'Início' => $c['start_date'] ? date('d/m/Y', strtotime($c['start_date'])) : 'a definir'],
+            ]);
+        }
         return $id;
     }
 

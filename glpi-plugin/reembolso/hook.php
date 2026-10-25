@@ -152,6 +152,9 @@ function plugin_reembolso_install(): bool
     }
     unset($_SESSION['glpimenu']);
 
+    // e-mails do fluxo (enviado, aprovado, recusado e pago), em Configurar → Notificações
+    \GlpiPlugin\Reembolso\Notifications::install();
+
     return true;
 }
 
@@ -165,6 +168,7 @@ function plugin_reembolso_uninstall(): bool
     $DB->delete('glpi_documents_items', ['itemtype' => Reembolso::class]);
     $DB->delete('glpi_logs', ['itemtype' => Reembolso::class]);
     ProfileRight::deleteProfileRights([Reembolso::$rightname]);
+    \GlpiPlugin\Reembolso\Notifications::uninstall();
     Config::deleteConfigurationValues('plugin:reembolso', ['km_rate', 'route_enabled', 'route_country', 'require_receipt']);
     unset($_SESSION['glpimenu']);
 

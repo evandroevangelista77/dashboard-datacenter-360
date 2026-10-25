@@ -337,6 +337,8 @@ class Reembolso extends CommonDBTM
                 throw new RuntimeException('Ação desconhecida.');
         }
         $this->update($data);
+        $this->getFromDB($this->getID());
+        Avisos::transition($this, $action);
         return $msg;
     }
 

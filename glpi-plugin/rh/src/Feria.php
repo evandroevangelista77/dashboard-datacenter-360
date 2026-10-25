@@ -218,6 +218,10 @@ class Feria extends CommonDBTM
     {
         parent::post_addItem();
         NotificationEvent::raiseEvent('rh_ferias_pendente', $this);
+        $conflicts = self::conflicts($this->fields);
+        $this->avisar('ferias_pendente', [(int) $this->fields['users_id_manager']], 'Férias aguardando sua aprovação',
+            getUserName((int) $this->fields['users_id']) . ' pediu ' . (int) $this->fields['days'] . ' dias de férias.', 'warning',
+            $conflicts ? ['Fora no mesmo período' => implode(', ', $conflicts)] : []);
     }
 
     /** Colegas da mesma equipe (mesmo gestor) com férias aprovadas que se sobrepõem. */
@@ -277,8 +281,26 @@ class Feria extends CommonDBTM
         $this->getFromDB($this->getID());
         if ($action !== 'cancel') {
             NotificationEvent::raiseEvent('rh_ferias_decisao', $this, ['comment' => $comment]);
+            $ok = $action === 'approve';
+            $this->avisar('ferias_decisao', [(int) $this->fields['users_id']], $ok ? 'Suas férias foram aprovadas' : 'Suas férias foram reprovadas',
+                ($ok ? 'Aprovadas por ' : 'Reprovadas por ') . getUserName((int) Session::getLoginUserID()) . ($comment !== '' ? ". Comentário: $comment" : '.'), $ok ? 'success' : 'danger');
+        } else {
+            NotificationEvent::raiseEvent('rh_ferias_cancelada', $this, ['comment' => $comment]);
+            $this->avisar('ferias_cancelada', [(int) $this->fields['users_id_manager'], (int) $this->fields['users_id']], 'Férias canceladas',
+                'O pedido de férias de ' . getUserName((int) $this->fields['users_id']) . ' foi cancelado' . ($comment !== '' ? ": $comment" : '.'), 'info');
         }
         return $msg;
+    }
+
+    private function avisar(string $event, array $users, string $title, string $message, string $level, array $facts = []): void
+    {
+        $f = $this->fields;
+        Avisos::send([
+            'event' => $event, 'users' => $users, 'title' => $title, 'message' => $message, 'level' => $level,
+            'url' => self::getFormURLWithID($this->getID()), 'item' => [self::class, $this->getID()],
+            'facts' => ['Colaborador' => (string) getUserName((int) $f['users_id']), 'Período' => date('d/m/Y', strtotime($f['date_begin'])) . ' a ' . date('d/m/Y', strtotime($f['date_end'])),
+                'Dias' => (int) $f['days'] . ((int) $f['sell_days'] ? ' + ' . (int) $f['sell_days'] . ' de abono' : ''), 'Situação' => self::STATUSES[(int) $f['status']][0] ?? ''] + $facts,
+        ]);
     }
 
     public function showForm($ID, array $options = [])

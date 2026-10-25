@@ -11,6 +11,7 @@ Plugin do GLPI 12.0.x com o processo de **recrutamento e seleção**: requisiç�
 | **Processo visual** | A vaga mostra uma **linha do tempo**: requisição → enviada → gestor → diretoria → seleção → preenchida, com quem decidiu, quando e o comentário. Tudo também fica na aba *Histórico*. |
 | **Minhas aprovações** | Tela com o que espera a decisão do usuário: vagas (como gestor ou diretoria) e férias da equipe. Tem aprovar e reprovar ali mesmo, e o número de pendências aparece no menu. |
 | **Avisos por e-mail** | Pelas notificações do GLPI: vaga para o gestor, depois para a diretoria, resultado para o solicitante, gestor e recrutador; pedido de férias para o gestor, decisão para o colaborador. Modelos editáveis em *Configurar → Notificações*. |
+| **Sino, pop-up e Teams** | Com o plugin [Avisos](../avisos), o solicitante acompanha cada etapa da vaga (envio, aprovações, candidatos mudando de etapa, contratação e encerramento), o gestor recebe o que precisa aprovar e as férias avisam gestor e colaborador, no sino, em pop-up e no canal do Teams do RH. |
 | **Cargos com job description** | Cada cargo tem CBO e um job description em texto rico: identificação, missão, responsabilidades, requisitos, competências, indicadores, relacionamentos e condições de trabalho. Os 15 cargos de exemplo vêm com modelos prontos, e cargo novo abre com a estrutura em branco. Ao escolher o cargo numa vaga nova, a **descrição e os requisitos já vêm preenchidos** com o job description, para editar e acrescentar o que for da vaga; o job description completo também aparece na requisição para quem aprova e para o recrutador. |
 | **Banco de Currículo** | Nome, foto (JPG, PNG ou WebP, recortada em quadrado), contato, LinkedIn, cidade, origem, **cargo pretendido** e pretensão salarial; **currículo** enviado no próprio cadastro (PDF, Word, ODT ou RTF, guardado como documento do GLPI e listado com download); processos de que o candidato participou. |
 | **Funil de seleção (Kanban)** | Por vaga: triagem → entrevista RH → teste técnico → entrevista com gestor → proposta → contratado. Os candidatos são **arrastados** entre etapas. Cada um tem nota (estrelas), parecer, entrevista agendada, proposta (salário e início), dias na etapa e histórico de cada passo. Dá para reprovar ou registrar desistência com motivo, e adicionar candidatos do banco ou novos. |
@@ -65,6 +66,7 @@ Tabelas: `glpi_plugin_rh_vagas`, `_candidatos`, `_candidaturas`, `_admissaos`, `
 
 ## Versões
 
+- **1.0.4**: avisos de cada etapa para o solicitante (envio, aprovações, andamento dos candidatos, contratação, encerramento) e das férias, no sino, pop-up e Teams com o plugin Avisos; novos e-mails “Andamento da vaga” e “Férias canceladas”.
 - **1.0.3**: cargo pretendido no banco de currículo (campo, coluna da lista e filtro de busca); envio do currículo no cadastro do candidato; vaga nova preenchida com o job description do cargo; calendário de férias com visão anual.
 - **1.0.2**: foto do candidato.
 - **1.0.1**: CBO e job description no cadastro de cargos, com modelos; job description exibido na vaga.

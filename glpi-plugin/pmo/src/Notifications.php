@@ -85,6 +85,9 @@ class Notifications extends CommonGLPI
             'unit'      => $unit,
             'url'       => self::absolute(View::projectUrl($projectId, 'board')),
         ]);
+        self::avisar($projectId, 'pmo_sprint_start', Avisos::projectPeople($projectId), "Sprint iniciada: {$sprint['name']}", 'info',
+            'De ' . Html::convDate($sprint['start_date']) . ' a ' . Html::convDate($sprint['end_date']) . ": $items item(ns), " . self::num($committed) . " $unit comprometidos." . ($sprint['goal'] ? " Meta: {$sprint['goal']}" : ''),
+            View::projectUrl($projectId, 'board'), ['Sprint' => $sprint['name'], 'Meta' => (string) $sprint['goal'], 'Período' => Html::convDate($sprint['start_date']) . ' a ' . Html::convDate($sprint['end_date'])]);
     }
 
     public static function sprintClosed(int $projectId, array $sprint, array $result, string $unit, string $targetName): void
@@ -103,6 +106,10 @@ class Notifications extends CommonGLPI
             'unit'      => $unit,
             'url'       => self::absolute(View::projectUrl($projectId, 'dashboard')),
         ]);
+        $rate = $total > 0 ? (int) round(100 * $result['done'] / $total) : 0;
+        self::avisar($projectId, 'pmo_sprint_end', Avisos::projectPeople($projectId), "Sprint concluída: {$sprint['name']}", 'success',
+            "$rate% concluído (" . self::num((float) $result['done']) . ' de ' . self::num($total) . " $unit)." . ((int) $result['moved'] ? " {$result['moved']} item(ns) foram para $targetName." : ''),
+            View::projectUrl($projectId, 'dashboard'), ['Sprint' => $sprint['name'], 'Concluído' => "$rate%"]);
     }
 
     public static function riskCritical(int $projectId, array $risk): void
@@ -121,6 +128,21 @@ class Notifications extends CommonGLPI
             'response'    => $risk['response'] ?: '—',
             'status'      => Risk::STATUSES[$risk['status']] ?? $risk['status'],
             'url'         => self::absolute(View::projectUrl($projectId, 'risks', ['risk' => $risk['id']])),
+        ]);
+        $score = (int) $risk['probability'] * (int) $risk['impact'];
+        self::avisar($projectId, 'pmo_risk', array_merge(Avisos::manager($projectId), $risk['users_id'] ? [(int) $risk['users_id']] : []), "Risco crítico: {$risk['name']}", 'danger',
+            "Probabilidade {$risk['probability']} × impacto {$risk['impact']} = $score ($level)." . ($risk['response'] ? " Resposta: {$risk['response']}" : ''),
+            View::projectUrl($projectId, 'risks', ['risk' => $risk['id']]), ['Risco' => $risk['name'], 'Pontuação' => "$score ($level)", 'Responsável' => $risk['users_id'] ? (string) getUserName((int) $risk['users_id']) : '—', 'Prazo' => $risk['due_date'] ? Html::convDate($risk['due_date']) : '']);
+    }
+
+    /** Aviso (sino, pop-up e Teams) de um evento do projeto, com o nome do projeto no cartão. */
+    private static function avisar(int $projectId, string $event, array $users, string $title, string $level, string $message, string $url, array $facts = []): void
+    {
+        $project = new Project();
+        $name = $project->getFromDB($projectId) ? $project->getName() : '';
+        Avisos::send([
+            'event' => $event, 'users' => $users, 'title' => $title, 'message' => ($name ? "$name · " : '') . $message, 'level' => $level,
+            'url' => $url, 'item' => [Project::class, $projectId], 'facts' => ['Projeto' => $name] + $facts,
         ]);
     }
 
@@ -146,10 +168,8 @@ class Notifications extends CommonGLPI
      */
     public static function cronPmolatetasks(CronTask $task): int
     {
-        global $DB, $CFG_GLPI;
-        if (!$CFG_GLPI['use_notifications']) {
-            return 0;
-        }
+        global $DB;
+        // o e-mail só sai com as notificações do GLPI ligadas; o aviso (sino, pop-up e Teams) sai sempre
         $sent = 0;
         $now = $_SESSION['glpi_currenttime'] ?? date('Y-m-d H:i:s');
         $it = $DB->request([
@@ -185,6 +205,11 @@ class Notifications extends CommonGLPI
                 'team' => $team ? implode(', ', $team) : '—',
                 'url'  => self::absolute(View::projectUrl((int) $pt->fields['projects_id'], 'board')),
             ]]);
+            $projectId = (int) $pt->fields['projects_id'];
+            $days = max(1, (int) floor((strtotime($now) - strtotime($row['plan_end_date'])) / DAY_TIMESTAMP));
+            self::avisar($projectId, 'pmo_task_late', array_merge(Avisos::taskPeople($pt->getID()), Avisos::manager($projectId)), "Tarefa atrasada: {$pt->fields['name']}", 'danger',
+                "Venceu há $days dia(s), em " . Html::convDateTime($row['plan_end_date']) . '.', View::projectUrl($projectId, 'board'),
+                ['Tarefa' => (string) $pt->fields['name'], 'Fim planejado' => Html::convDateTime($row['plan_end_date']), 'Atraso' => "$days dia(s)", 'Equipe' => $team ? implode(', ', $team) : '—', 'Progresso' => (int) $pt->fields['percent_done'] . '%']);
             $DB->update('glpi_plugin_pmo_items', ['late_notified' => $row['plan_end_date']], ['projecttasks_id' => $row['id']]);
             $sent++;
         }

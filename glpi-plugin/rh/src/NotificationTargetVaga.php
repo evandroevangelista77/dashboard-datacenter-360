@@ -24,6 +24,7 @@ class NotificationTargetVaga extends NotificationTarget
             'rh_vaga_diretoria' => 'RH: vaga aguardando a diretoria',
             'rh_vaga_aprovada'  => 'RH: vaga aprovada',
             'rh_vaga_reprovada' => 'RH: vaga reprovada',
+            'rh_vaga_andamento' => 'RH: andamento da vaga (para o solicitante)',
         ];
     }
 
@@ -95,6 +96,8 @@ class NotificationTargetVaga extends NotificationTarget
         $this->data['##vaga.manager##'] = (string) getUserName((int) $f['users_id_manager']);
         $this->data['##vaga.status##'] = Vaga::STATUSES[(int) $f['status']][0] ?? '';
         $this->data['##vaga.comment##'] = (string) ($options['comment'] ?? $this->options['comment'] ?? '') ?: '—';
+        $this->data['##vaga.step##'] = (string) ($options['step'] ?? $this->options['step'] ?? '');
+        $this->data['##vaga.step_detail##'] = (string) ($options['detail'] ?? $this->options['detail'] ?? '');
         $this->data['##vaga.url##'] = self::absolute(Vaga::getFormURLWithID((int) $f['id']));
         $this->data['##vaga.approvals_url##'] = self::absolute(Menu::url('/front/aprovacoes.php'));
     }
@@ -103,7 +106,7 @@ class NotificationTargetVaga extends NotificationTarget
     {
         $tags = ['name' => 'Título', 'code' => 'Código', 'cargo' => 'Cargo', 'departamento' => 'Departamento', 'positions' => 'Posições', 'contract' => 'Contratação',
             'workmode' => 'Modalidade', 'reason' => 'Motivo', 'salary' => 'Faixa salarial', 'requester' => 'Solicitante', 'manager' => 'Gestor', 'status' => 'Status',
-            'comment' => 'Comentário da decisão', 'url' => 'Link da vaga', 'approvals_url' => 'Link de Minhas aprovações'];
+            'comment' => 'Comentário da decisão', 'step' => 'Andamento (título)', 'step_detail' => 'Andamento (detalhe)', 'url' => 'Link da vaga', 'approvals_url' => 'Link de Minhas aprovações'];
         foreach ($tags as $tag => $label) {
             $this->addTagToList(['tag' => "vaga.$tag", 'label' => $label, 'value' => true]);
         }

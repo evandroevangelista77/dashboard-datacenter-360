@@ -18,7 +18,7 @@ use GlpiPlugin\Pmo\ProfileTab;
 use GlpiPlugin\Pmo\ProjectTab;
 use GlpiPlugin\Pmo\Snapshot;
 
-define('PLUGIN_PMO_VERSION', '1.1.1');
+define('PLUGIN_PMO_VERSION', '1.2.0');
 define('PLUGIN_PMO_MIN_GLPI', '12.0.0');
 define('PLUGIN_PMO_MAX_GLPI', '12.0.99');
 

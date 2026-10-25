@@ -382,7 +382,44 @@ class Vaga extends CommonDBTM
         if ($event) {
             NotificationEvent::raiseEvent($event, $this, ['comment' => $comment]);
         }
+        $this->avisar($action, $comment);
         return $msg;
+    }
+
+    /** Avisos (sino, pop-up e Teams) de cada passo da requisição; o solicitante acompanha todos. */
+    private function avisar(string $action, string $comment): void
+    {
+        $f = $this->fields;
+        $manager = (int) $f['users_id_manager'];
+        $why = $comment !== '' ? ['Comentário' => $comment] : [];
+        switch ($action) {
+            case 'submit':
+                if ((int) $f['status'] === self::WAIT_BOARD) {
+                    Avisos::vaga($this, 'vaga_diretoria', Avisos::diretoria(), 'Vaga aguardando a diretoria', "A vaga {$f['name']} espera a aprovação da diretoria.", 'warning', $why);
+                    Avisos::andamento($this, 'vaga_enviada', 'Vaga enviada à diretoria', 'Como o solicitante é o gestor da área, a requisição foi direto para a aprovação da diretoria.');
+                } else {
+                    $to = $manager ? [$manager] : Avisos::diretoria();
+                    Avisos::vaga($this, 'vaga_gestor', $to, 'Vaga aguardando sua aprovação', "A requisição {$f['name']} espera a aprovação do gestor da área.", 'warning', $why);
+                    Avisos::andamento($this, 'vaga_enviada', 'Vaga enviada para aprovação', $manager ? 'A requisição foi para a aprovação de ' . getUserName($manager) . ' (gestor da área).' : 'O departamento não tem gestor: a diretoria aprova as duas etapas.');
+                }
+                break;
+            case 'approve_manager':
+                Avisos::vaga($this, 'vaga_diretoria', Avisos::diretoria(), 'Vaga aguardando a diretoria', "O gestor aprovou a vaga {$f['name']}; falta a aprovação da diretoria.", 'warning', $why);
+                Avisos::andamento($this, 'vaga_gestor_aprovou', 'Gestor aprovou a vaga', getUserName($manager) . ' aprovou a requisição. Agora ela segue para a diretoria.', 'success', [], $why);
+                break;
+            case 'approve_board':
+                Avisos::andamento($this, 'vaga_aprovada', 'Vaga aprovada e aberta', 'A diretoria aprovou a vaga. O processo seletivo pode começar.', 'success', Avisos::pessoas($this), $why);
+                break;
+            case 'reject':
+                Avisos::andamento($this, 'vaga_reprovada', 'Vaga reprovada', "Motivo: $comment. Ajuste a requisição e envie de novo.", 'danger', [$manager]);
+                break;
+            case 'cancel':
+                Avisos::andamento($this, 'vaga_cancelada', 'Vaga cancelada', "Motivo: $comment", 'warning', Avisos::pessoas($this));
+                break;
+            case 'reopen':
+                Avisos::andamento($this, 'vaga_reaberta', 'Vaga reaberta', 'O RH reabriu a vaga.' . ($comment !== '' ? " Comentário: $comment" : ''), 'info', Avisos::pessoas($this));
+                break;
+        }
     }
 
     /** Chamado quando um candidato é contratado: com todas as posições preenchidas, encerra a vaga. */
@@ -391,6 +428,8 @@ class Vaga extends CommonDBTM
         if ((int) $this->fields['status'] === self::OPEN && $this->hiredCount() >= (int) $this->fields['positions']) {
             Aprovacoes::record(self::class, $this->getID(), 'close', 'filled', 'Todas as posições foram preenchidas.');
             $this->update(['id' => $this->getID(), '_workflow' => true, 'status' => self::FILLED, 'date_close' => $_SESSION['glpi_currenttime']]);
+            $this->getFromDB($this->getID());
+            Avisos::andamento($this, 'vaga_preenchida', 'Vaga preenchida', 'Todas as posições foram preenchidas e a vaga foi encerrada.', 'success', Avisos::pessoas($this));
             return true;
         }
         return false;

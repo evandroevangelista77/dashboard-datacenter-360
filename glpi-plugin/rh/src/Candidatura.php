@@ -225,10 +225,16 @@ class Candidatura extends CommonDBTM
             }
             $DB->update(self::getTable(), $data, ['id' => $id]);
             self::history($id, $c['stage'], $stage, $data['status'] ?? $c['status']);
+            $name = self::candidateName((int) $c['plugin_rh_candidatos_id']);
             if ($stage === 'contratado') {
+                Avisos::andamento($v, 'vaga_contratado', "Contratado: $name", "$name foi contratado(a) na vaga {$v->fields['name']}. A admissão foi criada.", 'success', [(int) $v->fields['users_id_manager']]);
                 $result['admissao'] = Admissao::createFor($id);
                 $v->getFromDB($v->getID());
                 $result['filled'] = $v->checkFilled();
+            } else {
+                $from = self::STAGES[$c['stage']][0] ?? $c['stage'];
+                $to = self::STAGES[$stage][0];
+                Avisos::andamento($v, 'vaga_etapa', "$name: $to", "$name passou de $from para $to na vaga {$v->fields['name']}.", 'info', [(int) $v->fields['users_id_manager']], ['Candidato' => $name, 'Etapa' => $to]);
             }
         }
         foreach (array_values(array_map('intval', $order)) as $i => $cid) {
@@ -277,5 +283,21 @@ class Candidatura extends CommonDBTM
         }
         $DB->update(self::getTable(), ['status' => $status, 'date_mod' => $_SESSION['glpi_currenttime']], ['id' => $id]);
         self::history($id, $c['stage'], $c['stage'], $status, $comment);
+        if ($status !== $c['status']) {
+            $v = self::vaga((int) $c['plugin_rh_vagas_id']);
+            $name = self::candidateName((int) $c['plugin_rh_candidatos_id']);
+            [$title, $text] = match ($status) {
+                'rejected' => ["$name reprovado(a)", "$name foi reprovado(a) na etapa " . (self::STAGES[$c['stage']][0] ?? '') . ". Motivo: $comment"],
+                'withdrew' => ["$name desistiu", "$name desistiu do processo na etapa " . (self::STAGES[$c['stage']][0] ?? '') . ". Motivo: $comment"],
+                default    => ["$name voltou ao processo", "$name foi reativado(a) na etapa " . (self::STAGES[$c['stage']][0] ?? '') . '.'],
+            };
+            Avisos::andamento($v, 'vaga_candidato', $title, $text, 'info', [(int) $v->fields['users_id_manager']], ['Candidato' => $name]);
+        }
+    }
+
+    private static function candidateName(int $candidatoId): string
+    {
+        $c = new Candidato();
+        return $c->getFromDB($candidatoId) ? (string) $c->fields['name'] : 'Candidato';
     }
 }
