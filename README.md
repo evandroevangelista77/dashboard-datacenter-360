@@ -354,7 +354,7 @@ Uso, configuração e permissões: [`glpi-plugin/reembolso/README.md`](glpi-plug
 Baixe `oak-rh-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
 
 ```bash
-unzip oak-rh-completo-1.0.6.zip && cd oak-rh-completo
+unzip oak-rh-completo-1.0.7.zip && cd oak-rh-completo
 sudo bash instalar.sh
 ```
 

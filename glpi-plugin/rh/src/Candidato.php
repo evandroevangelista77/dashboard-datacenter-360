@@ -89,6 +89,11 @@ class Candidato extends CommonDBTM
             ['id' => 7, 'table' => $t, 'field' => 'salary_expectation', 'name' => 'Pretensão salarial', 'datatype' => 'decimal'],
             ['id' => 8, 'table' => $t, 'field' => 'linkedin', 'name' => 'LinkedIn', 'datatype' => 'weblink'],
             ['id' => 9, 'table' => Cargo::getTable(), 'field' => 'name', 'linkfield' => 'plugin_rh_cargos_id', 'name' => 'Cargo pretendido', 'datatype' => 'dropdown'],
+            // processos do candidato (para o filtro de situação do Banco de Currículo)
+            ['id' => 10, 'table' => Candidatura::getTable(), 'field' => 'id', 'name' => 'Processos em andamento', 'datatype' => 'count', 'forcegroupby' => true, 'usehaving' => true,
+                'massiveaction' => false, 'joinparams' => ['jointype' => 'child', 'condition' => ['NEWTABLE.status' => 'active']]],
+            ['id' => 11, 'table' => Candidatura::getTable(), 'field' => 'id', 'name' => 'Contratações', 'datatype' => 'count', 'forcegroupby' => true, 'usehaving' => true,
+                'massiveaction' => false, 'joinparams' => ['jointype' => 'child', 'condition' => ['NEWTABLE.status' => 'hired']]],
             ['id' => 16, 'table' => $t, 'field' => 'comment', 'name' => __('Comments'), 'datatype' => 'text'],
             ['id' => 19, 'table' => $t, 'field' => 'date_mod', 'name' => __('Last update'), 'datatype' => 'datetime', 'massiveaction' => false],
         ];
@@ -376,5 +381,98 @@ class Candidato extends CommonDBTM
         }
         echo "</div>";
         return true;
+    }
+
+    // ------------------------------------------------------------------ filtros do Banco de Currículo
+
+    /** Faixas de pretensão salarial do filtro: rótulo => [mínimo, máximo) */
+    public const SALARY_RANGES = ['ate3' => ['Até R$ 3 mil', null, 3000], '3a6' => ['R$ 3 a 6 mil', 3000, 6000], '6a10' => ['R$ 6 a 10 mil', 6000, 10000], 'mais10' => ['Acima de R$ 10 mil', 10000, null]];
+    public const SITUATIONS = ['processo' => 'Em processo seletivo', 'livre' => 'Sem processo em andamento', 'contratado' => 'Já contratado'];
+
+    /**
+     * Barra de filtros acima da lista (nome/e-mail, cargo pretendido, cidade, origem, faixa
+     * salarial e situação). Os filtros viram critérios da busca do GLPI: a lista, a ordenação,
+     * a paginação e a exportação continuam as do GLPI. Ao enviar, troca os critérios da busca.
+     */
+    public static function filters(array &$get): string
+    {
+        global $DB;
+        $e = [Menu::class, 'e'];
+        $f = ['q' => '', 'cargo' => 0, 'city' => '', 'source' => '', 'salary' => '', 'situation' => ''];
+        if (isset($get['f'])) {
+            foreach ($f as $k => $v) {
+                $f[$k] = is_int($v) ? (int) ($get[$k] ?? 0) : trim((string) ($get[$k] ?? ''));
+            }
+            $c = [];
+            $add = function (int $field, string $type, $value) use (&$c) {
+                $c[] = ['link' => 'AND', 'field' => $field, 'searchtype' => $type, 'value' => $value];
+            };
+            if ($f['q'] !== '') {
+                $c[] = ['link' => 'AND', 'criteria' => [
+                    ['link' => 'AND', 'field' => 1, 'searchtype' => 'contains', 'value' => $f['q']],
+                    ['link' => 'OR', 'field' => 3, 'searchtype' => 'contains', 'value' => $f['q']],
+                    ['link' => 'OR', 'field' => 4, 'searchtype' => 'contains', 'value' => $f['q']],
+                ]];
+            }
+            $f['cargo'] && $add(9, 'equals', $f['cargo']);
+            $f['city'] !== '' && $add(5, 'contains', '^' . $f['city'] . '$');
+            isset(self::SOURCES[$f['source']]) && $add(6, 'equals', $f['source']);
+            if (isset(self::SALARY_RANGES[$f['salary']])) {
+                [, $min, $max] = self::SALARY_RANGES[$f['salary']];
+                $min !== null && $add(7, 'contains', '>=' . $min);
+                $max !== null && $add(7, 'contains', '<' . $max);
+            }
+            match ($f['situation']) {
+                'processo' => $add(10, 'contains', '>0'),
+                'livre' => $add(10, 'contains', '<1'),
+                'contratado' => $add(11, 'contains', '>0'),
+                default => null,
+            };
+            $get = $c ? ['criteria' => $c, 'start' => 0] : ['reset' => 'reset'];
+        } else {
+            // sem envio do formulário: mostra nos campos os filtros que a busca já tem (paginação, ordenação)
+            $p = \Search::manageParams(self::class, $get);
+            foreach ($p['criteria'] ?? [] as $cr) {
+                $v = (string) ($cr['value'] ?? '');
+                match ((int) ($cr['field'] ?? 0)) {
+                    9 => $f['cargo'] = (int) $v,
+                    5 => $f['city'] = trim($v, '^$'),
+                    6 => $f['source'] = $v,
+                    10 => $f['situation'] = $v === '>0' ? 'processo' : 'livre',
+                    11 => $f['situation'] = 'contratado',
+                    default => null,
+                };
+                if ((int) ($cr['field'] ?? 0) === 7) {
+                    foreach (self::SALARY_RANGES as $k => [, $min, $max]) {
+                        if ($v === '>=' . $min || $v === '<' . $max) {
+                            $f['salary'] = $k;
+                        }
+                    }
+                }
+                if (isset($cr['criteria'][0]['value'])) {
+                    $f['q'] = (string) $cr['criteria'][0]['value'];
+                }
+            }
+        }
+
+        $cities = array_column(iterator_to_array($DB->request(['SELECT' => 'city', 'DISTINCT' => true, 'FROM' => self::getTable(),
+            'WHERE' => ['is_deleted' => 0, ['NOT' => ['city' => null]], ['city' => ['<>', '']]], 'ORDER' => 'city'])), 'city');
+        $opt = fn (array $list, string $cur, string $empty) => "<option value=''>$empty</option>" . implode('', array_map(fn ($k, $v) => "<option value='" . $e($k) . "'" . ((string) $k === $cur ? ' selected' : '') . ">" . $e($v) . "</option>", array_keys($list), $list));
+        $active = count(array_filter($f));
+        $h = "<form method='get' class='card mb-3 rh-filters'><input type='hidden' name='f' value='1'><div class='card-body'><div class='row g-2 align-items-end'>"
+            . "<div class='col-12 col-md-6 col-xl-3'><label class='form-label'>Buscar</label><div class='input-icon'><span class='input-icon-addon'><i class='ti ti-search'></i></span>"
+            . "<input class='form-control' name='q' value='" . $e($f['q']) . "' placeholder='Nome, e-mail ou telefone'></div></div>"
+            . "<div class='col-6 col-md-3 col-xl-2'><label class='form-label'>Cargo pretendido</label>" . Cargo::dropdown(['name' => 'cargo', 'value' => $f['cargo'], 'display' => false, 'width' => '100%', 'emptylabel' => 'Todos', 'comments' => false, 'addicon' => false]) . "</div>"
+            . "<div class='col-6 col-md-3 col-xl-2'><label class='form-label'>Cidade</label><select class='form-select' name='city'>" . $opt(array_combine($cities, $cities), $f['city'], 'Todas') . "</select></div>"
+            . "<div class='col-6 col-md-3 col-xl-1'><label class='form-label'>Origem</label><select class='form-select' name='source'>" . $opt(self::SOURCES, $f['source'], 'Todas') . "</select></div>"
+            . "<div class='col-6 col-md-3 col-xl-2'><label class='form-label'>Pretensão salarial</label><select class='form-select' name='salary'>" . $opt(array_map(fn ($r) => $r[0], self::SALARY_RANGES), $f['salary'], 'Qualquer valor') . "</select></div>"
+            . "<div class='col-6 col-md-3 col-xl-2'><label class='form-label'>Situação</label><select class='form-select' name='situation'>" . $opt(self::SITUATIONS, $f['situation'], 'Todos') . "</select></div>"
+            . "</div><div class='d-flex flex-wrap gap-2 align-items-center mt-3'><button class='btn btn-primary'><i class='ti ti-filter me-1'></i>Filtrar</button>"
+            . ($active ? "<a class='btn btn-ghost-secondary' href='?f=1'><i class='ti ti-x me-1'></i>Limpar filtros</a><span class='small text-secondary'>$active filtro(s) ativo(s)</span>" : '')
+            . "<span class='ms-auto small text-secondary d-none d-md-inline'>Atalhos:</span>";
+        foreach (['processo' => 'ti-user-search', 'livre' => 'ti-user-check'] as $k => $icon) {
+            $h .= "<a class='btn btn-sm " . ($f['situation'] === $k ? 'btn-primary' : 'btn-outline-secondary') . "' href='?f=1&situation=$k'><i class='ti $icon me-1'></i>" . $e(self::SITUATIONS[$k]) . "</a>";
+        }
+        return $h . "</div></div>" . Html::closeForm(false);
     }
 }
