@@ -406,7 +406,7 @@ Use com RH 1.0.4+, PMO 1.2.0+ e Reembolso 1.1.0+. Configuração do Teams e deta
 
 ## Vigia da VM do GLPI (VirtualBox no macOS)
 
-[`tools/vigia-glpi.sh`](tools/vigia-glpi.sh) é para um laboratório em que o GLPI roda numa VM do VirtualBox no Mac, em ponte com o Wi-Fi. Sem o driver de kernel do VirtualBox (modo *driverless*), essa ponte às vezes para de entregar pacotes à VM, que continua ligada mas some da rede. A cada 20 s o vigia testa o GLPI; se cair (com o Mac e o roteador respondendo), desliga e religa o cabo virtual da VM (`VBoxManage controlvm … setlinkstate1`), o que traz a rede de volta em segundos, e registra em `~/Library/Logs/vigia-glpi.log`.
+[`tools/vigia-glpi.sh`](tools/vigia-glpi.sh) é para um laboratório em que o GLPI roda numa VM do VirtualBox no Mac, em ponte com o Wi-Fi. Sem o driver de kernel do VirtualBox (modo *driverless*), essa ponte às vezes para de entregar pacotes à VM, que continua ligada mas some da rede. A cada 20 s o vigia testa o GLPI; se cair (com o Mac e o roteador respondendo), desliga e religa o cabo virtual da VM (`VBoxManage controlvm … setlinkstate1`), o que costuma trazer a rede de volta em segundos. Se isso falhar 3 vezes seguidas, desliga a VM pelo ACPI e liga de novo em segundo plano, junto com as outras VMs da mesma ponte que estiverem ligadas (`VIGIA_JUNTO`, padrão `Zabbix 7.4`), no máximo uma vez a cada 30 min e até 3 vezes seguidas sem a rede voltar. Tudo fica registrado em `~/Library/Logs/vigia-glpi.log`.
 
 ```bash
 install -m 755 tools/vigia-glpi.sh ~/.local/bin/vigia-glpi.sh
