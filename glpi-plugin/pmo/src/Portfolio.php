@@ -86,7 +86,7 @@ class Portfolio
                 'pmo'         => Menu::url('/front/project.php?id=' . $id),
                 'methodology' => $config ? ProjectConfig::METHODOLOGIES[$config['methodology']] ?? '' : '',
                 'type'        => $p['projecttypes_id'] ? Dropdown::getDropdownName(ProjectType::getTable(), $p['projecttypes_id']) : '',
-                'state'       => $state ? ['name' => $state['name'], 'color' => $state['color'] ?: '#64748b'] : null,
+                'state'       => $state ? ['id' => (int) $state['id'], 'name' => $state['name'], 'color' => $state['color'] ?: '#64748b', 'finished' => (int) ($state['is_finished'] ?? 0)] : null,
                 'manager'     => $p['users_id'] ? (string) getUserName((int) $p['users_id']) : '',
                 'priority'    => (int) $p['priority'],
                 'actual'      => $actual,

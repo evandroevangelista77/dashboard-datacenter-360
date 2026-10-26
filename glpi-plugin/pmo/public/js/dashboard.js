@@ -133,11 +133,18 @@
                 graphic: v.length ? undefined : {type: 'text', left: 'center', top: 'middle', style: {text: 'Sem sprints iniciadas', fill: t.muted}},
             });
         }
-        mk('c-columns', {
-            tooltip: {trigger: 'item', ...t.base.tooltip},
-            grid: {left: 10, right: 30, top: 10, bottom: 10, containLabel: true},
-            xAxis: val({minInterval: 1}), yAxis: {type: 'category', inverse: true, data: d.columns.map((c) => c.name), ...t.axis},
-            series: [{type: 'bar', data: d.columns.map((c) => ({value: c.count, itemStyle: {color: c.color, borderRadius: [0, 4, 4, 0]}})), label: {show: true, position: 'right', color: t.text}}],
+        // cartões por coluna: barras do modelo comum (oakbars.js); clicar lista os cartões no painel lateral
+        const today = new Date().toISOString().slice(0, 10);
+        window.OakBars?.render(document.getElementById('c-columns'), {
+            items: d.columns.map((c) => ({name: c.name, value: c.count, color: /^#[0-9a-f]{6}$/i.test(c.color || '') ? c.color : 'blue', tasks: c.tasks || []})),
+            labelWidth: 200, right: 80, minInterval: 1, empty: 'Sem colunas',
+            onClick: (c) => window.OakDrawer?.open({title: c.name, icon: 'ti-layout-kanban', color: OakBars.pair(c.color)[1],
+                html: `<p class="oak-dr-lead">${c.tasks.length} cartão(ões) nesta coluna.</p><div class="oak-dr-list">` + (c.tasks.map((x) => {
+                    const late = x.end && x.end < today && x.percent < 100;
+                    return `<div class="oak-dr-item ${late ? 'bad' : ''}"><div class="oak-dr-row"><span class="oak-dr-name">${esc(x.name)}</span><span class="oak-dr-val">${x.percent}%</span></div>`
+                        + `<div class="oak-dr-sub">${esc(x.users.join(', ') || 'sem responsável')} · fim ${x.end ? fmt(x.end) : '—'}${late ? ' · <b class="text-danger">atrasada</b>' : ''}</div>`
+                        + `<div class="oak-dr-bar"><i style="width:${Math.min(100, x.percent)}%"></i></div></div>`;
+                }).join('') || '<div class="oak-dr-empty">Nenhum cartão.</div>') + '</div>'}),
         });
     }
 

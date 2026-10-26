@@ -15,6 +15,7 @@ class Menu
     public const SUBTITLES = [
         'ciclo'  => 'Cada venda fechada, do aviso de fechamento no CRM até o recebimento dos valores. Abra o Ciclo, acompanhe a fase atual e o que falta para concluí-la; cada área recebe a ação no seu grupo.',
         'painel' => 'Quanto tempo o Ciclo leva e onde ele para: ciclo médio, tempo de cada fase contra o SLO, fases atrasadas agora, retrabalho e valores a receber.',
+        'documentos' => 'Todos os documentos anexados aos Ciclos (NFs, contratos, termos de aceite, cotações…). PDF e imagens abrem aqui mesmo; os demais são baixados.',
         'config' => 'Fases do Ciclo: o grupo do GLPI que executa cada uma (recebe o chamado e os avisos), o SLO em dias corridos e quais fases estão ativas.',
     ];
 
@@ -26,6 +27,7 @@ class Menu
         $items = [
             'ciclo'  => ['title' => 'Ciclos', 'page' => self::page('/front/ciclo.php'), 'icon' => 'ti ti-recycle'],
             'painel' => ['title' => 'Painel do Ciclo', 'page' => self::page('/front/painel.php'), 'icon' => 'ti ti-chart-dots-3'],
+            'documentos' => ['title' => 'Documentos', 'page' => self::page('/front/documentos.php'), 'icon' => 'ti ti-files'],
         ];
         if (Session::haveRight('config', UPDATE)) {
             $items['config'] = ['title' => 'Fases e SLOs', 'page' => self::page('/front/config.php'), 'icon' => 'ti ti-settings'];

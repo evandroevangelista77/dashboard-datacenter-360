@@ -281,6 +281,7 @@ class Admissao extends CommonDBTM
                 . "<button class='btn btn-outline-primary' name='additem' value='1'><i class='ti ti-plus me-1'></i>Adicionar</button></div>" . Html::closeForm(false);
         }
         echo "</div><div class='col-xl-4'>";
+        echo Docs::card($this, 'Documentos admissionais', 'RG, CPF, comprovante de residência, ASO, contrato assinado, ficha de registro…');
         echo "<form method='post' action='$a' class='card mb-3'><input type='hidden' name='id' value='$id'><div class='card-header'><h3 class='card-title'><i class='ti ti-calendar me-2'></i>Dados</h3></div><div class='card-body'>";
         echo "<label class='form-label'>Data de início</label><input type='date' class='form-control mb-2' name='start_date' value='" . $e($f['start_date']) . "'" . ($edit ? '' : ' disabled') . ">";
         echo "<label class='form-label'>Observações</label><textarea class='form-control' rows='3' name='comment'" . ($edit ? '' : ' disabled') . ">" . $e($f['comment']) . "</textarea></div>";

@@ -517,6 +517,9 @@ class Vaga extends CommonDBTM
                 . "<div class='card-body rich_text_container'>" . \Glpi\RichText\RichText::getEnhancedHtml($cargo->fields['job_description']) . "</div></details>";
         }
         echo "</div><div class='col-xl-4'>";
+        if (!$new) {
+            echo Docs::card($this, 'Documentos da vaga', 'Requisição assinada, organograma, descrição do cargo, anúncio…');
+        }
         echo "<div class='card mb-3'><div class='card-header'><h3 class='card-title'><i class='ti ti-users me-2'></i>Pessoas</h3></div><div class='card-body row g-3'>";
         echo "<div class='col-12'><label class='form-label'>Solicitante</label><div class='form-control-plaintext'>" . $e(getUserName((int) $f['users_id_requester'])) . "</div></div>";
         echo "<div class='col-12'><label class='form-label'>Gestor da área (1ª aprovação)</label>" . User::dropdown(['name' => 'users_id_manager', 'value' => (int) $f['users_id_manager'], 'right' => 'all', 'display' => false, 'width' => '100%', 'disabled' => !$edit])

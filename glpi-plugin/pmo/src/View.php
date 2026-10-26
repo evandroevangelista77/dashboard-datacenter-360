@@ -39,6 +39,7 @@ class View
         'dashboard' => 'Painéis do projeto: progresso, tarefas por situação e responsável, atrasos e, com sprints, burndown e velocidade.',
         'docs'      => 'Documentação do projeto: páginas em texto rico (como o termo de abertura) e os arquivos anexados ao projeto.',
         'risks'     => 'Registro de riscos e pendências, com probabilidade, impacto, responsável e plano de ação. A matriz mostra onde estão os riscos abertos.',
+        'documentos' => 'Todos os arquivos anexados aos projetos (cronogramas, atas, propostas, contratos, evidências), por projeto, por categoria ou por tipo. PDF e imagens abrem aqui mesmo.',
         'config'    => 'Configuração do PMO neste projeto: metodologia, colunas do quadro e os avisos por e-mail de tarefa atrasada, sprint e risco crítico.',
     ];
 
@@ -145,6 +146,9 @@ class View
             default:
                 self::boot($view, self::bootData($project, $config, $canEdit));
                 echo self::script('pmo.js');
+                if ($view === 'dashboard') {
+                    echo self::script('drawer.js') . self::script('oakbars.js');
+                }
                 echo self::script($view . '.js');
         }
         echo "</div></div>";
@@ -360,29 +364,13 @@ JS;
             echo "</div>";
         }
 
-        // documentos nativos anexados ao projeto (inclui os .mpp/.xml do cronograma)
-        echo "<div class='card mt-3'><div class='card-header'><h3 class='card-title'><i class='ti ti-paperclip me-2'></i>Arquivos do projeto</h3></div><div class='list-group list-group-flush'>";
-        $docs = $DB->request([
-            'SELECT'     => ['d.id', 'd.name', 'd.filename', 'd.date_mod'],
-            'FROM'       => 'glpi_documents AS d',
-            'INNER JOIN' => ['glpi_documents_items AS di' => ['ON' => ['di' => 'documents_id', 'd' => 'id']]],
-            'WHERE'      => ['di.itemtype' => Project::class, 'di.items_id' => $id, 'd.is_deleted' => 0],
-            'ORDER'      => 'd.date_mod DESC',
-        ]);
-        if (!count($docs)) {
-            echo "<div class='list-group-item text-secondary small'>Nenhum arquivo anexado.</div>";
-        }
-        foreach ($docs as $d) {
-            $doc = new Document();
-            $doc->getFromDB($d['id']);
-            echo "<a class='list-group-item list-group-item-action small' href='" . self::e($doc->getDownloadLink(null)) . "'><i class='ti ti-download me-2'></i>" . self::e($d['name'] ?: $d['filename']) . "</a>";
-        }
-        $docsTab = $project->getLinkURL() . '&forcetab=' . rawurlencode('Document_Item$1');
-        echo "</div><div class='card-footer'><a class='small' href='" . self::e($docsTab) . "'><i class='ti ti-upload me-1'></i>Anexar arquivos no projeto</a></div></div>";
+        // arquivos do projeto: enviar, visualizar e baixar
+        echo "<div class='mt-3'>" . Docs::card($project) . "</div>";
         echo "</div><div class='col-lg-9'>";
 
         if (!$page) {
-            echo "<div class='card'><div class='card-body text-secondary'>Crie a primeira página da documentação (Termo de Abertura, EAP, RACI, plano de comunicação, atas, status report, lições aprendidas…).</div></div></div></div>";
+            echo "<div class='card'><div class='card-body text-secondary'>Crie a primeira página da documentação (Termo de Abertura, EAP, RACI, plano de comunicação, atas, status report, lições aprendidas…).</div></div>";
+            echo "</div></div>";
             return;
         }
         $meta = 'Criada por ' . self::e(getUserName((int) $page['users_id'])) . ' em ' . Html::convDateTime($page['date_creation'])
@@ -513,6 +501,7 @@ JS;
         ]);
         echo self::script('pmo.js');
         echo self::script('drawer.js');
+        echo self::script('oakbars.js');
         echo self::script('portfolio.js');
         echo "</div>";
     }

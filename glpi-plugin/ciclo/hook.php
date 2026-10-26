@@ -47,6 +47,9 @@ function plugin_ciclo_install(): bool
             `amount` decimal(14,2) NOT NULL DEFAULT 0, `date_expected` date DEFAULT NULL, `date_done` date DEFAULT NULL, `status` varchar(10) DEFAULT NULL,
             `users_id` $int, `date_creation` timestamp NULL DEFAULT NULL, `date_mod` timestamp NULL DEFAULT NULL,
             PRIMARY KEY (`id`), KEY `ciclo_kind` (`plugin_ciclo_ciclos_id`, `kind`)",
+        // fase a que cada documento se refere (o documento é do GLPI, ligado ao Ciclo)
+        \GlpiPlugin\Ciclo\Documentos::TABLE => "`id` int $sign NOT NULL AUTO_INCREMENT, `documents_id` $int, `plugin_ciclo_ciclos_id` $int, `code` varchar(30) DEFAULT NULL,
+            PRIMARY KEY (`id`), KEY `documents_id` (`documents_id`), KEY `ciclo` (`plugin_ciclo_ciclos_id`)",
         // linha do tempo: início, conclusão, devolução e pulo de fase, comentários
         Evento::getTable() => "`id` int $sign NOT NULL AUTO_INCREMENT, `plugin_ciclo_ciclos_id` $int, `code` varchar(30) DEFAULT NULL, `action` varchar(20) NOT NULL,
             `comment` text, `users_id` $int, `date` datetime DEFAULT NULL,
@@ -100,7 +103,7 @@ function plugin_ciclo_install(): bool
 function plugin_ciclo_uninstall(): bool
 {
     global $DB;
-    foreach ([Ciclo::getTable(), Etapa::getTable(), Fase::getTable(), Item::getTable(), Evento::getTable()] as $table) {
+    foreach ([Ciclo::getTable(), Etapa::getTable(), Fase::getTable(), Item::getTable(), Evento::getTable(), \GlpiPlugin\Ciclo\Documentos::TABLE] as $table) {
         $DB->dropTable($table, true);
     }
     $DB->delete('glpi_documents_items', ['itemtype' => Ciclo::class]);

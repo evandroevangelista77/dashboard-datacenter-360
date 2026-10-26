@@ -32,6 +32,7 @@ class Painel
 
         // fases
         $perPhase = [];
+        $phaseList = [];
         $hit = [];
         $active = [];
         foreach ($DB->request(['FROM' => Fase::getTable()]) as $f) {
@@ -41,6 +42,8 @@ class Painel
             }
             if ($f['status'] === 'done' && $f['date_end'] >= $since) {
                 $perPhase[$f['code']][] = Fase::elapsed($f) / 86400;
+                $phaseList[$f['code']][] = ['code' => Ciclo::code((int) $c['id']), 'name' => (string) $c['name'], 'url' => Ciclo::getFormURLWithID((int) $c['id']),
+                    'days' => Menu::days(Fase::elapsed($f)), 'slo' => (int) $f['slo_days'], 'late' => Fase::isLate($f), 'end' => substr((string) $f['date_end'], 0, 10)];
                 if ((int) $f['slo_days']) {
                     $hit[$f['code']][0] = ($hit[$f['code']][0] ?? 0) + (Fase::isLate($f) ? 0 : 1);
                     $hit[$f['code']][1] = ($hit[$f['code']][1] ?? 0) + 1;
@@ -60,7 +63,7 @@ class Painel
         $overdue = array_filter($parcelas, fn ($p) => $p['date_expected'] && strtotime($p['date_expected']) < strtotime('today', $nowTs));
 
         // ------------------------------------------------------------------ dados dos gráficos
-        $phase = ['names' => [], 'avg' => [], 'slo' => [], 'count' => [], 'hit' => []];
+        $phase = ['names' => [], 'avg' => [], 'slo' => [], 'count' => [], 'hit' => [], 'list' => []];
         $now = ['names' => [], 'ok' => [], 'late' => [], 'list' => []];
         foreach ($etapas as $code => $et) {
             if ($code === 'aviso' || !$et['is_active']) {
@@ -72,6 +75,7 @@ class Painel
             $phase['slo'][] = (int) $et['slo_days'];
             $phase['count'][] = count($list);
             $phase['hit'][] = isset($hit[$code]) ? round(100 * $hit[$code][0] / $hit[$code][1]) : null;
+            $phase['list'][] = $phaseList[$code] ?? [];
             $here = array_filter($active, fn ($f) => $f['code'] === $code);
             if ($here) {
                 $now['names'][] = $et['name'];
@@ -90,7 +94,7 @@ class Painel
         foreach ($done as $c) {
             $k = substr((string) $c['date_end'], 0, 7);
             if (isset($monthly[$k])) {
-                $monthly[$k][] = ['days' => round(Ciclo::cycleSeconds($c) / 86400), 'code' => Ciclo::code((int) $c['id']), 'name' => (string) $c['name']];
+                $monthly[$k][] = ['days' => round(Ciclo::cycleSeconds($c) / 86400), 'code' => Ciclo::code((int) $c['id']), 'name' => (string) $c['name'], 'url' => Ciclo::getFormURLWithID((int) $c['id'])];
             }
         }
         $month = [
@@ -126,7 +130,7 @@ class Painel
         $card = fn ($id, $icon, $title, $sub, $cls, $h) => "<div class='$cls'><div class='card h-100 cf-chart-card'><div class='card-header'><div><h3 class='card-title'><i class='ti $icon me-2'></i>$title</h3><div class='small text-secondary'>$sub</div></div></div>"
             . "<div class='card-body'><div class='cf-chart' id='$id' style='height:{$h}px'></div></div></div></div>";
         echo "<div class='row g-3 mb-3'>";
-        echo $card('cf-c-phase', 'ti-hourglass', 'Tempo médio por fase × SLO', 'Dias de cada fase concluída no período. A faixa clara é o prazo (SLO); vermelho passou do prazo.', 'col-xl-7', max(420, count($phase['names']) * 34 + 80));
+        echo $card('cf-c-phase', 'ti-hourglass', 'Tempo médio por fase × SLO', 'Dias de cada fase concluída no período. A faixa clara é o prazo (SLO); vermelho passou do prazo. Clique na fase para ver os Ciclos.', 'col-xl-7', max(420, count($phase['names']) * 34 + 80));
         echo "<div class='col-xl-5'>" . self::pipeline($etapas, $active, count($open), count($late)) . "</div>";
         echo $card('cf-c-month', 'ti-chart-line', 'Ciclo médio por mês de conclusão', "Dias do aviso de fechamento ao recebimento, contra a meta de $meta dias", 'col-12', 300);
         echo "</div>";

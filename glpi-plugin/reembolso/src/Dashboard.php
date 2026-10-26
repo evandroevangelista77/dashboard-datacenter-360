@@ -104,20 +104,31 @@ class Dashboard extends CommonGLPI
         $charts = [
             'months' => array_map(fn ($m) => ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][(int) substr($m, 5, 2) - 1] . '/' . substr($m, 2, 2), $months),
             'series' => $series,
+            'keys'   => $months,
             'type'   => array_map(fn ($n, $v) => ['name' => $n, 'value' => round($v, 2)], array_keys($s['type']), $s['type']),
             'user'   => array_map(fn ($n, $v) => ['name' => $n, 'value' => round($v, 2)], array_keys($s['user']), $s['user']),
             'centro' => array_map(fn ($n, $v) => ['name' => $n, 'value' => round($v, 2)], array_keys($s['centro']), $s['centro']),
+            // despesas do filtro (sem as recusadas), para o detalhe de cada barra no painel lateral
+            'exp'    => array_values(array_map(fn ($r) => [
+                'id' => (int) $r['reembolso'], 'code' => Reembolso::code((int) $r['reembolso']), 'url' => Reembolso::getFormURLWithID((int) $r['reembolso']),
+                'tec' => $r['tecnico'], 'tipo' => $r['tipo'] ?: '—', 'centro' => $r['centro_label'] ?: 'Sem centro de custo', 'date' => substr((string) $r['date'], 0, 10),
+                'desc' => (string) $r['description'], 'value' => round($r['amount'], 2), 'st' => $r['status'], 'over' => $r['over'],
+            ], array_filter($rows, fn ($r) => $r['status'] !== Reembolso::REFUSED))),
+            'statuses' => array_map(fn ($x) => ['name' => $x[0], 'color' => $x[1]], Reembolso::STATUSES),
         ];
-        $card = fn ($id, $title, $cls = 'col-xl-6') => "<div class='col-12 $cls'><div class='card h-100'><div class='card-header'><h3 class='card-title'>$title</h3></div><div class='card-body'><div class='rb-chart' id='$id'></div></div></div></div>";
+        $card = fn ($id, $title, $sub, $cls = 'col-xl-6') => "<div class='col-12 $cls'><div class='card h-100'><div class='card-header'><h3 class='card-title'>$title</h3>"
+            . "<div class='card-actions small text-secondary'>$sub</div></div><div class='card-body'><div class='rb-chart' id='$id'></div></div></div></div>";
         echo "<div class='row g-3 mb-3'>";
-        echo $card('rb-c-month', '<i class="ti ti-calendar-stats me-2"></i>Evolução mensal por status', 'col-xl-8');
-        echo $card('rb-c-type', '<i class="ti ti-chart-donut me-2"></i>Por tipo de despesa', 'col-xl-4');
-        echo $card('rb-c-user', '<i class="ti ti-user me-2"></i>Por técnico');
-        echo $card('rb-c-centro', '<i class="ti ti-building-bank me-2"></i>Por centro de custo');
+        echo $card('rb-c-month', '<i class="ti ti-calendar-stats me-2"></i>Evolução mensal por status', 'clique no mês para ver as despesas', 'col-xl-8');
+        echo $card('rb-c-type', '<i class="ti ti-receipt me-2"></i>Por tipo de despesa', 'clique na barra para ver as despesas', 'col-xl-4');
+        echo $card('rb-c-user', '<i class="ti ti-user me-2"></i>Por técnico', 'clique na barra para ver as despesas');
+        echo $card('rb-c-centro', '<i class="ti ti-building-bank me-2"></i>Por centro de custo', 'clique na barra para ver as despesas');
         echo "</div>";
+        echo "<div class='row g-3 mb-3'><div class='col-12'>" . self::pipeline($f) . "</div></div>";
         echo "<script type='application/json' id='rb-dash'>" . json_encode($charts, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) . "</script>";
         echo self::drawers($rows);
         echo Html::script(Menu::url('/js/drawer.js'), ['version' => Menu::fileVersion('js/drawer.js')], false);
+        echo Html::script(Menu::url('/js/oakbars.js'), ['version' => Menu::fileVersion('js/oakbars.js')], false);
         echo Html::script(Menu::url('/js/dashboard.js'), ['version' => Menu::fileVersion('js/dashboard.js')], false);
 
         // detalhamento
@@ -272,5 +283,35 @@ class Dashboard extends CommonGLPI
             $html .= "<template id='dr-$key' data-title='" . $e($title) . "' data-icon='$icon' data-color='$color'>$body</template>";
         }
         return $html;
+    }
+
+    /** Prazo de referência de cada etapa, em dias: para enviar, para aprovar e para pagar. */
+    public const PIPE_DAYS = [Reembolso::DRAFT => 5, Reembolso::SUBMITTED => 3, Reembolso::APPROVED => 5];
+
+    /** "Onde os reembolsos estão agora": as solicitações em aberto, pela etapa, com os dias parados nela. */
+    private static function pipeline(array $f): string
+    {
+        global $DB;
+        $where = ['is_deleted' => 0, 'status' => array_keys(self::PIPE_DAYS)] + (new \DbUtils())->getEntitiesRestrictCriteria(Reembolso::getTable(), '', '', true);
+        if (!$f['readall']) {
+            $me = (int) \Session::getLoginUserID();
+            $where[] = ['OR' => ['users_id' => $me, 'users_id_recipient' => $me]];
+        }
+        $areas = [Reembolso::DRAFT => 'Técnico', Reembolso::SUBMITTED => 'Aprovador', Reembolso::APPROVED => 'Financeiro'];
+        $steps = [];
+        foreach (self::PIPE_DAYS as $st => $days) {
+            $steps[$st] = ['name' => Reembolso::STATUSES[$st][0], 'area' => $areas[$st], 'items' => []];
+        }
+        foreach ($DB->request(['FROM' => Reembolso::getTable(), 'WHERE' => $where, 'ORDER' => 'id']) as $r) {
+            $st = (int) $r['status'];
+            $since = [Reembolso::DRAFT => $r['date_creation'], Reembolso::SUBMITTED => $r['date_submit'], Reembolso::APPROVED => $r['date_approval']][$st] ?: $r['date_creation'];
+            $steps[$st]['items'][] = [
+                'code' => Reembolso::code((int) $r['id']), 'name' => getUserName((int) $r['users_id']) . ' · ' . Money::format((float) $r['total']),
+                'sub' => 'atendimento de ' . date('d/m', strtotime((string) $r['date_begin'])) . ' a ' . date('d/m/Y', strtotime((string) $r['date_end'])),
+                'url' => Reembolso::getFormURLWithID((int) $r['id']), 'days' => max(0, (time() - strtotime((string) $since)) / 86400), 'limit' => self::PIPE_DAYS[$st],
+            ];
+        }
+        return Esteira::card(['title' => 'Onde os reembolsos estão agora', 'icon' => 'ti-route', 'steps' => $steps, 'ends' => ['Lançamento', 'Aprovação', 'Pagamento'],
+            'empty' => 'Nenhuma solicitação em aberto.']);
     }
 }

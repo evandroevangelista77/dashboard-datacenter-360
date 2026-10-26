@@ -35,11 +35,12 @@
             const c = echarts.init(node);
             c.setOption({backgroundColor: 'transparent', textStyle: {color: text, fontFamily: 'inherit'}, animationDuration: 700, ...option});
             charts.push(c);
+            return c;
         };
 
         // ---------------------------------------------------------- contratações por mês
         const h = d.hires;
-        mk('rh-c-hires', {
+        const hiresChart = mk('rh-c-hires', {
             legend: {top: 0, right: 0, textStyle: {color: muted}, icon: 'roundRect', itemWidth: 12, itemHeight: 8},
             grid: {left: 8, right: 8, top: 36, bottom: 6, containLabel: true},
             tooltip: {...tip, trigger: 'axis', axisPointer: {type: 'shadow', shadowStyle: {color: 'rgba(148,163,184,.08)'}},
@@ -49,13 +50,13 @@
                         + row('#22c55e', 'Contratações', h.hires[i])
                         + row('#38bdf8', 'Novos candidatos', h.entries[i])
                         + (h.entries[i] ? row('transparent', 'Taxa (contratações / novos)', Math.round(100 * h.hires[i] / h.entries[i]) + '%') : '')
-                        + list(h.names[i]);
+                        + list(h.names[i]) + `<div style="margin-top:6px;color:${muted};font-size:11.5px">Clique para ver os detalhes</div>`;
                 }},
             xAxis: {type: 'category', data: h.labels, ...axis, splitLine: {show: false}},
             yAxis: [{type: 'value', minInterval: 1, name: 'contratações', nameTextStyle: {color: muted, fontSize: 10}, ...axis},
                 {type: 'value', minInterval: 1, name: 'candidatos', nameTextStyle: {color: muted, fontSize: 10}, ...axis, splitLine: {show: false}}],
             series: [
-                {name: 'Contratações', type: 'bar', data: h.hires, barMaxWidth: 34,
+                {name: 'Contratações', type: 'bar', data: h.hires, barMaxWidth: 34, cursor: 'pointer',
                     itemStyle: {color: grad('#4ade80', '#15803d'), borderRadius: [6, 6, 0, 0]},
                     emphasis: {itemStyle: {color: grad('#86efac', '#16a34a')}},
                     label: {show: true, position: 'top', color: text, fontWeight: 700, formatter: (p) => (p.value ? p.value : '')},
@@ -67,40 +68,40 @@
             ],
         }, h.hires.some((v) => v) || h.entries.some((v) => v));
 
-        // ---------------------------------------------------------- vagas por situação
-        const st = d.status;
-        mk('rh-c-status', {
-            grid: {left: 8, right: 70, top: 6, bottom: 6, containLabel: true},
-            tooltip: {...tip, trigger: 'item', formatter: (p) => {
-                const s = st[p.dataIndex];
-                return head(`${dot(s.color)}${esc(s.name)}`) + row(s.color, 'Vagas', s.value) + row('transparent', 'Do total', s.pct + '%') + list(s.vagas);
-            }},
-            xAxis: {type: 'value', minInterval: 1, ...axis},
-            yAxis: {type: 'category', inverse: true, data: st.map((s) => s.name), ...axis, axisLabel: {color: text, fontSize: 11.5}},
-            series: [{type: 'bar', barMaxWidth: 18, showBackground: true, backgroundStyle: {color: 'rgba(148,163,184,.07)', borderRadius: 6},
-                data: st.map((s) => ({value: s.value, itemStyle: {color: grad(s.color, s.color + '99', true), borderRadius: [0, 6, 6, 0]}})),
-                label: {show: true, position: 'right', color: text, formatter: (p) => `{b|${p.value}}  {s|${st[p.dataIndex].pct}%}`,
-                    rich: {b: {fontWeight: 700, color: text}, s: {color: muted, fontSize: 10.5}}}}],
-        }, st.some((s) => s.value));
-
-        // ---------------------------------------------------------- vagas abertas por departamento
+        // ---------------------------------------------------------- vagas por situação e por departamento: barras do modelo comum (oakbars.js)
+        const st = d.status.filter((s) => s.value);
+        OakBars.render(document.getElementById('rh-c-status'), {
+            items: st, labelWidth: 210, right: 90, minInterval: 1, empty: 'Sem vagas ainda',
+            tip: (s) => OakBars.tipHtml(s.name, [[s.color, 'Vagas', s.value], ['', 'Do total', s.pct + '%']]),
+            onClick: (s) => vagas(s.name, s.color, `${plural(s.value, 'vaga', 'vagas')} nesta situação.`, s.vagas.map((v) => ({...v, val: plural(v.positions, 'posição', 'posições'), sub: v.dept}))),
+        });
         const dp = d.dept;
-        const series = [['Posições em aberto', 'positions', '#3b82f6', '#1d4ed8'], ['Candidatos em processo', 'active', '#a855f7', '#6d28d9'], ['Contratados', 'hired', '#22c55e', '#15803d']];
-        mk('rh-c-dept', {
-            legend: {top: 0, right: 0, textStyle: {color: muted}, icon: 'roundRect', itemWidth: 12, itemHeight: 8},
-            grid: {left: 8, right: 40, top: 34, bottom: 6, containLabel: true},
-            tooltip: {...tip, trigger: 'axis', axisPointer: {type: 'shadow', shadowStyle: {color: 'rgba(148,163,184,.08)'}},
-                formatter: (ps) => {
-                    const x = dp[ps[0].dataIndex];
-                    return head(esc(x.name)) + series.map(([n, k, c]) => row(c, n, x[k])).join('')
-                        + list(x.vagas.map((v) => `${v.name}: ${plural(v.positions, 'posição', 'posições')}, ${v.active} em processo, ${plural(v.hired, 'contratado', 'contratados')}`), 6);
-                }},
-            xAxis: {type: 'value', minInterval: 1, ...axis},
-            yAxis: {type: 'category', inverse: true, data: dp.map((x) => x.name), ...axis, axisLabel: {color: text, fontSize: 12, fontWeight: 600, width: 180, overflow: 'truncate'}},
-            series: series.map(([n, k, c1, c2]) => ({name: n, type: 'bar', barMaxWidth: 14, barGap: '25%', data: dp.map((x) => x[k]),
-                itemStyle: {color: grad(c1, c2, true), borderRadius: [0, 5, 5, 0]},
-                label: {show: true, position: 'right', color: muted, fontSize: 10.5, formatter: (p) => (p.value ? p.value : '')}})),
-        }, dp.length);
+        OakBars.render(document.getElementById('rh-c-dept'), {
+            items: dp.map((x) => ({...x, value: x.hired, track: x.positions + x.hired, color: 'green'})),
+            labelWidth: 260, right: 220, minInterval: 1, empty: 'Nenhuma vaga aberta',
+            legend: [{name: 'Contratados', color: '#22c55e'}, {name: 'Posições da vaga', color: 'rgba(148,163,184,.3)'}],
+            label: (x) => `{v|${x.hired}}{m| / ${x.track} contratado(s) · ${x.active} em processo}`,
+            tip: (x) => OakBars.tipHtml(x.name, [['#22c55e', 'Contratados', x.hired], ['rgba(148,163,184,.5)', 'Posições em aberto', x.positions], ['#a855f7', 'Candidatos em processo', x.active],
+                ['', 'Vagas abertas', x.vagas.length]]),
+            onClick: (x) => vagas(x.name, '#22c55e', `${plural(x.vagas.length, 'vaga aberta', 'vagas abertas')} · ${plural(x.positions, 'posição', 'posições')} a preencher.`,
+                x.vagas.map((v) => ({...v, val: `${v.hired}/${v.positions}`, sub: `${plural(v.active, 'candidato', 'candidatos')} em processo · ${plural(v.hired, 'contratado', 'contratados')} de ${plural(v.positions, 'posição', 'posições')}`,
+                    pct: v.positions ? Math.round(100 * v.hired / v.positions) : 0}))),
+        });
+        hiresChart?.on('click', (p) => {
+            const i = p.dataIndex;
+            const names = h.names[i] || [];
+            window.OakDrawer?.open({title: h.titles[i].replace(/^./, (c) => c.toUpperCase()), icon: 'ti-user-plus', color: '#22c55e',
+                html: `<div class="oak-dr-stats"><div style="--sc:#22c55e"><small>Contratações</small><b>${h.hires[i]}</b></div><div style="--sc:#38bdf8"><small>Novos candidatos</small><b>${h.entries[i]}</b></div></div>`
+                    + `<div class="oak-dr-list">${names.map((n) => `<div class="oak-dr-item good"><div class="oak-dr-row"><span class="oak-dr-name">${esc(n)}</span></div></div>`).join('') || '<div class="oak-dr-empty">Nenhuma contratação no mês.</div>'}</div>`});
+        });
+    }
+
+    // ---------------------------------------------------------- lista de vagas no painel lateral
+    function vagas(title, color, lead, list) {
+        window.OakDrawer?.open({title, icon: 'ti-briefcase-2', color,
+            html: `<p class="oak-dr-lead">${esc(lead)}</p><div class="oak-dr-list">` + (list.map((v) => `<div class="oak-dr-item" style="--oc:${color}"><div class="oak-dr-row">`
+                + `<a href="${esc(v.url)}"><b>${esc(v.code)}</b></a><span class="oak-dr-name">${esc(v.name)}</span><span class="oak-dr-val">${esc(v.val)}</span></div>`
+                + `<div class="oak-dr-sub">${esc(v.sub)}</div>${v.pct !== undefined ? `<div class="oak-dr-bar"><i style="width:${v.pct}%"></i></div>` : ''}</div>`).join('') || '<div class="oak-dr-empty">Nenhuma vaga.</div>') + '</div>'});
     }
 
     document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', draw) : draw();

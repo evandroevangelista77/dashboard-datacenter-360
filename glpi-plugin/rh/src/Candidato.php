@@ -70,7 +70,7 @@ class Candidato extends CommonDBTM
     {
         $ong = [];
         $this->addDefaultFormTab($ong);
-        $this->addStandardTab(Document_Item::class, $ong, $options);
+        $this->addStandardTab(Docs::class, $ong, $options);
         $this->addStandardTab(Log::class, $ong, $options);
         return $ong;
     }

@@ -22,7 +22,7 @@ use GlpiPlugin\Rh\Menu;
 use GlpiPlugin\Rh\ProfileTab;
 use GlpiPlugin\Rh\Vaga;
 
-define('PLUGIN_RH_VERSION', '1.0.5');
+define('PLUGIN_RH_VERSION', '1.0.6');
 define('PLUGIN_RH_MIN_GLPI', '12.0.0');
 define('PLUGIN_RH_MAX_GLPI', '12.0.99');
 
@@ -30,10 +30,10 @@ function plugin_init_rh(): void
 {
     global $PLUGIN_HOOKS;
 
-    Plugin::registerClass(Vaga::class, ['notificationtemplates_types' => true]);
+    Plugin::registerClass(Vaga::class, ['notificationtemplates_types' => true, 'document_types' => true]);
     Plugin::registerClass(Candidato::class, ['document_types' => true]);
     Plugin::registerClass(Candidatura::class);
-    Plugin::registerClass(Admissao::class);
+    Plugin::registerClass(Admissao::class, ['document_types' => true]);
     Plugin::registerClass(Feria::class, ['notificationtemplates_types' => true]);
     Plugin::registerClass(Departamento::class);
     Plugin::registerClass(Cargo::class);

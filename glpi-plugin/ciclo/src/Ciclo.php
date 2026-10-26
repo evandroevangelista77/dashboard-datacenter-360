@@ -79,7 +79,7 @@ class Ciclo extends CommonDBTM
     {
         $ong = [];
         $this->addDefaultFormTab($ong);
-        $this->addStandardTab(Document_Item::class, $ong, $options);
+        $this->addStandardTab(Documentos::class, $ong, $options);
         $this->addStandardTab(Log::class, $ong, $options);
         return $ong;
     }
@@ -334,6 +334,7 @@ class Ciclo extends CommonDBTM
 
         if (!$new) {
             $this->showItems($edit);
+            echo Documentos::card($this, $edit);
             $this->showTimeline();
         }
         echo "</div>";
@@ -567,6 +568,7 @@ class Ciclo extends CommonDBTM
         }
         echo "</tbody></table></div></details>";
         echo "</div></div>";
+        echo Menu::script('drawer.js');
         echo Menu::script('ciclo.js');
     }
 

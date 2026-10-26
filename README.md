@@ -233,7 +233,7 @@ Os caminhos do Java e do MPXJ ficam em `glpi_configs` (contexto `plugin:cronogra
 Baixe `oak-pmo-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
 
 ```bash
-unzip oak-pmo-completo-1.2.1.zip && cd oak-pmo-completo
+unzip oak-pmo-completo-1.2.2.zip && cd oak-pmo-completo
 sudo bash instalar.sh
 ```
 
@@ -331,7 +331,7 @@ Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](gl
 Baixe `oak-reembolso-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
 
 ```bash
-unzip oak-reembolso-completo-1.1.2.zip && cd oak-reembolso-completo
+unzip oak-reembolso-completo-1.1.3.zip && cd oak-reembolso-completo
 sudo bash instalar.sh
 ```
 
@@ -354,7 +354,7 @@ Uso, configuração e permissões: [`glpi-plugin/reembolso/README.md`](glpi-plug
 Baixe `oak-rh-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
 
 ```bash
-unzip oak-rh-completo-1.0.5.zip && cd oak-rh-completo
+unzip oak-rh-completo-1.0.6.zip && cd oak-rh-completo
 sudo bash instalar.sh
 ```
 
@@ -377,7 +377,7 @@ Fase 1 (piloto): tudo informado no GLPI; as integrações (CRM, TOTVS RM, Power 
 Baixe `oak-ciclo-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
 
 ```bash
-unzip oak-ciclo-completo-1.0.1.zip && cd oak-ciclo-completo
+unzip oak-ciclo-completo-1.0.2.zip && cd oak-ciclo-completo
 sudo bash instalar.sh
 ```
 

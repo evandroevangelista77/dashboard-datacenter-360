@@ -150,11 +150,14 @@ class Metrics
 
         $overdue = $soon = [];
         $byColumn = array_fill_keys(array_column($columns, 'id'), 0);
+        $columnTasks = [];
         $byKind = ['todo' => 0, 'doing' => 0, 'done' => 0];
         foreach ($leaves as $t) {
             $col = (int) $t['columns_id'];
             if (isset($byColumn[$col])) {
                 $byColumn[$col]++;
+                $columnTasks[$col][] = ['name' => (string) $t['name'], 'percent' => (int) $t['percent_done'], 'end' => $t['plan_end_date'] ? substr($t['plan_end_date'], 0, 10) : null,
+                    'users' => array_map(fn ($u) => Board::person($u)['name'], $t['users'] ?? [])];
             }
             $byKind[$kinds[$col] ?? 'todo']++;
             if (self::isDone($t, $kinds) || !$t['plan_end_date']) {
@@ -213,7 +216,7 @@ class Metrics
                 'days_left'  => $planEnd ? (int) ceil((strtotime($planEnd) - $now) / DAY_TIMESTAMP) : null,
                 'health'     => $health,
             ],
-            'columns'  => array_map(fn ($c) => ['id' => $c['id'], 'name' => $c['name'], 'color' => $c['color'], 'count' => $byColumn[$c['id']] ?? 0], $columns),
+            'columns'  => array_map(fn ($c) => ['id' => $c['id'], 'name' => $c['name'], 'color' => $c['color'], 'count' => $byColumn[$c['id']] ?? 0, 'tasks' => $columnTasks[$c['id']] ?? []], $columns),
             'overdue'  => array_slice($overdue, 0, 15),
             'soon'     => array_slice($soon, 0, 15),
             'sprints'  => array_map(fn ($s) => ['id' => $s['id'], 'name' => $s['name'], 'state' => $s['state']], $sprints),

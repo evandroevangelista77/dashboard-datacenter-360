@@ -156,18 +156,55 @@ $is-dark: true;
         background-color: rgba(34, 211, 238, 0.05);
     }
 
+    // campos de digitação um tom mais claro que o cartão, com borda visível, para destacar do fundo
+    --dc-field: #1a2842;
+    --dc-field-hover: #1f3050;
+    --dc-field-border: rgba(148, 184, 224, 0.30);
+
     .form-control,
     .form-select,
-    .select2-container--default .select2-selection {
-        background-color: var(--dc-surface);
-        border-color: var(--dc-ring);
+    .select2-container--default .select2-selection,
+    .input-group-text,
+    .input-group > .btn-outline-secondary {
+        background-color: var(--dc-field);
+        border-color: var(--dc-field-border);
         color: var(--dc-text);
     }
 
+    .select2-container--default .select2-selection--single .select2-selection__rendered,
+    .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+        color: var(--dc-text);
+    }
+
+    .form-control:hover:not(:disabled):not([readonly]),
+    .form-select:hover:not(:disabled),
+    .select2-container--default:not(.select2-container--disabled) .select2-selection:hover {
+        background-color: var(--dc-field-hover);
+        border-color: rgba(148, 184, 224, 0.45);
+    }
+
+    .form-control::placeholder {
+        color: var(--dc-muted);
+        opacity: 1;
+    }
+
     .form-control:focus,
-    .form-select:focus {
+    .form-select:focus,
+    .select2-container--default.select2-container--focus .select2-selection,
+    .select2-container--default.select2-container--open .select2-selection {
+        background-color: var(--dc-field-hover);
         border-color: var(--dc-accent);
         box-shadow: 0 0 0 0.2rem rgba(34, 211, 238, 0.18);
+    }
+
+    // somente leitura / desabilitado: continua visível, mas sem parecer editável
+    .form-control:disabled,
+    .form-control[readonly],
+    .form-select:disabled,
+    .select2-container--disabled .select2-selection {
+        background-color: var(--dc-surface-2);
+        border-color: var(--dc-ring);
+        color: var(--dc-text-2);
     }
 
     .btn-primary {

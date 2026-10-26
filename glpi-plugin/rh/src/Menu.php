@@ -66,6 +66,9 @@ class Menu
                 'links' => Feria::canCreate() ? ['add' => self::page('/front/feria.form.php'), 'search' => self::page('/front/feria.php')] : []];
             $items['calendario'] = ['title' => 'Calendário de férias', 'page' => self::page('/front/calendario.php'), 'icon' => 'ti ti-calendar-event'];
         }
+        if ($vaga) {
+            $items['documentos'] = ['title' => 'Documentos', 'page' => self::page('/front/documentos.php'), 'icon' => 'ti ti-files'];
+        }
         if ($vaga || $ferias) {
             $items['dashboard'] = ['title' => 'Dashboard RH', 'page' => self::page('/front/dashboard.php'), 'icon' => 'ti ti-chart-bar'];
         }
@@ -92,6 +95,7 @@ class Menu
         'calendario'   => 'Quem está de férias no mês ou no ano inteiro: barras verdes são férias aprovadas e as listradas aguardam o gestor. Clique numa barra para abrir o pedido.',
         'dashboard'    => 'Visão geral do RH: vagas e aprovações, funil de seleção, origem dos candidatos, contratações, admissões em andamento e férias.',
         'departamento' => 'Departamentos da empresa e o gestor de cada um, que aprova a 1ª etapa das requisições de vaga da área.',
+        'documentos'   => 'Todos os documentos do RH: anexos das vagas, currículos do banco de candidatos e documentos admissionais. PDF e imagens abrem aqui mesmo; os demais são baixados.',
         'cargo'        => 'Cargos da empresa com CBO e job description (missão, responsabilidades, requisitos, competências e indicadores). O job description aparece na requisição de vaga.',
     ];
 

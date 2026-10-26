@@ -130,7 +130,7 @@ class Reembolso extends CommonDBTM
     {
         $ong = [];
         $this->addDefaultFormTab($ong);
-        $this->addStandardTab(Document_Item::class, $ong, $options);
+        $this->addStandardTab(Docs::class, $ong, $options);
         $this->addStandardTab(Log::class, $ong, $options);
         return $ong;
     }
@@ -297,7 +297,7 @@ class Reembolso extends CommonDBTM
                 $types = Tipodespesa::all();
                 $needsReceipt = array_filter($expenses, fn ($e) => $types[(int) $e['plugin_reembolso_tipodespesas_id']]['receipt'] ?? false);
                 if ($needsReceipt && Money::config()['require_receipt'] && !$this->countDocuments()) {
-                    throw new RuntimeException('Há despesas que exigem comprovante: anexe os comprovantes na aba "Documentos" antes de enviar.');
+                    throw new RuntimeException('Há despesas que exigem comprovante: anexe os comprovantes (card Comprovantes, abaixo das despesas) antes de enviar.');
                 }
                 $data += ['status' => self::SUBMITTED, 'date_submit' => $now, 'approval_comment' => ''];
                 $msg = 'Solicitação enviada para aprovação.';
@@ -451,6 +451,7 @@ class Reembolso extends CommonDBTM
         }
 
         $this->showExpenses($edit);
+        echo Docs::card($this);
         $this->showWorkflow();
         echo "</div>";
         return true;
@@ -498,7 +499,7 @@ class Reembolso extends CommonDBTM
         $tab = $e($this->getLinkURL() . '&forcetab=' . rawurlencode('Document_Item$1'));
         echo "<div class='card-footer small " . ($needsReceipt && !$docs ? 'text-warning' : 'text-secondary') . "'><i class='ti ti-paperclip me-1'></i>"
             . ($docs ? "$docs comprovante(s) anexado(s)." : ($needsReceipt ? 'Há despesas que exigem comprovante e nenhum foi anexado.' : 'Nenhum comprovante anexado.'))
-            . " <a href='$tab'>Anexar comprovantes (aba Documentos)</a></div></div>";
+            . " <a href='#oak-docs'>Anexar comprovantes</a></div></div>";
 
         if ($edit) {
             $boot = [

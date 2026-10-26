@@ -49,6 +49,11 @@ class Menu extends CommonGLPI
                 'page'  => "$front/mywork.php",
                 'icon'  => 'ti ti-user-check',
             ],
+            'documentos'       => [
+                'title' => 'Documentos dos projetos',
+                'page'  => "$front/documentos.php",
+                'icon'  => 'ti ti-files',
+            ],
             'projects'         => [
                 'title' => 'Projetos (GLPI)',
                 'page'  => '/front/project.php',

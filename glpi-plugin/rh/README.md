@@ -19,6 +19,7 @@ Plugin do GLPI 12.0.x com o processo de **recrutamento e seleção**: requisiç�
 | **Admissão (onboarding)** | Checklist por área (RH, TI, gestor, facilities) com 15 itens padrão e itens extras, com progresso, quem marcou e quando. O botão **Abrir chamado de TI** cria a requisição no GLPI com os itens de TI. |
 | **Férias** | Pedido com período, dias corridos e abono (até 10 dias). O gestor padrão é o *Responsável* do usuário no GLPI. Regras: mínimo de 5 dias, até 30 com o abono, sem sobreposição. O gestor vê quem da equipe estará fora no mesmo período e aprova ou reprova. |
 | **Calendário de férias** | Visão **mensal** (um dia por coluna, fins de semana destacados) e **anual** (os 12 meses numa tela, resumo de pessoas fora e dias por mês, mês mais cheio e linha de hoje). Barras de férias aprovadas e aguardando, com o período ao passar o mouse; clique abre o pedido. |
+| **Documentos** | Cartão de documentos na lateral da **vaga** (requisição assinada, organograma, anúncio…) e da **admissão** (RG, CPF, ASO, contrato…): cada arquivo com ícone do tipo, nome, tamanho e **Abrir**. PDF e imagens abrem num painel lateral, sem sair da página. O envio fica em *Anexar arquivos* (vários de uma vez, até 20 MB cada, com categoria e observação). A página *RH → Documentos* reúne os documentos de vagas, candidatos (currículos) e admissões em **grade** ou **lista**, com pastas por tipo, origem, item e categoria, e busca. |
 | **Dashboard RH** | Indicadores: vagas abertas, aguardando aprovação, candidatos em processo, contratações, tempo médio de contratação, admissões em andamento e férias. Gráficos: funil de conversão (vagas abertas, todas ou uma vaga), ranking da origem dos candidatos, contratações e novos candidatos por mês, vagas por situação e vagas abertas por departamento, com detalhes ao passar o mouse (quem foi contratado, quais vagas). |
 
 ## Permissões (Administração → Perfis → aba RH)
@@ -66,6 +67,7 @@ Tabelas: `glpi_plugin_rh_vagas`, `_candidatos`, `_candidaturas`, `_admissaos`, `
 
 ## Versões
 
+- **1.0.6**: gráficos de barras no modelo comum (clique abre as vagas no painel lateral), esteira *Onde as vagas estão agora* (requisição, aprovações e seleção, com os dias em cada etapa contra o prazo de referência); documentos na vaga e na admissão (lista compacta com visualização de PDF e imagens no painel lateral e envio de vários arquivos) e a biblioteca *RH → Documentos*.
 - **1.0.5**: os cartões do Dashboard RH abrem um resumo no painel lateral (vagas abertas, aprovações paradas, candidatos por etapa, contratações, tempo de contratação, admissões e férias).
 - **1.0.4**: avisos de cada etapa para o solicitante (envio, aprovações, andamento dos candidatos, contratação, encerramento) e das férias, no sino, pop-up e Teams com o plugin Avisos; novos e-mails “Andamento da vaga” e “Férias canceladas”.
 - **1.0.3**: cargo pretendido no banco de currículo (campo, coluna da lista e filtro de busca); envio do currículo no cadastro do candidato; vaga nova preenchida com o job description do cargo; calendário de férias com visão anual.

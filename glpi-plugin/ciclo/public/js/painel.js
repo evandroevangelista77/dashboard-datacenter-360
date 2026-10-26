@@ -28,6 +28,22 @@
         drawer.setAttribute('aria-hidden', 'false');
         drawer.querySelector('.btn-close').focus();
     }
+    /** Abre o painel com um conteúdo montado aqui (detalhe de uma barra do gráfico). */
+    function openHtml({title, icon, color, html}) {
+        if (!drawer) return;
+        drawer.style.setProperty('--c', color);
+        drawer.querySelector('h3').textContent = title;
+        drawer.querySelector('.cf-drawer-icon i').className = `ti ${icon}`;
+        const body = drawer.querySelector('.cf-drawer-body');
+        body.innerHTML = html;
+        body.scrollTop = 0;
+        backdrop.hidden = false;
+        requestAnimationFrame(() => { backdrop.classList.add('on'); drawer.classList.add('on'); });
+        drawer.setAttribute('aria-hidden', 'false');
+        drawer.querySelector('.btn-close').focus();
+    }
+    const ciclos = (list, val, sub) => `<div class="cf-dr-list">${list.map((c) => `<div class="cf-dr-item ${c.cls}"><div class="cf-dr-row"><a href="${esc(c.url || '#')}"><b>${esc(c.code)}</b></a>`
+        + `<span class="cf-dr-name">${esc(c.name)}</span><span class="cf-dr-val">${val(c)}</span></div>${sub(c) ? `<div class="cf-dr-sub">${sub(c)}</div>` : ''}</div>`).join('') || '<div class="cf-dr-empty">Nenhum Ciclo.</div>'}</div>`;
     function closeDrawer() {
         drawer.classList.remove('on');
         backdrop.classList.remove('on');
@@ -65,12 +81,13 @@
             const c = echarts.init(node);
             c.setOption({backgroundColor: 'transparent', textStyle: {color: text, fontFamily: 'inherit'}, animationDuration: 700, animationEasing: 'cubicOut', ...option});
             charts.push(c);
+            return c;
         };
         const grad = (a, b) => new echarts.graphic.LinearGradient(0, 0, 1, 0, [{offset: 0, color: a}, {offset: 1, color: b}]);
 
         // 1) tempo médio × SLO: faixa clara = SLO; barra por cima = tempo médio (verde no prazo, vermelho acima)
         const p = d.phase;
-        mk('cf-c-phase', {
+        const phaseChart = mk('cf-c-phase', {
             grid: {left: LABEL_W, right: 96, top: 42, bottom: 28},
             legend: {...legend,
                 data: [{name: 'No prazo', itemStyle: {color: '#22c55e'}}, {name: 'Acima do SLO', itemStyle: {color: '#ef4444'}}, {name: 'SLO (prazo)', itemStyle: {color: 'rgba(148,163,184,.25)'}}]},
@@ -80,17 +97,18 @@
                 return head(p.names[i]) + row(over ? '#ef4444' : '#22c55e', 'Tempo médio', p.count[i] ? `${fmt(p.avg[i])} dia(s)` : 'sem fases concluídas')
                     + row('rgba(148,163,184,.5)', 'SLO', p.slo[i] ? `${p.slo[i]} dia(s)` : 'sem SLO')
                     + row('transparent', 'Fases medidas', p.count[i]) + (p.hit[i] != null ? row('transparent', 'Concluídas no SLO', `${p.hit[i]}%`) : '')
-                    + (over ? `<div style="margin-top:6px;color:#ef4444;font-weight:700">${fmt((p.avg[i] - p.slo[i]).toFixed(1))} dia(s) acima do prazo</div>` : '');
+                    + (over ? `<div style="margin-top:6px;color:#ef4444;font-weight:700">${fmt((p.avg[i] - p.slo[i]).toFixed(1))} dia(s) acima do prazo</div>` : '')
+                    + `<div style="margin-top:8px;padding-top:6px;border-top:1px solid ${border};color:${muted};font-size:11.5px">Clique para ver os Ciclos</div>`;
             }},
             xAxis: {type: 'value', ...axis, name: 'dias', nameLocation: 'middle', nameGap: 24, nameTextStyle: {color: muted, fontSize: 12}},
-            yAxis: {...catAxis, data: p.names},
+            yAxis: {...catAxis, data: p.names, triggerEvent: true},
             // as três barras com a mesma espessura e sobrepostas (barGap -100%): a faixa do SLO fica atrás e aparece no que falta até o prazo
             series: [
                 {name: 'SLO (prazo)', type: 'bar', barWidth: 16, barGap: '-100%', silent: true, z: 1, data: p.slo.map((v) => v || null),
                     itemStyle: {color: 'rgba(148,163,184,.16)', borderColor: 'rgba(148,163,184,.4)', borderWidth: 1, borderRadius: 8}},
-                {name: 'No prazo', type: 'bar', barWidth: 16, barGap: '-100%', z: 3, data: p.avg.map((v, i) => (p.slo[i] && v > p.slo[i] ? null : (v || null))),
+                {name: 'No prazo', type: 'bar', barWidth: 16, barGap: '-100%', z: 3, cursor: 'pointer', data: p.avg.map((v, i) => (p.slo[i] && v > p.slo[i] ? null : (v || null))),
                     itemStyle: {color: grad('#16a34a', '#4ade80'), borderRadius: 8}},
-                {name: 'Acima do SLO', type: 'bar', barWidth: 16, barGap: '-100%', z: 3, data: p.avg.map((v, i) => (p.slo[i] && v > p.slo[i] ? v : null)),
+                {name: 'Acima do SLO', type: 'bar', barWidth: 16, barGap: '-100%', z: 3, cursor: 'pointer', data: p.avg.map((v, i) => (p.slo[i] && v > p.slo[i] ? v : null)),
                     itemStyle: {color: grad('#dc2626', '#f87171'), borderRadius: 8}},
                 {type: 'scatter', symbolSize: 0, silent: true, z: 4, data: p.avg.map((v, i) => [Math.max(v, p.slo[i] || 0), i]),
                     label: {show: true, position: 'right', distance: 10, fontSize: 13, formatter: (x) => {
@@ -101,10 +119,22 @@
                     }, rich: {g: {color: '#22c55e', fontWeight: 700, fontSize: 13}, r: {color: '#ef4444', fontWeight: 700, fontSize: 13}, m: {color: muted, fontSize: 12}}}},
             ],
         }, p.count.some((v) => v), 'O tempo de cada fase aparece quando os primeiros Ciclos concluírem fases.');
+        phaseChart?.on('click', (x) => {
+            const i = x.componentType === 'yAxis' ? p.names.indexOf(x.value) : x.dataIndex;
+            if (i < 0) return;
+            const list = [...(p.list[i] || [])].sort((a, b) => b.days - a.days).map((c) => ({...c, cls: c.late ? 'bad' : 'good'}));
+            const over = p.slo[i] && p.avg[i] > p.slo[i];
+            openHtml({title: p.names[i], icon: 'ti-hourglass', color: over ? '#ef4444' : '#22c55e',
+                html: `<div class="cf-dr-stats"><div><small>Tempo médio</small><b>${fmt(p.avg[i])} d</b></div><div><small>SLO</small><b>${p.slo[i] || '—'} d</b></div>`
+                    + `<div class="${p.hit[i] !== null && p.hit[i] < 80 ? 'bad' : ''}"><small>No SLO</small><b>${p.hit[i] ?? '—'}${p.hit[i] !== null ? '%' : ''}</b></div></div>`
+                    + `<p class="cf-dr-lead">${list.length} fase(s) concluída(s) no período, da mais demorada para a mais rápida.</p>`
+                    + ciclos(list, (c) => `${fmt(c.days)}d${c.slo ? ` <small class="text-secondary">/ ${c.slo}</small>` : ''}`,
+                        (c) => `concluída em ${esc(c.end.split('-').reverse().join('/'))}${c.late ? ' · <b class="text-danger">além do SLO</b>' : ''}`)});
+        });
 
         // 3) ciclo médio por mês × meta: linha com área, barras com a quantidade e a meta tracejada
         const m = d.month;
-        mk('cf-c-month', {
+        const monthChart = mk('cf-c-month', {
             grid: {left: 8, right: 16, top: 46, bottom: 4, containLabel: true},
             legend,
             tooltip: {...tip, trigger: 'axis', formatter: (ps) => {
@@ -130,6 +160,13 @@
                         label: {color: '#f59e0b', formatter: `meta ${m.meta} dias`, position: 'insideEndTop', fontWeight: 700, fontSize: 13}, data: [{yAxis: m.meta}]}},
             ],
         }, m.count.some((v) => v), 'O ciclo médio aparece quando o primeiro Ciclo for concluído.');
+        monthChart?.on('click', (x) => {
+            const i = x.dataIndex;
+            const list = (m.list[i] || []).map((c) => ({...c, cls: c.days > m.meta ? 'warn' : 'good'}));
+            openHtml({title: `Ciclos concluídos em ${m.labels[i]}`, icon: 'ti-calendar-check', color: '#14b8a6',
+                html: `<div class="cf-dr-stats"><div><small>Concluídos</small><b>${m.count[i]}</b></div><div><small>Ciclo médio</small><b>${m.avg[i] ?? '—'} d</b></div><div><small>Meta</small><b>${m.meta} d</b></div></div>`
+                    + ciclos(list, (c) => `${c.days}d`, (c) => (c.days > m.meta ? `${c.days - m.meta} dia(s) acima da meta` : 'dentro da meta'))});
+        });
     }
 
     document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', draw) : draw();

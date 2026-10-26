@@ -12,7 +12,7 @@ Plugin do GLPI 12.0.x para gerenciar projetos ágeis (Scrum e Kanban), waterfall
 | **Painéis do projeto** | Saúde (semáforo), % real × % planejado, índice de prazo (SPI), burndown da sprint, burnup com previsão de término pelo ritmo, curva S, fluxo cumulativo (CFD), velocidade, cartões por coluna, carga da equipe por semana e listas de atrasadas e das que vencem em 7 dias. |
 | **Portfólio do PMO** | Todos os projetos com saúde, progresso real × planejado, prazo, tarefas atrasadas, riscos e os campos do bloco "Dados do projeto" (plugin Fields, se houver). Inclui filtros, ordenação e exportação para CSV. |
 | **Meu trabalho** | As tarefas abertas do usuário em todos os projetos, agrupadas pelo prazo. |
-| **Documentação** | Páginas em texto rico com modelos: Termo de Abertura (TAP), Escopo/EAP, Matriz RACI, Plano de Comunicação, Ata de Reunião, Status Report, Lições Aprendidas e Retrospectiva. Também lista os arquivos anexados ao projeto. |
+| **Documentação** | Páginas em texto rico com modelos: Termo de Abertura (TAP), Escopo/EAP, Matriz RACI, Plano de Comunicação, Ata de Reunião, Status Report, Lições Aprendidas e Retrospectiva. Na lateral, o cartão *Arquivos do projeto* lista cada arquivo com ícone do tipo, nome, tamanho e **Abrir** (PDF e imagens no painel lateral) e recebe vários arquivos de uma vez. A página *PMO → Documentos* reúne os arquivos de todos os projetos em grade ou lista, com pastas por tipo, projeto e categoria. |
 | **Riscos e pendências** | Registro com probabilidade × impacto (matriz 5×5), nível, responsável, prazo e plano de resposta. |
 | **Avisos por e-mail** | Sprint iniciada, sprint concluída, risco crítico e tarefa atrasada, pelo sistema de notificações do próprio GLPI (modelos e destinatários editáveis). |
 | **Sino, pop-up e Teams** | Com o plugin [Avisos](../avisos), os mesmos eventos aparecem no sino e como pop-up para o gerente, a equipe e o responsável pelo risco, e vão para o canal do Teams do PMO. |
@@ -122,6 +122,7 @@ Tabelas criadas: `glpi_plugin_pmo_projects`, `_columns`, `_items`, `_sprints`, `
 
 ## Versões
 
+- **1.2.2**: gráficos do Portfólio e *Cartões por coluna* no modelo de barras comum, sem a rosca (clique abre os projetos ou os cartões no painel lateral), esteira *Onde os projetos estão agora*; cartão *Arquivos do projeto* na Documentação (lista compacta com visualização no painel lateral e envio de vários arquivos) e a página *Documentos dos projetos*; gráficos do Portfólio (estado, saúde e cliente) no mesmo estilo dos outros dashboards, com a lista de projetos na dica e clique na saúde para filtrar a tabela.
 - **1.2.1**: os cartões do Portfólio abrem um resumo no painel lateral (projetos por saúde, com filtro da tabela, tarefas atrasadas e riscos por projeto).
 - **1.2.0**: avisos no sino, pop-up e Teams (com o plugin Avisos) para tarefa atrasada, risco crítico e início e fim de sprint; o aviso de tarefa atrasada sai mesmo com o e-mail do GLPI desligado.
 - **1.1.1**: título e subtítulo em todas as telas (Portfólio, Meu trabalho e cada aba do projeto), explicando para que serve a página.

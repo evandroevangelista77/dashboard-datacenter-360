@@ -22,6 +22,7 @@ class Menu
         if (!$items) {
             return [];
         }
+        $items['documentos'] = ['title' => 'Comprovantes', 'page' => '/plugins/reembolso/front/documentos.php', 'icon' => 'ti ti-files'];
         if (\Session::haveRight('dropdown', READ)) {
             $items[strtolower(Tipodespesa::class)] = ['title' => Tipodespesa::getTypeName(2), 'page' => Tipodespesa::getSearchURL(false), 'icon' => Tipodespesa::getIcon()];
             $items[strtolower(Centrocusto::class)] = ['title' => Centrocusto::getTypeName(2), 'page' => Centrocusto::getSearchURL(false), 'icon' => Centrocusto::getIcon()];
@@ -55,6 +56,7 @@ class Menu
     public const SUBTITLES = [
         'reembolso' => 'Solicitações de reembolso de despesas dos técnicos em atendimentos externos. Crie a solicitação, lance as despesas com comprovante e envie para aprovação; depois de aprovada, o financeiro registra o pagamento.',
         'dashboard' => 'Quanto foi gasto, com o quê e por quem: indicadores e gráficos por período, técnico, centro de custo, tipo de despesa e situação, com exportação para Excel (XLSX).',
+        'documentos' => 'Todos os comprovantes das solicitações de reembolso (notas, cupons, recibos e fotos), por solicitação, por categoria ou por tipo de arquivo. PDF e imagens abrem aqui mesmo.',
         'config'    => 'Regras gerais do reembolso: valor pago por KM rodado, cálculo do KM pela rota entre origem e destino e exigência de comprovante. Tipos de despesa e centros de custo ficam nas listas próprias.',
         'form_new'  => 'Informe o técnico, o centro de custo, o chamado e o local do atendimento, lance as despesas abaixo e envie para aprovação.',
         'form'      => 'Dados do atendimento, despesas lançadas com comprovantes e o andamento da aprovação e do pagamento. O histórico completo fica na aba Histórico.',

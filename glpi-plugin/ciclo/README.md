@@ -36,6 +36,12 @@ Acompanha cada venda do **aviso de fechamento no CRM até o recebimento dos valo
 
 Um Ciclo tem quantos itens quiser de cada tipo, com valor e datas: **pedidos do Power Automate** (aprovação), **RMs de compra**, **pedidos a fornecedores** (previsão e entrega; hardware/software), **NFs de entrada** (conferência OK/NOK), **NFs de saída** (hardware, software ou serviço) e **parcelas a receber** (vencimento e recebimento). Os PDFs (NF, termo de aceite, contrato) vão na aba *Documentos*.
 
+## Documentos
+
+- **No Ciclo**, o card *Documentos do Ciclo* lista cada arquivo com ícone do tipo, nome, tamanho, fase e categoria, e o botão **Abrir**. Em *Anexar arquivos* recebe vários de uma vez (arrastar e soltar, até 20 MB cada), com **categoria**, **fase** e observação. **PDF e imagens abrem num painel lateral**, sem sair da página; os demais são baixados.
+- **Biblioteca** (*Ciclo Financeiro → Documentos*): todos os documentos dos Ciclos em **grade** (miniatura das fotos e uma folha com a categoria para os PDFs) ou **lista**, com **pastas** por tipo, por Ciclo, por categoria e por fase, e busca por arquivo, Ciclo ou cliente.
+- Os arquivos são documentos do GLPI ligados ao Ciclo: aparecem também na aba *Documentos* e seguem os tipos de arquivo permitidos no GLPI.
+
 ## Avisos e chamados
 
 - **Chamado por fase** para o grupo responsável (liga e desliga na configuração): a área trabalha na sua fila e recebe os e-mails de chamado do GLPI.
@@ -78,6 +84,7 @@ No Ciclo, um **Gantt** mostra cada passagem pelas fases no tempo (verde no prazo
 
 ## Versões
 
+- **1.0.2**: clique nas barras de *Tempo médio por fase × SLO* e no *Ciclo médio por mês* abre os Ciclos no painel lateral; documentos no Ciclo (envio de vários arquivos com categoria e fase, visualização de PDF e imagens no painel lateral) e a biblioteca de documentos de todos os Ciclos.
 - **1.0.1**: “Onde os Ciclos estão agora” virou uma esteira do processo (cada Ciclo na sua fase, com dias contra o SLO); gráficos com texto maior e fases alinhadas à esquerda.
 - **1.0.0**: primeira versão (fase 1, piloto sem integrações).
 

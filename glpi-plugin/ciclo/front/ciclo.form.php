@@ -1,6 +1,7 @@
 <?php
 
 use GlpiPlugin\Ciclo\Ciclo;
+use GlpiPlugin\Ciclo\Documentos;
 use GlpiPlugin\Ciclo\Fase;
 use GlpiPlugin\Ciclo\Item;
 use GlpiPlugin\Ciclo\Menu;
@@ -47,6 +48,15 @@ try {
         $load();
         Item::save($ciclo, (array) ($_POST['item'] ?? []));
         Html::back();
+    } elseif (isset($_POST['doc_upload'])) {
+        $load();
+        $n = Documentos::upload($ciclo, (array) ($_FILES['docs'] ?? []), (int) ($_POST['doc_category'] ?? 0), (string) ($_POST['doc_code'] ?? ''), trim((string) ($_POST['doc_note'] ?? '')));
+        Session::addMessageAfterRedirect($n ? "$n documento(s) anexado(s)." : 'Escolha pelo menos um arquivo.', false, $n ? INFO : WARNING);
+        Html::redirect(Ciclo::getFormURLWithID($ciclo->getID()) . '#cf-docs');
+    } elseif (isset($_POST['doc_remove'])) {
+        $load();
+        Documentos::remove($ciclo, (int) ($_POST['doc_id'] ?? 0));
+        Html::redirect(Ciclo::getFormURLWithID($ciclo->getID()) . '#cf-docs');
     } elseif (isset($_POST['item_delete'])) {
         $load();
         Item::remove($ciclo, (int) ($_POST['item_id'] ?? 0));

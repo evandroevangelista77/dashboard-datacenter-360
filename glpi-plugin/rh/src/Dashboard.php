@@ -123,13 +123,13 @@ class Dashboard extends CommonGLPI
         return $html . "</div><div class='small text-secondary mt-2'>Cada barra mostra quantos candidatos <b>chegaram</b> à etapa (estão nela, avançaram ou saíram ali). A % entre as barras é quanto avançou de uma etapa para a outra.</div></div></div>";
     }
 
-    /** Origem dos candidatos: rosca com o total e ranking com logotipo, participação e contratações. */
+    /** Origem dos candidatos: ranking com logotipo, participação e contratações. */
     private static function sources(array $sources): string
     {
         $e = [Menu::class, 'e'];
         $total = array_sum(array_column($sources, 'all'));
         $hired = array_sum(array_column($sources, 'hired'));
-        $html = "<div class='card h-100'><div class='card-header'><h3 class='card-title'><i class='ti ti-chart-donut me-2'></i>Origem dos candidatos</h3>"
+        $html = "<div class='card h-100'><div class='card-header'><h3 class='card-title'><i class='ti ti-speakerphone me-2'></i>Origem dos candidatos</h3>"
             . "<div class='card-actions small text-secondary'>$total candidato(s) · $hired contratado(s)</div></div><div class='card-body'>";
         if (!$total) {
             return $html . "<div class='rh-empty' style='height:240px'>Sem candidatos ainda.</div></div></div>";
@@ -174,9 +174,9 @@ class Dashboard extends CommonGLPI
         foreach ($DB->request(['SELECT' => ['v.id', 'v.name', 'v.positions', 'v.status', 'd.name AS dept'], 'FROM' => Vaga::getTable() . ' AS v',
             'LEFT JOIN' => [Departamento::getTable() . ' AS d' => ['ON' => ['d' => 'id', 'v' => 'plugin_rh_departamentos_id']]], 'WHERE' => $vw, 'ORDER' => 'v.name']) as $r) {
             $byStatus[(int) $r['status']]++;
-            $statusVagas[(int) $r['status']][] = 'VG-' . $r['id'] . ' ' . $r['name'];
+            $statusVagas[(int) $r['status']][] = ['code' => 'VG-' . $r['id'], 'name' => (string) $r['name'], 'dept' => $r['dept'] ?: 'Sem departamento', 'positions' => (int) $r['positions'], 'url' => Vaga::getFormURLWithID((int) $r['id'])];
             if ((int) $r['status'] === Vaga::OPEN) {
-                $openVagas[(int) $r['id']] = ['name' => (string) $r['name'], 'dept' => $r['dept'] ?: 'Sem departamento', 'positions' => (int) $r['positions'], 'active' => 0, 'hired' => 0];
+                $openVagas[(int) $r['id']] = ['code' => 'VG-' . $r['id'], 'url' => Vaga::getFormURLWithID((int) $r['id']), 'name' => (string) $r['name'], 'dept' => $r['dept'] ?: 'Sem departamento', 'positions' => (int) $r['positions'], 'active' => 0, 'hired' => 0];
             }
         }
 
@@ -292,14 +292,16 @@ class Dashboard extends CommonGLPI
         echo "<div class='col-12 col-xl-7'>" . self::funnel($vw, (string) ($get['funil'] ?? 'open'), $from, $months) . "</div>";
         echo "<div class='col-12 col-xl-5'>" . self::sources($sources) . "</div>";
         echo $card('rh-c-hires', '<i class="ti ti-user-plus me-2"></i>Contratações por mês', array_sum($hires) . ' contratação(ões) · média ' . str_replace('.', ',', (string) $hireSeries['avg']) . '/mês');
-        echo $card('rh-c-status', '<i class="ti ti-briefcase-2 me-2"></i>Vagas por situação', $totalVagas . ' vaga(s) no total');
+        echo $card('rh-c-status', '<i class="ti ti-briefcase-2 me-2"></i>Vagas por situação', $totalVagas . ' vaga(s) · clique para ver as vagas');
         echo $card('rh-c-dept', '<i class="ti ti-sitemap me-2"></i>Vagas abertas por departamento',
             count($depts) . ' departamento(s) · ' . array_sum(array_column($depts, 'positions')) . ' posição(ões) em aberto · ' . array_sum(array_column($depts, 'active')) . ' candidato(s) em processo',
-            'col-xl-12', max(220, count($depts) * 70 + 70));
+            'col-xl-12');
+        echo "<div class='col-12'>" . self::pipeline($vw) . "</div>";
         echo "</div></div>";
         echo "<script type='application/json' id='rh-dash'>" . json_encode($data, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) . "</script>";
         echo self::drawers($vw, $from, $months, $admWhere, $fw);
         echo Menu::script('drawer.js');
+        echo Menu::script('oakbars.js');
         echo Menu::script('dashboard.js');
     }
 
@@ -435,5 +437,49 @@ class Dashboard extends CommonGLPI
             $html .= "<template id='dr-$key' data-title='" . $e($title) . "' data-icon='$icon' data-color='$color'>$body</template>";
         }
         return $html;
+    }
+
+    /** Prazo de referência de cada etapa, em dias (a seleção usa o prazo da vaga, quando tem). */
+    public const PIPE_DAYS = [Vaga::DRAFT => 5, Vaga::WAIT_MANAGER => 2, Vaga::WAIT_BOARD => 3, Vaga::OPEN => 45];
+
+    /** "Onde as vagas estão agora": requisição, aprovações e seleção, com os dias parados em cada etapa. */
+    private static function pipeline(array $vw): string
+    {
+        global $DB;
+        $areas = [Vaga::DRAFT => 'Solicitante', Vaga::WAIT_MANAGER => 'Gestor da área', Vaga::WAIT_BOARD => 'Diretoria', Vaga::OPEN => 'Recrutador'];
+        $steps = [];
+        foreach (self::PIPE_DAYS as $st => $days) {
+            $steps[$st] = ['name' => Vaga::STATUSES[$st][0], 'area' => $areas[$st], 'items' => []];
+        }
+        $rows = iterator_to_array($DB->request(['SELECT' => ['v.*', 'd.name AS dept'], 'FROM' => Vaga::getTable() . ' AS v',
+            'LEFT JOIN' => [Departamento::getTable() . ' AS d' => ['ON' => ['d' => 'id', 'v' => 'plugin_rh_departamentos_id']]],
+            'WHERE' => $vw + ['v.status' => array_keys(self::PIPE_DAYS)], 'ORDER' => 'v.id']), false);
+        // quando o gestor aprovou (a diretoria conta a partir daí)
+        $approved = [];
+        if ($rows) {
+            foreach ($DB->request(['FROM' => 'glpi_plugin_rh_aprovacoes', 'WHERE' => ['itemtype' => Vaga::class, 'items_id' => array_column($rows, 'id'), 'step' => 'manager', 'decision' => 'approved'], 'ORDER' => 'id']) as $a) {
+                $approved[(int) $a['items_id']] = $a['date'];
+            }
+        }
+        $cands = [];
+        foreach ($DB->request(['SELECT' => ['plugin_rh_vagas_id', new \Glpi\DBAL\QueryExpression('COUNT(*) AS n')], 'FROM' => Candidatura::getTable(), 'WHERE' => ['status' => 'active'], 'GROUPBY' => 'plugin_rh_vagas_id']) as $c) {
+            $cands[(int) $c['plugin_rh_vagas_id']] = (int) $c['n'];
+        }
+        foreach ($rows as $r) {
+            $st = (int) $r['status'];
+            $since = [Vaga::DRAFT => $r['date_creation'], Vaga::WAIT_MANAGER => $r['date_submit'], Vaga::WAIT_BOARD => $approved[(int) $r['id']] ?? $r['date_submit'], Vaga::OPEN => $r['date_open']][$st] ?: $r['date_creation'];
+            $limit = self::PIPE_DAYS[$st];
+            if ($st === Vaga::OPEN && $r['deadline'] && $r['date_open']) {
+                $limit = max(1, (strtotime($r['deadline'] . ' 23:59:59') - strtotime($r['date_open'])) / 86400);
+            }
+            $n = $cands[(int) $r['id']] ?? 0;
+            $steps[$st]['items'][] = [
+                'code' => 'VG-' . $r['id'], 'name' => (string) $r['name'], 'url' => Vaga::getFormURLWithID((int) $r['id']),
+                'sub' => implode(' · ', array_filter([$r['dept'] ?: 'Sem departamento', (int) $r['positions'] . ' posição(ões)', $st === Vaga::OPEN ? "$n candidato(s) em processo" : ''])),
+                'days' => max(0, (time() - strtotime((string) $since)) / 86400), 'limit' => round($limit),
+            ];
+        }
+        return Esteira::card(['title' => 'Onde as vagas estão agora', 'icon' => 'ti-route', 'steps' => $steps, 'ends' => ['Requisição', 'Aprovação', 'Seleção'],
+            'empty' => 'Nenhuma vaga em andamento.']);
     }
 }
