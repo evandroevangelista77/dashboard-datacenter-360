@@ -14,7 +14,7 @@ use GlpiPlugin\Ciclo\Ciclo;
 use GlpiPlugin\Ciclo\Menu;
 use GlpiPlugin\Ciclo\ProfileTab;
 
-define('PLUGIN_CICLO_VERSION', '1.0.2');
+define('PLUGIN_CICLO_VERSION', '1.0.3');
 define('PLUGIN_CICLO_MIN_GLPI', '12.0.0');
 define('PLUGIN_CICLO_MAX_GLPI', '12.0.99');
 

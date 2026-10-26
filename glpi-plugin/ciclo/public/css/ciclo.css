@@ -362,3 +362,6 @@
 /* barras do modelo comum (oakbars.js) */
 .oak-bars-empty { min-height: 200px; height: 100%; display: flex; flex-direction: column; gap: .4rem; align-items: center; justify-content: center; color: var(--tblr-secondary-color); font-size: .9rem; text-align: center; }
 .oak-bars-empty .ti { font-size: 1.8rem; opacity: .6; }
+
+/* ata do transfermeeting (somente leitura) */
+.cf-minutes { padding: .75rem 1rem; border: 1px solid var(--tblr-border-color); border-radius: 8px; background: var(--tblr-bg-surface-secondary); min-height: 3rem; }

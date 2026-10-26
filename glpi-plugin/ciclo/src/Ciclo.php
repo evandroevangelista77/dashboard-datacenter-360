@@ -5,6 +5,7 @@ namespace GlpiPlugin\Ciclo;
 use CommonDBTM;
 use Document_Item;
 use Dropdown;
+use Glpi\RichText\RichText;
 use Html;
 use Log;
 use Project;
@@ -115,6 +116,8 @@ class Ciclo extends CommonDBTM
             ['id' => 10, 'table' => 'glpi_users', 'field' => 'name', 'linkfield' => 'users_id_gp', 'name' => 'GP', 'datatype' => 'dropdown', 'right' => 'all'],
             ['id' => 11, 'table' => 'glpi_users', 'field' => 'name', 'linkfield' => 'users_id_otc', 'name' => 'OTC', 'datatype' => 'dropdown', 'right' => 'all'],
             ['id' => 12, 'table' => $t, 'field' => 'cc_number', 'name' => 'Centro de custo', 'datatype' => 'string'],
+            ['id' => 15, 'table' => $t, 'field' => 'date_transfer', 'name' => 'Transfermeeting em', 'datatype' => 'date'],
+            ['id' => 16, 'table' => $t, 'field' => 'transfer_minutes', 'name' => 'Ata do transfermeeting', 'datatype' => 'text', 'htmltext' => true, 'massiveaction' => false],
             ['id' => 13, 'table' => $t, 'field' => 'returns', 'name' => 'Devoluções', 'datatype' => 'number', 'massiveaction' => false],
             ['id' => 14, 'table' => $t, 'field' => 'date_end', 'name' => 'Concluído em', 'datatype' => 'datetime', 'massiveaction' => false],
             ['id' => 19, 'table' => $t, 'field' => 'date_mod', 'name' => __('Last update'), 'datatype' => 'datetime', 'massiveaction' => false],
@@ -302,6 +305,17 @@ class Ciclo extends CommonDBTM
             echo $text('cc_description', 'Descrição', 'col-md-9');
             echo $section('Transfermeeting', 'ti-users', 'transfer');
             echo $date('date_transfer', 'Realizada em');
+            echo $text('transfer_participants', 'Participantes', 'col-md-9', 'Ex.: Comercial, OTC, GP, Compras, Logística, cliente');
+            // ata da reunião em texto rico (o arquivo assinado, se houver, vai em Documentos com a fase Transfermeeting)
+            echo "<div class='col-12'><label class='form-label'>Ata do transfermeeting</label>";
+            if ($edit) {
+                echo Html::textarea(['name' => 'transfer_minutes', 'value' => RichText::getSafeHtml((string) $f['transfer_minutes']), 'enable_richtext' => true,
+                    'enable_images' => false, 'rows' => 10, 'display' => false]);
+                echo "<div class='form-hint'>Pauta, decisões, responsáveis e prazos combinados. Se a ata tiver arquivo assinado, anexe em <a href='#cf-docs'>Documentos do Ciclo</a> com a fase Transfermeeting.</div>";
+            } else {
+                echo "<div class='cf-minutes rich_text_container'>" . (trim(strip_tags((string) $f['transfer_minutes'])) !== '' ? RichText::getEnhancedHtml((string) $f['transfer_minutes']) : "<span class='text-secondary'>Ata ainda não registrada.</span>") . "</div>";
+            }
+            echo "</div>";
             if ($fisico) {
                 echo $section('Separação e transporte', 'ti-truck', 'expedicao');
                 echo $text('cubage', 'Cubagem / volumes', 'col-md-4', 'ex.: 3 volumes, 0,8 m³, 120 kg');

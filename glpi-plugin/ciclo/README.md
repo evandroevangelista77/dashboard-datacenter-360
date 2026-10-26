@@ -84,6 +84,7 @@ No Ciclo, um **Gantt** mostra cada passagem pelas fases no tempo (verde no prazo
 
 ## Versões
 
+- **1.0.3**: ata do transfermeeting no Ciclo (participantes e a ata em texto rico, na seção Transfermeeting dos dados), também disponível na busca.
 - **1.0.2**: clique nas barras de *Tempo médio por fase × SLO* e no *Ciclo médio por mês* abre os Ciclos no painel lateral; documentos no Ciclo (envio de vários arquivos com categoria e fase, visualização de PDF e imagens no painel lateral) e a biblioteca de documentos de todos os Ciclos.
 - **1.0.1**: “Onde os Ciclos estão agora” virou uma esteira do processo (cada Ciclo na sua fase, com dias contra o SLO); gráficos com texto maior e fases alinhadas à esquerda.
 - **1.0.0**: primeira versão (fase 1, piloto sem integrações).

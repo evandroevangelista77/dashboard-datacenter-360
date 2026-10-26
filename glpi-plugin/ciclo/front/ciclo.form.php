@@ -31,7 +31,7 @@ try {
         $load();
         $ciclo->update(array_intersect_key($_POST, array_flip([
             'id', 'name', 'customer', 'opportunity', 'sale_type', 'amount', 'date_closing', 'date_signed', 'users_id_commercial', 'users_id_otc', 'users_id_gp',
-            'cc_number', 'cc_description', 'date_transfer', 'cubage', 'transport_mode', 'transport_cost', 'date_delivery', 'projects_id', 'date_accept', 'comment',
+            'cc_number', 'cc_description', 'date_transfer', 'transfer_participants', 'transfer_minutes', 'cubage', 'transport_mode', 'transport_cost', 'date_delivery', 'projects_id', 'date_accept', 'comment',
         ])));
         Html::back();
     } elseif (isset($_POST['purge'])) {

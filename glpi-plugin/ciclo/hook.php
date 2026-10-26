@@ -24,7 +24,7 @@ function plugin_ciclo_install(): bool
             `amount` decimal(14,2) NOT NULL DEFAULT 0, `date_closing` datetime DEFAULT NULL, `date_signed` date DEFAULT NULL,
             `users_id_commercial` $int, `users_id_otc` $int, `users_id_gp` $int,
             `cc_number` varchar(100) DEFAULT NULL, `cc_description` varchar(255) DEFAULT NULL,
-            `date_transfer` date DEFAULT NULL, `cubage` varchar(255) DEFAULT NULL, `transport_mode` varchar(20) DEFAULT NULL, `transport_cost` decimal(14,2) NOT NULL DEFAULT 0,
+            `date_transfer` date DEFAULT NULL, `transfer_participants` varchar(255) DEFAULT NULL, `transfer_minutes` mediumtext, `cubage` varchar(255) DEFAULT NULL, `transport_mode` varchar(20) DEFAULT NULL, `transport_cost` decimal(14,2) NOT NULL DEFAULT 0,
             `date_delivery` date DEFAULT NULL, `projects_id` $int, `date_accept` date DEFAULT NULL,
             `status` tinyint NOT NULL DEFAULT 1, `current_phase` varchar(30) DEFAULT NULL, `returns` int NOT NULL DEFAULT 0,
             `date_end` datetime DEFAULT NULL, `close_comment` text, `comment` text, `is_deleted` tinyint NOT NULL DEFAULT 0,
@@ -58,6 +58,12 @@ function plugin_ciclo_install(): bool
     foreach ($tables as $table => $def) {
         if (!$DB->tableExists($table)) {
             $DB->doQuery("CREATE TABLE `$table` ($def) $opts");
+        }
+    }
+    // 1.0.3: ata do transfermeeting
+    foreach (['transfer_participants' => 'varchar(255) DEFAULT NULL AFTER `date_transfer`', 'transfer_minutes' => 'mediumtext AFTER `transfer_participants`'] as $field => $type) {
+        if (!$DB->fieldExists(Ciclo::getTable(), $field)) {
+            $DB->doQuery("ALTER TABLE `" . Ciclo::getTable() . "` ADD `$field` $type");
         }
     }
 

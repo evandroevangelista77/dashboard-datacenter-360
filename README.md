@@ -377,7 +377,7 @@ Fase 1 (piloto): tudo informado no GLPI; as integrações (CRM, TOTVS RM, Power 
 Baixe `oak-ciclo-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
 
 ```bash
-unzip oak-ciclo-completo-1.0.2.zip && cd oak-ciclo-completo
+unzip oak-ciclo-completo-1.0.3.zip && cd oak-ciclo-completo
 sudo bash instalar.sh
 ```
 
