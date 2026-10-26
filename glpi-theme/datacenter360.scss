@@ -204,7 +204,27 @@ $is-dark: true;
     .select2-container--disabled .select2-selection {
         background-color: var(--dc-surface-2);
         border-color: var(--dc-ring);
-        color: var(--dc-text-2);
+        color: var(--dc-text);
+        // Safari/Chrome apagam o texto de date/time desabilitado: força a cor e a opacidade
+        -webkit-text-fill-color: var(--dc-text);
+        opacity: 1;
+    }
+
+    .form-control:disabled::-webkit-datetime-edit,
+    .form-control:disabled::-webkit-datetime-edit-fields-wrapper,
+    .form-control:disabled::-webkit-datetime-edit-text,
+    .form-control:disabled::-webkit-datetime-edit-hour-field,
+    .form-control:disabled::-webkit-datetime-edit-minute-field,
+    .form-control:disabled::-webkit-datetime-edit-day-field,
+    .form-control:disabled::-webkit-datetime-edit-month-field,
+    .form-control:disabled::-webkit-datetime-edit-year-field {
+        color: var(--dc-text);
+        -webkit-text-fill-color: var(--dc-text);
+        opacity: 1;
+    }
+
+    .form-control:disabled::-webkit-calendar-picker-indicator {
+        opacity: 0.35;
     }
 
     .btn-primary {

@@ -15,8 +15,8 @@ use User;
 
 /**
  * Solicitação de reembolso: técnico, centro de custo, localização, chamado e
- * período, com as despesas lançadas e o fluxo rascunho → enviado → aprovado
- * (ou recusado) → pago.
+ * período, com as despesas lançadas. Desde a 1.2.0 as solicitações seguem em lote
+ * (Lote): rascunho → no lote (enviado) → aprovado → pago, ou devolvida para correção.
  */
 class Reembolso extends CommonDBTM
 {
@@ -35,7 +35,7 @@ class Reembolso extends CommonDBTM
 
     public const STATUSES = [
         self::DRAFT     => ['Rascunho', '#64748b', 'ti-pencil'],
-        self::SUBMITTED => ['Aguardando aprovação', '#f59e0b', 'ti-hourglass'],
+        self::SUBMITTED => ['No lote (em aprovação)', '#f59e0b', 'ti-stack-2'],
         self::APPROVED  => ['Aprovado (a pagar)', '#3b82f6', 'ti-circle-check'],
         self::REFUSED   => ['Recusado', '#ef4444', 'ti-circle-x'],
         self::PAID      => ['Pago', '#22c55e', 'ti-cash'],
@@ -99,7 +99,8 @@ class Reembolso extends CommonDBTM
         if (in_array($status, [self::DRAFT, self::REFUSED], true)) {
             return self::isApprover() || ($this->isOwner() && Session::haveRight(self::$rightname, UPDATE));
         }
-        return $status === self::SUBMITTED && self::isApprover();
+        // no lote: só volta a ser editável quando o lote é devolvido ao técnico
+        return $status === self::SUBMITTED && self::isApprover() && !(int) ($this->fields['plugin_reembolso_lotes_id'] ?? 0);
     }
 
     public function canUpdateItem(): bool
@@ -167,6 +168,9 @@ class Reembolso extends CommonDBTM
             ['id' => 14, 'table' => $t, 'field' => 'address', 'name' => 'Local do atendimento', 'datatype' => 'string'],
             ['id' => 15, 'table' => $t, 'field' => 'date_submit', 'name' => 'Enviado em', 'datatype' => 'datetime', 'massiveaction' => false],
             ['id' => 19, 'table' => $t, 'field' => 'date_mod', 'name' => __('Last update'), 'datatype' => 'datetime', 'massiveaction' => false],
+            ['id' => 20, 'table' => $t, 'field' => 'minutes_business', 'name' => 'Horas comerciais', 'datatype' => 'specific', 'massiveaction' => false],
+            ['id' => 21, 'table' => $t, 'field' => 'minutes_outside', 'name' => 'Horas fora do horário comercial', 'datatype' => 'specific', 'massiveaction' => false],
+            ['id' => 22, 'table' => $t, 'field' => 'minutes_night', 'name' => 'Horas de adicional noturno', 'datatype' => 'specific', 'massiveaction' => false],
             ['id' => 80, 'table' => 'glpi_entities', 'field' => 'completename', 'name' => __('Entity'), 'datatype' => 'dropdown', 'massiveaction' => false],
         ];
     }
@@ -175,6 +179,13 @@ class Reembolso extends CommonDBTM
     {
         if ($field === 'status') {
             return self::statusBadge((int) ($values[$field] ?? 0));
+        }
+        if ($field === 'minutes_business' || $field === 'minutes_outside') {
+            return Money::minutes((int) ($values[$field] ?? 0));
+        }
+        if ($field === 'minutes_night') {
+            $m = (int) ($values[$field] ?? 0);
+            return $m ? "<span class='badge rb-night-badge'><i class='ti ti-moon-stars me-1'></i>" . Money::minutes($m) . "</span>" : '—';
         }
         return parent::getSpecificValueToDisplay($field, $values, $options);
     }
@@ -187,6 +198,57 @@ class Reembolso extends CommonDBTM
             return Dropdown::showFromArray($name, array_map(fn ($s) => $s[0], self::STATUSES), $options);
         }
         return parent::getSpecificValueToSelect($field, $name, $values, $options);
+    }
+
+    /** Selos: horas comerciais, fora do horário comercial e de adicional noturno. */
+    public static function hoursBadges(int $business, int $outside, int $night, bool $has): string
+    {
+        if (!$has) {
+            return "<span class='rb-hours-empty'><i class='ti ti-clock me-1'></i>Informe o horário do início e do fim para ver as horas comerciais, fora do horário comercial e de adicional noturno.</span>";
+        }
+        $c = Money::config();
+        return "<span class='rb-hours-badge biz'><i class='ti ti-briefcase me-1'></i>Comercial <b>" . Money::minutes($business) . "</b></span>"
+            . "<span class='rb-hours-badge out'><i class='ti ti-clock-exclamation me-1'></i>Fora do horário comercial <b>" . Money::minutes($outside) . "</b></span>"
+            . ($night ? "<span class='rb-hours-badge night'><i class='ti ti-moon-stars me-1'></i>Adicional noturno <b>" . Money::minutes($night) . "</b></span>" : '')
+            . "<span class='rb-hours-hint'>comercial: seg. a sex. " . htmlspecialchars($c['business_start'] . '–' . $c['business_end']) . " · noturno: " . htmlspecialchars($c['night_start'] . '–' . $c['night_end']) . "</span>";
+    }
+
+    /** Mesmo cálculo do Money::hours, no navegador, para os selos mudarem enquanto se digita. */
+    public static function hoursScript(): string
+    {
+        return <<<'JS'
+(() => {
+    const box = document.querySelector('[data-rb-hours]');
+    if (!box) return;
+    const form = box.closest('form');
+    const v = (n) => form.querySelector(`[name="${n}"]`)?.value || '';
+    const {bs, be, ns, ne} = box.dataset;
+    const night = (t) => (ns <= ne ? t >= ns && t < ne : t >= ns || t < ne);
+    const fmt = (m) => (m <= 0 ? '—' : (Math.floor(m / 60) ? `${Math.floor(m / 60)}h${m % 60 ? String(m % 60).padStart(2, '0') : ''}` : `${m}min`));
+    const calc = () => {
+        const d1 = v('date_begin'), t1 = v('time_begin'), d2 = v('date_end'), t2 = v('time_end');
+        if (!d1 || !t1 || !d2 || !t2) return;
+        let a = new Date(`${d1}T${t1}`), b = new Date(`${d2}T${t2}`);
+        if (!(b > a)) {
+            box.innerHTML = '<span class="rb-hours-empty text-danger"><i class="ti ti-alert-triangle me-1"></i>O fim precisa ser depois do início (se passou da meia-noite, ajuste a data do fim).</span>';
+            return;
+        }
+        b = new Date(Math.min(b, a.getTime() + 31 * 864e5));
+        let biz = 0, out = 0, nig = 0;
+        for (let m = new Date(a); m < b; m = new Date(m.getTime() + 6e4)) {
+            const t = m.toTimeString().slice(0, 5), wd = m.getDay() >= 1 && m.getDay() <= 5;
+            if (wd && t >= bs && t < be) biz++; else out++;
+            if (night(t)) nig++;
+        }
+        box.innerHTML = `<span class="rb-hours-badge biz"><i class="ti ti-briefcase me-1"></i>Comercial <b>${fmt(biz)}</b></span>`
+            + `<span class="rb-hours-badge out"><i class="ti ti-clock-exclamation me-1"></i>Fora do horário comercial <b>${fmt(out)}</b></span>`
+            + (nig ? `<span class="rb-hours-badge night"><i class="ti ti-moon-stars me-1"></i>Adicional noturno <b>${fmt(nig)}</b></span>` : '')
+            + `<span class="rb-hours-hint">comercial: seg. a sex. ${bs}–${be} · noturno: ${ns}–${ne}</span>`;
+    };
+    ['date_begin', 'time_begin', 'date_end', 'time_end'].forEach((n) => form.querySelector(`[name="${n}"]`)?.addEventListener('input', calc));
+    ['date_begin', 'time_begin', 'date_end', 'time_end'].forEach((n) => form.querySelector(`[name="${n}"]`)?.addEventListener('change', calc));
+})();
+JS;
     }
 
     public static function statusBadge(int $status): string
@@ -227,6 +289,24 @@ class Reembolso extends CommonDBTM
 
     private function validateHeader(array $input)
     {
+        // horário do atendimento (hh:mm), opcional
+        foreach (['time_begin', 'time_end'] as $k) {
+            if (array_key_exists($k, $input)) {
+                $input[$k] = preg_match('/^([01]\d|2[0-3]):[0-5]\d(:\d\d)?$/', (string) $input[$k]) ? substr((string) $input[$k], 0, 5) . ':00' : null;
+            }
+        }
+        // horas do atendimento: comerciais, fora do horário comercial e de adicional noturno (pode ser retroativo)
+        $f = $input + ($this->fields ?? []);
+        if (array_intersect_key($input, array_flip(['date_begin', 'date_end', 'time_begin', 'time_end']))) {
+            if (!empty($f['time_begin']) && !empty($f['time_end']) && ($f['date_begin'] ?? '') === ($f['date_end'] ?? '') && $f['time_end'] <= $f['time_begin']) {
+                Session::addMessageAfterRedirect('O fim do atendimento precisa ser depois do início: se ele passou da meia-noite, ajuste a data do fim.', false, ERROR);
+                return false;
+            }
+            $h = Money::hours($f['date_begin'] ?? null, $f['time_begin'] ?? null, $f['date_end'] ?? null, $f['time_end'] ?? null);
+            $input['minutes_business'] = $h['business'] ?? 0;
+            $input['minutes_outside'] = $h['outside'] ?? 0;
+            $input['minutes_night'] = $h['night'] ?? 0;
+        }
         if (!empty($input['date_begin']) && !empty($input['date_end']) && $input['date_end'] < $input['date_begin']) {
             Session::addMessageAfterRedirect('O fim do período não pode ser antes do início.', false, ERROR);
             return false;
@@ -248,6 +328,18 @@ class Reembolso extends CommonDBTM
     public function cleanDBonPurge()
     {
         $this->deleteChildrenAndRelationsFromDb([Despesa::class]);
+    }
+
+    /** Último dia do período que ainda vai fechar (o lote sai no dia seguinte). */
+    public static function nextClose(string $period): string
+    {
+        $today = date('Y-m-d');
+        return match ($period) {
+            'diario'    => $today,
+            'semanal'   => date('Y-m-d', strtotime('sunday this week')),
+            'quinzenal' => (int) date('j') <= 15 ? date('Y-m-15') : date('Y-m-t'),
+            default     => date('Y-m-t'),
+        };
     }
 
     public static function code(int $id): string
@@ -283,25 +375,21 @@ class Reembolso extends CommonDBTM
         $data = ['id' => $this->getID(), '_workflow' => true];
 
         switch ($action) {
+            case 'lote':
+                if (!in_array($status, [self::DRAFT, self::REFUSED], true) || (int) $this->fields['plugin_reembolso_lotes_id'] || !($this->isOwner() || self::isApprover())) {
+                    throw new RuntimeException('Esta solicitação já está num lote.');
+                }
+                [$id, $left] = Lote::generate((int) $this->fields['users_id'], true);
+                if (!$id) {
+                    throw new RuntimeException('Nenhuma solicitação pronta para o lote' . ($left ? ': ' . implode('; ', $left) : '') . '.');
+                }
+                $lote = new Lote();
+                $lote->getFromDB($id);
+                return 'Lote ' . Lote::code($id) . ' gerado com ' . count($lote->requests()) . ' solicitação(ões). O técnico recebe o PDF para conferir e assinar' . ($left ? '. Ficaram de fora: ' . implode('; ', $left) : '') . '.';
+
             case 'submit':
-                if (!in_array($status, [self::DRAFT, self::REFUSED], true) || !($this->isOwner() || self::isApprover())) {
-                    throw new RuntimeException('Só o técnico pode enviar um rascunho (ou uma solicitação recusada).');
-                }
-                $expenses = Despesa::forReembolso($this->getID());
-                if (!$expenses) {
-                    throw new RuntimeException('Lance pelo menos uma despesa antes de enviar.');
-                }
-                if (!$this->fields['plugin_reembolso_centrocustos_id']) {
-                    throw new RuntimeException('Informe o centro de custo antes de enviar.');
-                }
-                $types = Tipodespesa::all();
-                $needsReceipt = array_filter($expenses, fn ($e) => $types[(int) $e['plugin_reembolso_tipodespesas_id']]['receipt'] ?? false);
-                if ($needsReceipt && Money::config()['require_receipt'] && !$this->countDocuments()) {
-                    throw new RuntimeException('Há despesas que exigem comprovante: anexe os comprovantes (card Comprovantes, abaixo das despesas) antes de enviar.');
-                }
-                $data += ['status' => self::SUBMITTED, 'date_submit' => $now, 'approval_comment' => ''];
-                $msg = 'Solicitação enviada para aprovação.';
-                break;
+                // o envio avulso deu lugar ao lote (desde a 1.2.0)
+                throw new RuntimeException('O envio agora é por lote: no fim do período, as solicitações do técnico viram um lote para ele conferir e assinar. Use "Gerar o lote agora" para não esperar.');
 
             case 'approve':
             case 'refuse':
@@ -387,7 +475,7 @@ class Reembolso extends CommonDBTM
         echo "</div>";
         if (!$new) {
             echo "<div class='rb-steps'>";
-            $steps = [self::DRAFT => 'Rascunho', self::SUBMITTED => 'Enviado', self::APPROVED => 'Aprovado', self::PAID => 'Pago'];
+            $steps = [self::DRAFT => 'Rascunho', self::SUBMITTED => 'No lote', self::APPROVED => 'Aprovado', self::PAID => 'Pago'];
             $order = [self::DRAFT => 1, self::REFUSED => 1, self::SUBMITTED => 2, self::APPROVED => 3, self::PAID => 4];
             foreach ($steps as $k => $label) {
                 $cls = $order[$k] < $order[$status] ? 'done' : ($order[$k] === $order[$status] ? 'current' : '');
@@ -425,8 +513,19 @@ class Reembolso extends CommonDBTM
         echo Location::dropdown(['name' => 'locations_id', 'value' => (int) $f['locations_id'], 'entity' => (int) $f['entities_id'], 'entity_sons' => true, 'display' => false, 'width' => '100%', 'disabled' => !$edit]);
         echo "</div>";
         echo "<div class='col-md-6 col-xl-4'><label class='form-label'>Local do atendimento (endereço / cidade)</label><input class='form-control' name='address' maxlength='255' placeholder='Ex.: Av. Paulista, 1000 - São Paulo/SP' value='" . $e($f['address']) . "' $dis></div>";
-        echo "<div class='col-6 col-xl-2'><label class='form-label required'>Período: início</label><input type='date' class='form-control' name='date_begin' value='" . $e($f['date_begin']) . "' required $dis></div>";
-        echo "<div class='col-6 col-xl-2'><label class='form-label required'>Período: fim</label><input type='date' class='form-control' name='date_end' value='" . $e($f['date_end']) . "' required $dis></div>";
+        $hm = fn ($v) => $v ? substr((string) $v, 0, 5) : '';
+        echo "<div class='col-md-6 col-xl-4'><label class='form-label required'>Início do atendimento</label><div class='input-group'>"
+            . "<input type='date' class='form-control' name='date_begin' value='" . $e($f['date_begin']) . "' required $dis>"
+            . "<input type='time' class='form-control' name='time_begin' value='" . $e($hm($f['time_begin'] ?? '')) . "' title='Horário de início' style='max-width:120px' $dis></div></div>";
+        echo "<div class='col-md-6 col-xl-4'><label class='form-label required'>Fim do atendimento</label><div class='input-group'>"
+            . "<input type='date' class='form-control' name='date_end' value='" . $e($f['date_end']) . "' required $dis>"
+            . "<input type='time' class='form-control' name='time_end' value='" . $e($hm($f['time_end'] ?? '')) . "' title='Horário de fim' style='max-width:120px' $dis></div></div>";
+        // selos das horas do atendimento (recalculados no navegador ao mudar as datas e horas)
+        $cfgH = Money::config();
+        echo "<div class='col-md-12 col-xl-8'><label class='form-label'>Horas do atendimento</label><div class='rb-hours' data-rb-hours"
+            . " data-bs='" . $e($cfgH['business_start']) . "' data-be='" . $e($cfgH['business_end']) . "' data-ns='" . $e($cfgH['night_start']) . "' data-ne='" . $e($cfgH['night_end']) . "'>"
+            . self::hoursBadges((int) ($f['minutes_business'] ?? 0), (int) ($f['minutes_outside'] ?? 0), (int) ($f['minutes_night'] ?? 0), (bool) (($f['time_begin'] ?? '') && ($f['time_end'] ?? ''))) . "</div></div>";
+        echo Html::scriptBlock(self::hoursScript());
         echo "<div class='col-12'><label class='form-label'>Justificativa / observações</label><textarea class='form-control' rows='2' name='comment' placeholder='Motivo do deslocamento, cliente atendido, observações para o aprovador…' $dis>" . $e($f['comment']) . "</textarea></div>";
         echo "</div></div>";
         if ($edit) {
@@ -446,6 +545,11 @@ class Reembolso extends CommonDBTM
         Html::closeForm();
 
         if ($new) {
+            $c = Money::config();
+            echo "<div class='card mb-3'><div class='card-header'><h3 class='card-title'><i class='ti ti-list-details me-2'></i>Despesas</h3></div><div class='card-body'>"
+                . "<div class='d-flex gap-3 align-items-start'><i class='ti ti-clock-hour-4 fs-1 text-primary'></i><div>Depois de <b>Criar e lançar despesas</b>, cada despesa é lançada com <b>data e horário</b>."
+                . "<div class='rb-night-hint on mt-2'><i class='ti ti-moon-stars me-1'></i>Despesa com horário das <b>" . $e($c['night_start']) . "</b> às <b>" . $e($c['night_end']) . "</b> entra como <b>adicional noturno</b> e sai destacada no lote.</div></div></div>"
+                . "</div></div>";
             echo "</div>";
             return true;
         }
@@ -474,7 +578,7 @@ class Reembolso extends CommonDBTM
         if (!$rows) {
             echo "<div class='card-body text-secondary'>Nenhuma despesa lançada." . ($edit ? ' Clique em <b>Lançar despesa</b> para começar.' : '') . "</div>";
         } else {
-            echo "<div class='table-responsive'><table class='table table-vcenter card-table rb-table'><thead><tr><th>Data</th><th>Tipo</th><th>Descrição / detalhe</th><th class='text-end'>Valor</th>" . ($edit ? '<th></th>' : '') . "</tr></thead><tbody>";
+            echo "<div class='table-responsive'><table class='table table-vcenter card-table rb-table'><thead><tr><th>Data e hora</th><th>Tipo</th><th>Descrição / detalhe</th><th class='text-end'>Valor</th>" . ($edit ? '<th></th>' : '') . "</tr></thead><tbody>";
             foreach ($rows as $r) {
                 $t = $types[(int) $r['plugin_reembolso_tipodespesas_id']] ?? ['name' => '?', 'mileage' => false, 'max' => 0, 'receipt' => false];
                 $needsReceipt = $needsReceipt || $t['receipt'];
@@ -486,7 +590,10 @@ class Reembolso extends CommonDBTM
                         . ($odo ? " · $odo" : '') . " · <b>" . Money::km((float) $r['distance']) . "</b> × " . Money::format((float) $r['km_rate']) . "/km</div>";
                 }
                 $over = $t['max'] > 0 && (float) $r['amount'] > $t['max'] ? "<div><span class='badge bg-warning-lt' title='Limite do tipo: " . Money::format($t['max']) . "'><i class='ti ti-alert-triangle me-1'></i>acima do limite</span></div>" : '';
-                echo "<tr><td class='text-nowrap'>" . Html::convDate($r['date']) . "</td><td>" . ($t['mileage'] ? "<i class='ti ti-car me-1 text-primary'></i>" : '') . $e($t['name']) . "</td>"
+                $night = (int) $r['is_night'] ? " <span class='badge rb-night-badge' title='Horário de adicional noturno'><i class='ti ti-moon-stars me-1'></i>noturno</span>" : '';
+                $time = $r['time'] ? ' ' . substr((string) $r['time'], 0, 5)
+                    : ($edit ? " <span class='text-warning small' title='Edite a despesa e informe o horário: sem ele a solicitação não entra no lote'>sem horário</span>" : '');
+                echo "<tr" . ((int) $r['is_night'] ? " class='rb-night-row'" : '') . "><td class='text-nowrap'>" . Html::convDate($r['date']) . $time . $night . "</td><td>" . ($t['mileage'] ? "<i class='ti ti-car me-1 text-primary'></i>" : '') . $e($t['name']) . "</td>"
                     . "<td>$detail</td><td class='text-end text-nowrap fw-bold'>" . Money::format((float) $r['amount']) . "$over</td>";
                 if ($edit) {
                     echo "<td class='text-end text-nowrap'><button type='button' class='btn btn-sm btn-ghost-secondary' data-rb-edit='" . (int) $r['id'] . "' title='Editar'><i class='ti ti-pencil'></i></button>"
@@ -526,21 +633,38 @@ class Reembolso extends CommonDBTM
         $hidden = "<input type='hidden' name='id' value='$id'>";
         $buttons = [];
 
-        if (in_array($status, [self::DRAFT, self::REFUSED], true) && ($this->isOwner() || self::isApprover())) {
-            $buttons[] = "<form method='post' action='$action'>$hidden<button class='btn btn-success' name='workflow' value='submit'><i class='ti ti-send me-1'></i>Enviar para aprovação</button>" . Html::closeForm(false);
+        $loteId = (int) $this->fields['plugin_reembolso_lotes_id'];
+        if ($loteId) {
+            $lote = new Lote();
+            if ($lote->getFromDB($loteId)) {
+                $buttons[] = "<a class='rb-lote-link' href='" . $e(Lote::getFormURLWithID($loteId)) . "'><i class='ti ti-stack-2'></i><span><b>No lote " . Lote::code($loteId) . "</b><small>"
+                    . $e(Lote::periodLabel($lote->fields)) . ' · ' . Money::format((float) $lote->fields['total']) . "</small></span>" . Lote::badge((int) $lote->fields['status']) . "</a>";
+                if ((int) $lote->fields['status'] === Lote::RETURNED) {
+                    $buttons[] = "<div class='alert alert-danger py-2 mb-0 small'><i class='ti ti-arrow-back-up me-1'></i>O lote foi devolvido: corrija esta solicitação e reenvie o lote na tela dele.</div>";
+                }
+            }
+        } elseif (in_array($status, [self::DRAFT, self::REFUSED], true)) {
+            $set = Lote::techSettings((int) $this->fields['users_id']);
+            $next = date('d/m/Y', strtotime(self::nextClose($set['period'])));
+            $buttons[] = "<div class='small'><i class='ti ti-calendar-time me-1'></i>Esta solicitação entra no próximo lote do técnico (<b>" . $e(Lote::PERIODS[$set['period']]) . "</b>, que fecha no fim do dia $next). "
+                . "O técnico recebe o PDF por e-mail para conferir e assinar.</div>";
+            if ($this->isOwner() || self::isApprover()) {
+                $buttons[] = "<form method='post' action='$action'>$hidden<button class='btn btn-success' name='workflow' value='lote'><i class='ti ti-stack-push me-1'></i>Gerar o lote agora</button>"
+                    . "<div class='form-hint'>Junta todas as solicitações prontas do técnico num lote, sem esperar o fim do período.</div>" . Html::closeForm(false);
+            }
         }
-        if ($status === self::SUBMITTED && self::isApprover()) {
+        if ($status === self::SUBMITTED && self::isApprover() && !$loteId) {
             $buttons[] = "<form method='post' action='$action' class='rb-approve'>$hidden<textarea class='form-control mb-2' name='approval_comment' rows='2' placeholder='Comentário (obrigatório para recusar)'></textarea>"
                 . "<div class='d-flex gap-2'><button class='btn btn-success' name='workflow' value='approve'><i class='ti ti-circle-check me-1'></i>Aprovar</button>"
                 . "<button class='btn btn-outline-danger' name='workflow' value='refuse'><i class='ti ti-circle-x me-1'></i>Recusar</button></div>" . Html::closeForm(false);
         }
-        if ($status === self::APPROVED && self::isApprover()) {
+        if ($status === self::APPROVED && self::isApprover() && !$loteId) {
             $buttons[] = "<form method='post' action='$action' class='d-flex flex-wrap gap-2 align-items-end'>$hidden"
                 . "<div><label class='form-label'>Data do pagamento</label><input type='date' class='form-control' name='date_payment' value='" . date('Y-m-d') . "'></div>"
                 . "<div class='flex-grow-1'><label class='form-label'>Referência (PIX, lote, folha…)</label><input class='form-control' name='payment_reference' maxlength='255'></div>"
                 . "<button class='btn btn-success' name='workflow' value='pay'><i class='ti ti-cash me-1'></i>Marcar como pago</button>" . Html::closeForm(false);
         }
-        if (in_array($status, [self::SUBMITTED, self::APPROVED, self::REFUSED], true) && self::isApprover()) {
+        if (in_array($status, [self::SUBMITTED, self::APPROVED, self::REFUSED], true) && self::isApprover() && !$loteId) {
             $buttons[] = "<form method='post' action='$action'>$hidden<button class='btn btn-ghost-secondary' name='workflow' value='reopen' onclick=\"return confirm('Voltar a solicitação para rascunho?')\"><i class='ti ti-arrow-back-up me-1'></i>Reabrir como rascunho</button>" . Html::closeForm(false);
         }
 
@@ -560,7 +684,7 @@ class Reembolso extends CommonDBTM
         }
         $facts[] = ['Lançado por', $e(getUserName((int) $f['users_id_recipient'])) . ' em ' . Html::convDateTime($f['date_creation'])];
 
-        echo "<div class='card mb-3'><div class='card-header'><h3 class='card-title'><i class='ti ti-git-pull-request me-2'></i>Aprovação e pagamento</h3></div><div class='card-body'><div class='row g-3'>";
+        echo "<div class='card mb-3'><div class='card-header'><h3 class='card-title'><i class='ti ti-git-pull-request me-2'></i>Lote, aprovação e pagamento</h3></div><div class='card-body'><div class='row g-3'>";
         echo "<div class='col-lg-5'><dl class='row mb-0 small'>";
         foreach ($facts as [$k, $v]) {
             echo "<dt class='col-5 text-secondary'>$k</dt><dd class='col-7'>$v</dd>";

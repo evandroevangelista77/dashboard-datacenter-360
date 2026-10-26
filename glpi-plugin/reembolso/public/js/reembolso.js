@@ -19,6 +19,13 @@
     };
     const fmt = (v, d = 1) => (Number.isFinite(v) ? v.toLocaleString('pt-BR', {minimumFractionDigits: 0, maximumFractionDigits: d}) : '');
     const today = new Date().toISOString().slice(0, 10);
+    const nowTime = () => new Date().toTimeString().slice(0, 5);
+    // adicional noturno: a faixa pode virar a noite (22:00 às 05:00); o fim não entra
+    const isNight = (t) => {
+        const a = boot.config.night_start, b = boot.config.night_end;
+        if (!/^\d{2}:\d{2}$/.test(t || '')) return false;
+        return a <= b ? t >= a && t < b : t >= a || t < b;
+    };
 
     async function api(action, payload) {
         const res = await fetch(boot.ajax, {
@@ -33,7 +40,7 @@
     }
 
     function open(expense) {
-        const x = expense || {type: 0, date: today, description: '', origin: '', destination: '', round_trip: false, km_start: null, km_end: null, distance: 0, km_rate: boot.config.km_rate, amount: 0};
+        const x = expense || {type: 0, date: today, time: nowTime(), description: '', origin: '', destination: '', round_trip: false, km_start: null, km_end: null, distance: 0, km_rate: boot.config.km_rate, amount: 0};
         const rate = expense && expense.km_rate ? expense.km_rate : boot.config.km_rate;
         const opts = '<option value="">Selecione o tipo de despesa…</option>' + boot.types.map((t) =>
             `<option value="${t.id}" ${t.id === x.type ? 'selected' : ''}>${esc(t.name)}${t.mileage ? ' (por KM)' : ''}</option>`).join('');
@@ -43,8 +50,10 @@
             <div class="rb-modal-h"><i class="ti ti-receipt-2"></i><h3>${expense ? 'Editar despesa' : 'Lançar despesa'}</h3><button type="button" class="btn-close" data-close aria-label="Fechar"></button></div>
             <div class="rb-modal-b">
                 <div class="row g-3">
-                    <div class="col-md-8"><label class="form-label required">Tipo de despesa</label><select class="form-select" name="type">${opts}</select><div class="form-hint" data-hint></div></div>
-                    <div class="col-md-4"><label class="form-label required">Data</label><input type="date" class="form-control" name="date" max="${today}" value="${esc(x.date)}"></div>
+                    <div class="col-md-6"><label class="form-label required">Tipo de despesa</label><select class="form-select" name="type">${opts}</select><div class="form-hint" data-hint></div></div>
+                    <div class="col-6 col-md-3"><label class="form-label required">Data</label><input type="date" class="form-control" name="date" max="${today}" value="${esc(x.date)}"></div>
+                    <div class="col-6 col-md-3"><label class="form-label required">Horário</label><input type="time" class="form-control" name="time" value="${esc(x.time || '')}"></div>
+                    <div class="col-12"><div class="rb-night-hint" data-night></div></div>
                     <div class="col-12"><label class="form-label">Descrição</label><input class="form-control" name="description" maxlength="255" placeholder="Ex.: almoço durante atendimento no cliente X" value="${esc(x.description)}"></div>
                 </div>
                 <div data-km class="rb-km mt-3">
@@ -91,6 +100,14 @@
             const t = current();
             const warn = q('[data-warn]');
             warn.classList.add('d-none');
+            const night = isNight(f('time').value);
+            const nb = q('[data-night]');
+            nb.className = `rb-night-hint ${night ? 'on' : ''}`;
+            nb.innerHTML = f('time').value
+                ? (night ? `<i class="ti ti-moon-stars me-1"></i><b>Adicional noturno</b>: o horário está na faixa ${esc(boot.config.night_start)} às ${esc(boot.config.night_end)} e a despesa sai destacada no lote.`
+                    : `<i class="ti ti-sun me-1"></i>Horário diurno (adicional noturno das ${esc(boot.config.night_start)} às ${esc(boot.config.night_end)}).`)
+                : '<i class="ti ti-clock me-1"></i>Informe o horário: ele define se a despesa entra como adicional noturno.';
+
             if (!t) { q('[data-total]').textContent = brl(0); return 0; }
             let amount;
             if (t.mileage) {
@@ -132,7 +149,7 @@
             compute();
         };
         f('type').addEventListener('change', toggle);
-        ['amount', 'distance', 'km_rate', 'date'].forEach((n) => f(n).addEventListener('input', compute));
+        ['amount', 'distance', 'km_rate', 'date', 'time'].forEach((n) => f(n).addEventListener('input', compute));
         f('distance').addEventListener('input', () => { routeOneWay = null; });
         f('km_start').addEventListener('input', fromOdometer);
         f('km_end').addEventListener('input', fromOdometer);
@@ -167,7 +184,7 @@
             const t = current();
             const data = {
                 id: expense ? expense.id : 0,
-                type: t ? t.id : 0, date: f('date').value, description: f('description').value,
+                type: t ? t.id : 0, date: f('date').value, time: f('time').value, description: f('description').value,
             };
             if (t && t.mileage) {
                 Object.assign(data, {

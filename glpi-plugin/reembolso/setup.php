@@ -10,16 +10,18 @@
  */
 
 use Glpi\Plugin\Hooks;
+use GlpiPlugin\Reembolso\Adiantamento;
 use GlpiPlugin\Reembolso\Centrocusto;
 use GlpiPlugin\Reembolso\Dashboard;
 use GlpiPlugin\Reembolso\Despesa;
+use GlpiPlugin\Reembolso\Lote;
 use GlpiPlugin\Reembolso\Menu;
 use GlpiPlugin\Reembolso\ProfileTab;
 use GlpiPlugin\Reembolso\Reembolso;
 use GlpiPlugin\Reembolso\TicketTab;
 use GlpiPlugin\Reembolso\Tipodespesa;
 
-define('PLUGIN_REEMBOLSO_VERSION', '1.1.3');
+define('PLUGIN_REEMBOLSO_VERSION', '1.3.0');
 define('PLUGIN_REEMBOLSO_MIN_GLPI', '12.0.0');
 define('PLUGIN_REEMBOLSO_MAX_GLPI', '12.0.99');
 
@@ -29,6 +31,8 @@ function plugin_init_reembolso(): void
 
     Plugin::registerClass(Reembolso::class, ['document_types' => true, 'notificationtemplates_types' => true]);
     Plugin::registerClass(Despesa::class);
+    Plugin::registerClass(Lote::class, ['document_types' => true, 'notificationtemplates_types' => true]);
+    Plugin::registerClass(Adiantamento::class, ['document_types' => true, 'notificationtemplates_types' => true]);
     Plugin::registerClass(Tipodespesa::class);
     Plugin::registerClass(Centrocusto::class);
     Plugin::registerClass(Dashboard::class);
@@ -42,7 +46,7 @@ function plugin_init_reembolso(): void
     }
 
     // seção "Reembolso" no menu lateral (abaixo de PMO): Reembolsos e Dashboard de reembolsos
-    $PLUGIN_HOOKS[Hooks::MENU_TOADD]['reembolso']     = [Menu::SECTOR => [Reembolso::class, Dashboard::class]];
+    $PLUGIN_HOOKS[Hooks::MENU_TOADD]['reembolso']     = [Menu::SECTOR => [Reembolso::class, Adiantamento::class, Lote::class, Dashboard::class]];
     $PLUGIN_HOOKS[Hooks::REDEFINE_MENUS]['reembolso'] = 'plugin_reembolso_redefine_menus';
     $PLUGIN_HOOKS[Hooks::ADD_CSS]['reembolso']    = ['css/reembolso.css'];
     $PLUGIN_HOOKS[Hooks::CONFIG_PAGE]['reembolso'] = 'front/config.form.php';
@@ -69,7 +73,7 @@ function plugin_reembolso_redefine_menus(array $menu): array
     $section = [Menu::SECTOR => [
         'title'   => 'Reembolso',
         'icon'    => 'ti ti-coin',
-        'types'   => [Reembolso::class, Dashboard::class],
+        'types'   => [Reembolso::class, Adiantamento::class, Lote::class, Dashboard::class],
         'content' => $content,
         'default' => reset($content)['page'],
     ]];

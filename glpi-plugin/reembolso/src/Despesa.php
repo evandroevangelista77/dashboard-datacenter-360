@@ -24,7 +24,7 @@ class Despesa extends CommonDBChild
     public static function forReembolso(int $id): array
     {
         global $DB;
-        return iterator_to_array($DB->request(['FROM' => self::getTable(), 'WHERE' => [self::$items_id => $id], 'ORDER' => ['date', 'id']]), false);
+        return iterator_to_array($DB->request(['FROM' => self::getTable(), 'WHERE' => [self::$items_id => $id], 'ORDER' => ['date', 'time', 'id']]), false);
     }
 
     public static function toArray(array $r): array
@@ -33,6 +33,8 @@ class Despesa extends CommonDBChild
             'id'          => (int) $r['id'],
             'type'        => (int) $r['plugin_reembolso_tipodespesas_id'],
             'date'        => (string) $r['date'],
+            'time'        => $r['time'] ? substr((string) $r['time'], 0, 5) : '',
+            'night'       => (bool) $r['is_night'],
             'description' => (string) $r['description'],
             'origin'      => (string) $r['origin'],
             'destination' => (string) $r['destination'],
@@ -66,10 +68,19 @@ class Despesa extends CommonDBChild
         if ($date > date('Y-m-d')) {
             throw new RuntimeException('A data da despesa não pode ser futura.');
         }
+        $time = (string) ($in['time'] ?? '');
+        if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $time)) {
+            throw new RuntimeException('Informe o horário da despesa (hh:mm): ele define se entra como adicional noturno.');
+        }
+        if ($date === date('Y-m-d') && $time > date('H:i')) {
+            throw new RuntimeException('O horário da despesa não pode ser futuro.');
+        }
         $data = [
             Reembolso::getForeignKeyField()   => $reembolso->getID(),
             'plugin_reembolso_tipodespesas_id' => $type['id'],
             'date'                             => $date,
+            'time'                             => "$time:00",
+            'is_night'                         => Money::isNight($time) ? 1 : 0,
             'description'                      => mb_substr(trim((string) ($in['description'] ?? '')), 0, 255),
             'origin'                           => null,
             'destination'                      => null,

@@ -34,6 +34,8 @@ class Centrocusto extends CommonDropdown
     {
         return [
             ['name' => 'code', 'label' => 'Código', 'type' => 'text'],
+            ['name' => 'users_id_manager', 'label' => 'Gestor do centro de custo (aprova os lotes)', 'type' => 'UserDropdown', 'right' => 'all'],
+            ['name' => 'groups_id_manager', 'label' => 'Grupo gestor do centro de custo', 'type' => 'dropdownValue'],
         ];
     }
 
@@ -41,6 +43,7 @@ class Centrocusto extends CommonDropdown
     {
         $tab = parent::rawSearchOptions();
         $tab[] = ['id' => 101, 'table' => $this->getTable(), 'field' => 'code', 'name' => 'Código', 'datatype' => 'string'];
+        $tab[] = ['id' => 102, 'table' => 'glpi_users', 'field' => 'name', 'linkfield' => 'users_id_manager', 'name' => 'Gestor do centro de custo', 'datatype' => 'dropdown', 'right' => 'all'];
         return $tab;
     }
 
