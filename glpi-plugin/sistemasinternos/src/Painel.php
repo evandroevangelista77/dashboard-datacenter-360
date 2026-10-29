@@ -79,7 +79,7 @@ class Painel extends CommonGLPI
             foreach ($problems as $p) {
                 $h = $byTrigger[$p['objectid']] ?? null;
                 $outProblems[] = [
-                    'eventid' => $p['eventid'], 'name' => $p['name'], 'severity' => (int) $p['severity'], 'clock' => (int) $p['clock'],
+                    'eventid' => $p['eventid'], 'triggerid' => $p['objectid'], 'name' => $p['name'], 'severity' => (int) $p['severity'], 'clock' => (int) $p['clock'],
                     'ack' => (int) $p['acknowledged'], 'hostid' => $h['hostid'] ?? '', 'host' => $h['name'] ?? '',
                 ];
             }
@@ -137,16 +137,19 @@ class Painel extends CommonGLPI
         $from = date('Y-m-d 00:00:00', strtotime('-13 days'));
         $days = [];
         for ($i = 13; $i >= 0; $i--) {
-            $days[date('Y-m-d', strtotime("-$i days"))] = ['opened' => 0, 'solved' => 0];
+            $days[date('Y-m-d', strtotime("-$i days"))] = ['opened' => 0, 'solved' => 0, 'tickets' => []];
         }
-        foreach ($DB->request(['SELECT' => ['date', 'solvedate'], 'FROM' => 'glpi_tickets', 'WHERE' => ['is_deleted' => 0, 'entities_id' => $ents, 'OR' => [['date' => ['>=', $from]], ['solvedate' => ['>=', $from]]]]]) as $r) {
+        foreach ($DB->request(['SELECT' => ['id', 'name', 'status', 'date', 'solvedate'], 'FROM' => 'glpi_tickets', 'WHERE' => ['is_deleted' => 0, 'entities_id' => $ents, 'OR' => [['date' => ['>=', $from]], ['solvedate' => ['>=', $from]]]]]) as $r) {
+            $t = ['id' => (int) $r['id'], 'name' => (string) $r['name'], 'status' => (int) $r['status'], 'date' => $r['date'], 'solvedate' => $r['solvedate']];
             $d = substr((string) $r['date'], 0, 10);
             if (isset($days[$d])) {
                 $days[$d]['opened']++;
+                $days[$d]['tickets'][] = $t + ['kind' => 'aberto'];
             }
             $s = substr((string) $r['solvedate'], 0, 10);
             if ($s && isset($days[$s])) {
                 $days[$s]['solved']++;
+                $days[$s]['tickets'][] = $t + ['kind' => 'solucionado'];
             }
         }
         return ['open' => array_values($open), 'days' => $days];

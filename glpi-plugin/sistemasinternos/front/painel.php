@@ -63,24 +63,35 @@ foreach ($problems as $p) {
 }
 $charts = [
     'sev'  => array_map(fn ($i) => ['name' => Zabbix::SEVERITIES[$i][0], 'value' => $sev[$i], 'color' => Zabbix::SEVERITIES[$i][1]], [5, 4, 3, 2, 1, 0]),
+    'dayKeys' => array_keys($g['days']),
     'days' => ['labels' => array_map(fn ($d) => date('d/m', strtotime($d)), array_keys($g['days'])), 'opened' => array_column($g['days'], 'opened'), 'solved' => array_column($g['days'], 'solved')],
     'hosts' => ['ok' => count($active) - count($down), 'down' => count($down), 'off' => count($hosts) - count($active)],
+];
+// o que está por trás de cada ponto dos gráficos (clique abre a lista, com o link de cada alerta, host ou chamado)
+$web = Zabbix::webUrl();
+$charts['detail'] = [
+    'problems' => array_map(fn ($p) => ['sev' => $p['severity'], 'sevName' => Zabbix::SEVERITIES[$p['severity']][0], 'color' => Zabbix::SEVERITIES[$p['severity']][1],
+        'host' => $p['host'], 'name' => $p['name'], 'clock' => $p['clock'], 'ack' => (bool) $p['ack'],
+        'url' => $web ? $web . 'tr_events.php?triggerid=' . rawurlencode((string) $p['triggerid']) . '&eventid=' . rawurlencode((string) $p['eventid']) : ''], $problems),
+    'hosts' => array_map(fn ($h) => ['name' => $h['name'], 'ip' => $h['ip'], 'state' => $h['status'] === 1 ? 'off' : ($h['avail'] === 2 ? 'down' : 'ok'),
+        'url' => $web ? $web . 'zabbix.php?action=problem.view&filter_set=1&hostids%5B%5D=' . rawurlencode((string) $h['id']) : ''], $hosts),
+    'days' => array_map(fn ($d) => array_map(fn ($t) => $t + ['url' => Ticket::getFormURLWithID($t['id'])], $d['tickets']), array_values($g['days'])),
+    'now' => $now,
 ];
 echo "<div class='row g-3 mb-3'>"
     . "<div class='col-xl-4'><div class='card si360-card h-100'><div class='card-header'><h3 class='card-title'><i class='ti ti-server me-2'></i>Estado dos hosts</h3></div><div class='card-body'><div class='si360-chart' id='si-c-hosts'></div></div></div></div>"
     . "<div class='col-xl-4'><div class='card si360-card h-100'><div class='card-header'><h3 class='card-title'><i class='ti ti-alert-triangle me-2'></i>Problemas por severidade</h3></div><div class='card-body'><div class='si360-chart' id='si-c-sev'></div></div></div></div>"
     . "<div class='col-xl-4'><div class='card si360-card h-100'><div class='card-header'><h3 class='card-title'><i class='ti ti-chart-line me-2'></i>Abertos × solucionados (14 dias)</h3></div><div class='card-body'><div class='si360-chart' id='si-c-days'></div></div></div></div>"
-    . "</div>";
+    . "</div><div class='si360-foot mb-3' style='margin-top:-.5rem'><i class='ti ti-pointer me-1'></i>Clique numa fatia, barra ou ponto dos gráficos para ver os alertas, hosts ou chamados, com o link de cada um.</div>";
 echo "<script type='application/json' id='si-dash'>" . json_encode($charts, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) . "</script>";
 
 // ------------------------------------------------------------------ problemas ativos
-$web = Zabbix::webUrl();
 echo "<div class='row g-3 mb-3'><div class='col-xl-7'><div class='card si360-card h-100'><div class='card-header'><h3 class='card-title'><i class='ti ti-alert-triangle me-2'></i>Problemas ativos</h3>"
     . "<div class='card-actions small text-secondary'>" . count($problems) . " no total</div></div><div class='table-responsive si360-scroll'><table class='table table-vcenter card-table table-sm'>"
     . "<thead><tr><th>Severidade</th><th>Host</th><th>Problema</th><th>Duração</th><th></th></tr></thead><tbody>";
 foreach (array_slice($problems, 0, 80) as $p) {
     [$sn, $sc] = Zabbix::SEVERITIES[$p['severity']];
-    $link = $web && $p['hostid'] ? "<a href='" . $e($web . 'zabbix.php?action=problem.view&filter_set=1&hostids%5B%5D=' . rawurlencode($p['hostid'])) . "' target='_blank' rel='noopener' title='Abrir no Zabbix'><i class='ti ti-external-link'></i></a>" : '';
+    $link = $web ? "<a href='" . $e($web . 'tr_events.php?triggerid=' . rawurlencode((string) $p['triggerid']) . '&eventid=' . rawurlencode((string) $p['eventid'])) . "' target='_blank' rel='noopener' title='Abrir o alerta no Zabbix'><i class='ti ti-external-link'></i></a>" : '';
     echo "<tr><td><span class='si360-sev' style='--c:$sc'>" . $e($sn) . "</span></td><td class='text-nowrap'>" . $e($p['host']) . "</td><td>" . $e($p['name'])
         . ($p['ack'] ? " <i class='ti ti-check text-success' title='Reconhecido'></i>" : '') . "</td><td class='text-nowrap'>" . Painel::duration($now - $p['clock']) . "</td><td>$link</td></tr>";
 }

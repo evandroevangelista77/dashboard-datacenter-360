@@ -226,3 +226,24 @@
 .si360-test-row.bad { background: rgba(239, 68, 68, .16); color: #fca5a5; }
 .si360 .alert { background: rgba(16, 38, 75, .92); color: var(--tblr-body-color); }
 .si360 .empty, .si360 .empty-title { color: var(--tblr-secondary-color); }
+
+/* lista do clique nos gráficos do Resumo rápido, com filtros */
+.si360-chart { cursor: pointer; }
+.si360-drill { position: fixed; inset: 0; z-index: 1080; display: none; align-items: flex-start; justify-content: center; padding: 5vh 16px; background: rgba(5, 12, 28, .6); backdrop-filter: blur(3px); }
+.si360-drill.on { display: flex; }
+.si360-drill-box { width: min(1100px, 100%); max-height: 88vh; display: flex; flex-direction: column; border-radius: 14px; overflow: hidden; color: #e7eefb;
+    background: #10264b; border: 1px solid rgba(143, 181, 239, .3); box-shadow: 0 24px 60px rgba(0, 0, 0, .45); }
+.si360-drill-head { display: flex; align-items: center; gap: .75rem; padding: .8rem 1rem; background: linear-gradient(135deg, #3769B2, #1f3f73); color: #fff; }
+.si360-drill-head [data-n] { font-size: .8rem; opacity: .85; }
+.si360-drill-filters { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding: .7rem 1rem; border-bottom: 1px solid rgba(143, 181, 239, .2); }
+.si360-drill-filters > input[data-f=q] { flex: 1 1 220px; }
+.si360-drill-filters label { display: inline-flex; align-items: center; gap: .35rem; font-size: .8rem; color: #a9bee3; margin: 0; }
+.si360-drill-filters .form-control, .si360-drill-filters .form-select { width: auto; background-color: #0b1b38; color: #e7eefb; border-color: rgba(143, 181, 239, .3); color-scheme: dark; }
+.si360-drill-filters .btn-ghost-secondary { color: #e7eefb; }
+.si360-drill-body { overflow: auto; }
+.si360-drill .table { --tblr-table-color: #e7eefb; --tblr-table-bg: transparent; color: #e7eefb; margin: 0; }
+.si360-drill .table > :not(caption) > * > * { background: transparent; color: inherit; border-bottom-color: rgba(143, 181, 239, .14); padding: .45rem .75rem; }
+.si360-drill .table thead th { position: sticky; top: 0; background: #0c1e3d; color: #a9bee3; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; z-index: 1; }
+.si360-drill .table a:not(.btn) { color: #9cc0f5; }
+.si360-drill .text-secondary { color: #a9bee3 !important; }
+.si360-drill .btn-primary { background: #3769B2; border-color: #3769B2; white-space: nowrap; }
