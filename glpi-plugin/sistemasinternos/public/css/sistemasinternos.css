@@ -1,0 +1,170 @@
+/* Sistemas Internos 360 — cor do departamento #3769B2 (Sistemas da Informação) */
+:root {
+    --si-blue: #3769B2;
+    --si-blue-dark: #1f3f73;
+    --si-blue-soft: rgba(55, 105, 178, .14);
+}
+
+/* ------------------------------------------------------------------ páginas do plugin */
+.si360 {
+    --tblr-primary: var(--si-blue);
+    --tblr-primary-rgb: 55, 105, 178;
+    --tblr-link-color: var(--si-blue);
+    --tblr-link-color-rgb: 55, 105, 178;
+    position: relative;
+    isolation: isolate;
+    margin: -.5rem -.75rem 0;
+    padding: 1.25rem 1.25rem 2rem;
+    border-radius: 14px;
+    min-height: calc(100vh - 140px);
+    overflow: hidden;
+}
+/* árvore ao fundo, tingida na cor do departamento (a luminosidade da foto sobre o azul) */
+.si360-bg {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    background-color: var(--si-blue);
+    background-image: linear-gradient(180deg, rgba(31, 63, 115, .15), rgba(31, 63, 115, .55)), url("../img/arvore.jpg");
+    background-size: cover;
+    background-position: center 35%;
+    background-attachment: fixed;
+    background-blend-mode: normal, luminosity;
+}
+/* véu para o texto e os cartões ficarem legíveis por cima da foto */
+.si360-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(55, 105, 178, .25) 0, color-mix(in srgb, var(--tblr-body-bg, #f4f6fa) 62%, transparent) 300px, color-mix(in srgb, var(--tblr-body-bg, #f4f6fa) 72%, transparent));
+}
+/* marca-d'água: a árvore da Oakmont na cor do departamento */
+.si360-mark {
+    position: absolute;
+    z-index: -1;
+    right: 2%;
+    bottom: 1.5rem;
+    width: min(42vw, 560px);
+    aspect-ratio: 1.56;
+    background: var(--si-blue);
+    opacity: .14;
+    -webkit-mask: url("../img/oakmont.png") center / contain no-repeat;
+    mask: url("../img/oakmont.png") center / contain no-repeat;
+    pointer-events: none;
+}
+[data-bs-theme="dark"] .si360-bg::after {
+    background: linear-gradient(180deg, rgba(31, 63, 115, .35) 0, color-mix(in srgb, var(--tblr-body-bg, #0f172a) 66%, transparent) 300px, color-mix(in srgb, var(--tblr-body-bg, #0f172a) 76%, transparent));
+}
+[data-bs-theme="dark"] .si360-mark { opacity: .22; background: #6f9be0; }
+
+.si360-title { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; color: #fff; }
+.si360-title h2 { margin: .15rem 0 .2rem; font-weight: 700; color: #fff; text-shadow: 0 2px 12px rgba(0, 0, 0, .25); }
+.si360-crumb { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: rgba(255, 255, 255, .85); }
+.si360-subtitle { max-width: 900px; font-size: .86rem; color: rgba(255, 255, 255, .88); }
+.si360-title .btn-ghost-light { color: #fff; border-color: rgba(255, 255, 255, .4); }
+.si360-title .btn-ghost-light:hover { background: rgba(255, 255, 255, .15); color: #fff; }
+.si360-title .btn-light { color: var(--si-blue-dark); }
+
+.si360-card { background: color-mix(in srgb, var(--tblr-bg-surface, #fff) 92%, transparent); backdrop-filter: blur(6px); border-color: color-mix(in srgb, var(--si-blue) 22%, var(--tblr-border-color)); box-shadow: 0 8px 24px rgba(20, 40, 80, .08); }
+.si360-card .card-header { border-bottom-color: color-mix(in srgb, var(--si-blue) 18%, var(--tblr-border-color)); }
+.si360-card .card-title i { color: var(--si-blue); }
+.si360 .btn-primary { --tblr-btn-bg: var(--si-blue); --tblr-btn-border-color: var(--si-blue); --tblr-btn-hover-bg: var(--si-blue-dark); --tblr-btn-hover-border-color: var(--si-blue-dark); }
+.si360 .nav-tabs .nav-link.active { color: var(--si-blue); border-bottom-color: var(--si-blue); }
+.si360-scroll { max-height: 460px; overflow-y: auto; }
+.si360-chart { height: 260px; }
+.si360-foot { margin-top: .75rem; font-size: .78rem; color: var(--tblr-secondary-color); }
+
+/* indicadores */
+.si360-kpi { display: flex; gap: .85rem; align-items: center; height: 100%; padding: .9rem 1rem; border-radius: 12px; background: color-mix(in srgb, var(--tblr-bg-surface, #fff) 94%, transparent);
+    border: 1px solid color-mix(in srgb, var(--si-blue) 22%, var(--tblr-border-color)); border-left: 4px solid var(--si-blue); box-shadow: 0 8px 22px rgba(20, 40, 80, .08); backdrop-filter: blur(6px); }
+.si360-kpi-ico { width: 44px; height: 44px; flex: none; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.4rem; background: var(--si-blue-soft); color: var(--si-blue); }
+.si360-kpi-label { font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; font-weight: 700; color: var(--tblr-secondary-color); }
+.si360-kpi-value { font-size: 1.6rem; font-weight: 700; line-height: 1.15; }
+.si360-kpi-sub { font-size: .76rem; color: var(--tblr-secondary-color); }
+.si360-kpi.ok { border-left-color: #22c55e; } .si360-kpi.ok .si360-kpi-ico { background: rgba(34, 197, 94, .14); color: #16a34a; }
+.si360-kpi.warn { border-left-color: #f59e0b; } .si360-kpi.warn .si360-kpi-ico { background: rgba(245, 158, 11, .16); color: #d97706; }
+.si360-kpi.bad { border-left-color: #ef4444; } .si360-kpi.bad .si360-kpi-ico { background: rgba(239, 68, 68, .14); color: #dc2626; }
+
+.si360-sev { display: inline-block; min-width: 1.6rem; padding: .12rem .5rem; border-radius: 6px; font-size: .76rem; font-weight: 700; text-align: center; color: #1f2937; background: var(--c); }
+.si360-pill { display: inline-block; padding: .14rem .55rem; border-radius: 999px; font-size: .76rem; font-weight: 600; background: rgba(148, 163, 184, .18); color: var(--tblr-secondary-color); white-space: nowrap; }
+.si360-pill.ok { background: rgba(34, 197, 94, .15); color: #16a34a; }
+.si360-pill.warn { background: rgba(245, 158, 11, .16); color: #b45309; }
+.si360-pill.bad { background: rgba(239, 68, 68, .14); color: #dc2626; }
+.si360-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: .45rem; background: #94a3b8; }
+.si360-dot.bad { background: #ef4444; box-shadow: 0 0 0 3px rgba(239, 68, 68, .2); }
+.si360-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+.si360-chip { display: inline-flex; align-items: center; padding: .3rem .7rem; border-radius: 999px; font-size: .8rem; background: color-mix(in srgb, var(--tblr-bg-surface, #fff) 90%, transparent); border: 1px solid color-mix(in srgb, var(--si-blue) 25%, transparent); }
+.si360-chip.ok { color: #16a34a; } .si360-chip.bad { color: #dc2626; }
+
+/* formulário do host */
+.si360-kv { display: flex; gap: .5rem; margin-bottom: .5rem; }
+.si360-kv input:first-child { flex: 0 0 42%; }
+.si360-keep { font-size: .8rem; padding: .45rem .6rem; border-radius: 8px; background: var(--si-blue-soft); }
+.si360-danger { border-color: rgba(239, 68, 68, .35); }
+.si360-danger .card-title i { color: #ef4444; }
+.si360-focus { background: var(--si-blue-soft); }
+
+/* configuração */
+.si360-howto { padding: .8rem 1rem; border-radius: 10px; background: var(--si-blue-soft); border: 1px solid color-mix(in srgb, var(--si-blue) 25%, transparent); font-size: .86rem; }
+.si360-test-row { padding: .45rem .75rem; border-radius: 8px; margin-bottom: .35rem; font-size: .88rem; }
+.si360-test-row.ok { background: rgba(34, 197, 94, .12); color: #15803d; }
+.si360-test-row.warn { background: rgba(245, 158, 11, .14); color: #b45309; }
+.si360-test-row.bad { background: rgba(239, 68, 68, .12); color: #b91c1c; }
+.si360-matrix th { font-size: .74rem; text-transform: uppercase; letter-spacing: .03em; color: var(--tblr-secondary-color); white-space: nowrap; }
+.si360-matrix th i { color: var(--si-blue); font-size: 1.1rem; }
+.si360-matrix-group td { background: var(--si-blue-soft); font-weight: 700; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--si-blue); }
+.si360-matrix .form-check-input:checked { background-color: var(--si-blue); border-color: var(--si-blue); }
+.si360-alert-ico { display: inline-flex; width: 28px; height: 28px; margin-right: .55rem; border-radius: 8px; align-items: center; justify-content: center; vertical-align: middle;
+    background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); }
+
+/* ------------------------------------------------------------------ sinalizador (todas as telas) */
+.si360-flag { position: relative; display: flex; align-items: center; }
+.si360-flag .nav-link { position: relative; color: inherit; }
+.si360-flag.si360-flag-active .nav-link > .ti { color: var(--si-flag, var(--si-blue)); }
+.si360-flag-count { position: absolute; top: 2px; right: 0; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--si-blue); color: #fff;
+    font-size: .68rem; font-weight: 700; line-height: 18px; text-align: center; box-shadow: 0 0 0 2px var(--tblr-bg-surface, #fff); }
+.si360-flag-pulse .nav-link::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; border: 2px solid var(--si-flag, var(--si-blue)); animation: si360-ring 1.4s ease-out infinite; pointer-events: none; }
+.si360-flag-pulse .si360-flag-count { animation: si360-blink 1s steps(2, start) infinite; }
+.si360-flag-locked .nav-link > .ti { animation: si360-shake .6s ease-in-out infinite; }
+@keyframes si360-ring { 0% { transform: scale(.7); opacity: .9; } 100% { transform: scale(1.7); opacity: 0; } }
+@keyframes si360-blink { to { opacity: .35; } }
+@keyframes si360-shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-12deg); } 75% { transform: rotate(12deg); } }
+.si360-flag-floating { position: fixed; right: 18px; top: 14px; z-index: 1050; background: var(--tblr-bg-surface); border-radius: 50%; box-shadow: 0 6px 20px rgba(0, 0, 0, .3); }
+.si360-flag-menu { width: 400px; max-width: calc(100vw - 24px); padding: 0; overflow: hidden; }
+.si360-flag-head { display: flex; flex-direction: column; gap: .1rem; padding: .65rem .9rem; color: #fff; background: linear-gradient(135deg, var(--si-blue), var(--si-blue-dark)); }
+.si360-flag-state { font-size: .74rem; opacity: .9; }
+.si360-flag-list { max-height: 420px; overflow-y: auto; }
+.si360-flag-empty { padding: 1.3rem; text-align: center; color: var(--tblr-secondary-color); font-size: .85rem; }
+.si360-flag-item { display: flex; gap: .7rem; padding: .6rem .9rem; color: inherit; text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--tblr-border-color) 60%, transparent); }
+.si360-flag-item:hover { background: var(--si-blue-soft); color: inherit; }
+.si360-flag-foot { display: flex; justify-content: space-between; gap: .5rem; padding: .5rem .7rem; border-top: 1px solid var(--tblr-border-color); }
+.si360-flag-foot .btn-primary { background: var(--si-blue); border-color: var(--si-blue); }
+.si360-ico { width: 34px; height: 34px; flex: none; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem;
+    background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); }
+.si360-txt { display: flex; flex-direction: column; min-width: 0; font-size: .84rem; line-height: 1.35; }
+.si360-txt span, .si360-txt small { color: var(--tblr-secondary-color); }
+.si360-txt small { font-size: .72rem; }
+
+/* ------------------------------------------------------------------ pop-up no rodapé */
+.si360-toasts { position: fixed; bottom: 18px; right: 18px; z-index: 1090; display: flex; flex-direction: column; gap: .6rem; width: 390px; max-width: calc(100vw - 24px); pointer-events: none; }
+.si360-toasts.left { right: auto; left: 18px; }
+.si360-toast { pointer-events: auto; display: flex; gap: .75rem; align-items: flex-start; padding: .85rem .9rem; border-radius: 12px;
+    background: var(--tblr-bg-surface, #fff); color: var(--tblr-body-color); border: 1px solid var(--tblr-border-color); border-left: 5px solid var(--c, var(--si-blue));
+    box-shadow: 0 14px 34px rgba(20, 40, 80, .35); opacity: 0; transform: translateY(24px); transition: opacity .25s, transform .25s; }
+.si360-toast.in { opacity: 1; transform: none; }
+.si360-toast.out { opacity: 0; transform: translateY(24px); }
+.si360-toast .si360-txt { flex: 1; }
+.si360-toast .si360-txt b { font-size: .92rem; color: var(--tblr-body-color); }
+.si360-toast .si360-txt small { text-transform: uppercase; letter-spacing: .04em; font-weight: 700; color: var(--si-blue); }
+.si360-toast .btn-primary { align-self: flex-start; background: var(--si-blue); border-color: var(--si-blue); }
+.si360-toast .btn-close { flex: none; }
+
+@media (max-width: 768px) {
+    .si360 { margin: 0; padding: 1rem .75rem 1.5rem; border-radius: 0; }
+    .si360-mark { width: 70vw; }
+    .si360-bg { background-attachment: scroll; }
+}
+
+/* Visão 360 completa (o dashboard do SI 360 servido pelo GLPI) */
+.si360-frame { display: block; width: 100%; height: calc(100vh - 205px); min-height: 640px; border: 0; border-radius: 12px; background: #081428;
+    box-shadow: 0 14px 36px rgba(10, 30, 70, .35); }

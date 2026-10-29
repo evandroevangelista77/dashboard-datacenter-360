@@ -1,0 +1,44 @@
+/* Sistemas Internos 360 dentro do GLPI: o dashboard completo na cor do departamento (#3769B2),
+   com a árvore ao fundo tingida de azul e a marca-d'água da Oakmont. Só troca cores. */
+
+/* escuro (padrão do painel) */
+body.si {
+  --page: #081428; --surface: #0f2242; --surface2: #152d55; --ink: #e8eef8; --ink2: #b6c6e0;
+  --muted: #8196b8; --grid: #1c3560; --axis: #2c4a7c; --border: rgba(255, 255, 255, .1);
+  --accent: #3769B2; --link: #8fb5ef; --info: #5b8fd9; --s1: #5b8fd9; --sev1: #5b8fd9;
+  --side-bg: #0a1a33; --side-ink: #e6edf8; --side-muted: #8fa6c9; --side-hover: #13305c; --side-line: rgba(255, 255, 255, .08);
+  background: linear-gradient(rgba(8, 20, 40, .80), rgba(8, 20, 40, .86)), url("../img/arvore.jpg") center / cover fixed, #3769B2 !important;
+  background-blend-mode: normal, luminosity, normal !important;
+}
+/* claro */
+:root[data-theme="light"] body.si {
+  --page: #eef3fb; --surface: #ffffff; --surface2: #e9f0fa; --ink: #0d1b33; --ink2: #44587a;
+  --muted: #7686a3; --grid: #dde6f3; --axis: #c3d1e8; --border: rgba(13, 27, 51, .12);
+  --accent: #3769B2; --link: #3769B2; --info: #3769B2; --s1: #3769B2; --sev1: #3769B2;
+  background: linear-gradient(rgba(238, 243, 251, .80), rgba(238, 243, 251, .88)), url("../img/arvore.jpg") center / cover fixed, #3769B2 !important;
+  background-blend-mode: normal, luminosity, normal !important;
+}
+/* no claro, cartões continuam escuros (como no painel original), agora em azul */
+:root[data-theme="light"] body.si :is(.card, .kpi, .gcard, .xsum > div, #tip) {
+  --surface: #0f2242; --surface2: #152d55; --ink: #e8eef8; --ink2: #b6c6e0;
+  --muted: #8196b8; --grid: #1c3560; --axis: #2c4a7c; --border: rgba(255, 255, 255, .1); --link: #8fb5ef;
+}
+
+/* marca-d'água: árvore da Oakmont na cor do departamento */
+body.si::after {
+  content: ""; position: fixed; z-index: 0; right: 2.5vw; bottom: 3vh; width: min(40vw, 560px); aspect-ratio: 1.56;
+  background: #3769B2; opacity: .16; pointer-events: none;
+  -webkit-mask: url("../img/oakmont.png") center / contain no-repeat; mask: url("../img/oakmont.png") center / contain no-repeat;
+}
+:root[data-theme="light"] body.si::after { opacity: .12; }
+body.si .app { position: relative; z-index: 1; }
+
+/* topologia em tela cheia e figuras do mapa */
+#siTopo { background: linear-gradient(rgba(8, 20, 40, .82), rgba(8, 20, 40, .88)), url("../img/arvore.jpg") center / cover, #3769B2 !important;
+  background-blend-mode: normal, luminosity, normal !important; }
+:root[data-theme="light"] #siTopo { background: linear-gradient(rgba(238, 243, 251, .84), rgba(238, 243, 251, .9)), url("../img/arvore.jpg") center / cover, #3769B2 !important; }
+.tp-n .pic { background: #10223f !important; }
+.tp-n .pic .plogo { background: rgba(8, 20, 40, .88) !important; }
+
+/* botões e destaques */
+body.si a { color: var(--link); }

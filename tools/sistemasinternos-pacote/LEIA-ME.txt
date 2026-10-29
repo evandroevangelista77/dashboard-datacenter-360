@@ -1,0 +1,77 @@
+PLUGIN SISTEMAS INTERNOS 360 PARA GLPI 12 · versão @VERSAO@
+=========================================================
+
+O painel do departamento de Sistemas Internos dentro do GLPI 12.0.x
+(seção "Sistemas Internos" do menu lateral, logo abaixo de Dashboard):
+
+- Visão 360: o MESMO dashboard do SI 360 (porta 8092) dentro do GLPI, com
+  mapa, topologia, access points do Wi-Fi, vulnerabilidades, resumo
+  operacional, voz e book (o servidor do SI 360 precisa ser acessível pelo
+  servidor do GLPI: Configurações > Departamento > Servidor do SI 360)
+- Resumo rápido: disponibilidade, hosts indisponíveis, problemas ativos por
+  severidade (Zabbix) e chamados em aberto da entidade com SLA (GLPI)
+- Hosts do Zabbix: incluir, editar, ativar/desativar e excluir hosts sem sair
+  do GLPI, só nos grupos liberados para o perfil, com auditoria (antes e depois)
+- Alertas em todas as telas: sinalizador no topo, som, voz e pop-up no rodapé,
+  configuráveis para cada tipo de alerta (severidades do Zabbix, chamado novo,
+  SLA vencendo, SLA vencido, host alterado por outra pessoa)
+- Configurações em abas: conexão, departamento, cadastro de hosts, alertas e
+  notificações (horário de silêncio, volume, voz, duração do pop-up)
+- Cor do departamento #3769B2, com a árvore ao fundo e a marca-d'água
+
+CONTEÚDO
+--------
+  sistemasinternos/  o plugin (a pasta precisa se chamar "sistemasinternos")
+  instalar.sh        instala ou atualiza tudo de uma vez
+  LEIA-ME.txt        este arquivo
+  LICENSE            GNU GPL versão 3
+
+REQUISITOS
+----------
+- GLPI 12.0.x (Linux), com a extensão PHP curl.
+- Zabbix 6.0 ou mais novo (testado no 7.4), acessível pelo servidor do GLPI.
+- Uma conta de serviço no Zabbix (veja abaixo).
+
+CONTA DE SERVIÇO NO ZABBIX
+--------------------------
+1) Usuários > Grupos de usuários > Criar "glpi-sistemas-internos", sem acesso
+   ao frontend, com Leitura e escrita SÓ nos hostgroups do departamento e
+   Leitura nos grupos de templates.
+2) Usuários > Papéis: papel do tipo Admin com acesso à API.
+3) Usuários > Usuários > Criar "glpi-si360", no grupo e com o papel acima.
+4) Usuários > Tokens de API > Criar para esse usuário. Guarde o token.
+
+INSTALAÇÃO AUTOMÁTICA (no servidor do GLPI)
+-------------------------------------------
+   unzip oak-sistemasinternos-completo-@VERSAO@.zip
+   cd oak-sistemasinternos-completo
+   sudo bash instalar.sh
+
+   GLPI em outro caminho ou com outro administrador:
+   sudo GLPI_DIR=/caminho/do/glpi GLPI_ADMIN=usuario bash instalar.sh
+
+INSTALAÇÃO MANUAL
+-----------------
+   sudo cp -r sistemasinternos /var/www/glpi/plugins/
+   sudo chown -R www-data:www-data /var/www/glpi/plugins/sistemasinternos
+   sudo -u www-data php /var/www/glpi/bin/console plugin:install --username=glpi sistemasinternos
+   sudo -u www-data php /var/www/glpi/bin/console plugin:activate sistemasinternos
+
+PRIMEIROS PASSOS
+----------------
+1) Sistemas Internos > Configurações > Conexão com o Zabbix: endereço da API
+   (termina em api_jsonrpc.php) e o token. Clique em "Testar a conexão".
+2) Aba Departamento: grupos do Zabbix e entidade do GLPI.
+3) Aba Alertas: para cada tipo, sinalizador, som, voz e pop-up (botão Testar).
+4) Administração > Perfis > (perfil) > aba "Sistemas Internos 360": direitos
+   (ver o painel, ver/incluir/editar/excluir hosts, configurar) e, se quiser,
+   grupos do Zabbix próprios do perfil.
+
+ATENÇÃO
+-------
+Excluir um host apaga o histórico dele no Zabbix. Desinstalar o plugin apaga a
+auditoria e a configuração (os hosts no Zabbix não são tocados).
+
+LICENÇA
+-------
+GNU General Public License, versão 3 ou posterior (GPLv3+), a mesma do GLPI.

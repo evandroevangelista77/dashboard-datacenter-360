@@ -404,6 +404,26 @@ sudo bash instalar.sh
 
 Use com RH 1.0.4+, PMO 1.2.0+ e Reembolso 1.1.0+. Configuração do Teams e detalhes: [`glpi-plugin/avisos/README.md`](glpi-plugin/avisos/README.md).
 
+## Sistemas Internos 360 (plugin)
+
+[`glpi-plugin/sistemasinternos`](glpi-plugin/sistemasinternos) traz para o GLPI 12 o painel do departamento de Sistemas Internos, numa seção **Sistemas Internos** do menu lateral (abaixo de Dashboard):
+
+- **Visão 360** e **Topologia**: o mesmo dashboard do SI 360 (mapa, access points do Wi-Fi, vulnerabilidades, resumo operacional, voz e book), servido pelo GLPI com o login e os direitos do GLPI; cor do departamento (#3769B2, com a árvore e a marca-d'água) ou a original.
+- **Hosts do Zabbix**: incluir, editar, ativar/desativar e excluir hosts pelo GLPI, só nos grupos liberados para o perfil, por uma conta de serviço da API do Zabbix, com **auditoria** (antes e depois).
+- **Alertas** em todas as telas: sinalizador no topo, som, voz e pop-up no rodapé, configuráveis por tipo (severidades do Zabbix, chamado novo, SLA vencendo e vencido, host alterado).
+- **Configurações** em abas: conexão com o Zabbix (com teste), departamento, cadastro de hosts, alertas e notificações.
+
+### Instalação
+
+Baixe `oak-sistemasinternos-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
+
+```bash
+unzip oak-sistemasinternos-completo-1.1.0.zip && cd oak-sistemasinternos-completo
+sudo bash instalar.sh
+```
+
+Depois, em **Sistemas Internos → Configurações**, informe a API e o token da conta de serviço do Zabbix e o servidor do SI 360. Detalhes: [`glpi-plugin/sistemasinternos/README.md`](glpi-plugin/sistemasinternos/README.md).
+
 ## Vigia da VM do GLPI (VirtualBox no macOS)
 
 [`tools/vigia-glpi.sh`](tools/vigia-glpi.sh) é para um laboratório em que o GLPI roda numa VM do VirtualBox no Mac, em ponte com o Wi-Fi. Sem o driver de kernel do VirtualBox (modo *driverless*), essa ponte às vezes para de entregar pacotes à VM, que continua ligada mas some da rede. A cada 20 s o vigia testa o GLPI; se cair (com o Mac e o roteador respondendo), desliga e religa o cabo virtual da VM (`VBoxManage controlvm … setlinkstate1`), o que costuma trazer a rede de volta em segundos. Se isso falhar 3 vezes seguidas, desliga a VM pelo ACPI e liga de novo em segundo plano, junto com as outras VMs da mesma ponte que estiverem ligadas (`VIGIA_JUNTO`, padrão `Zabbix 7.4`), no máximo uma vez a cada 30 min e até 3 vezes seguidas sem a rede voltar. Tudo fica registrado em `~/Library/Logs/vigia-glpi.log`.
