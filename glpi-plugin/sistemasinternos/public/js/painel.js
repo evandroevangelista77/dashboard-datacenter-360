@@ -12,7 +12,7 @@
     const drawCharts = () => {
         if (!data || !window.echarts) return;
         const d = JSON.parse(data.textContent);
-        const css = getComputedStyle(document.body);
+        const css = getComputedStyle(data.closest('.si360') || document.body); // cores do cartão escuro do plugin
         const fg = css.getPropertyValue('--tblr-body-color').trim() || '#1f2937';
         const muted = css.getPropertyValue('--tblr-secondary-color').trim() || '#6b7280';
         const grid = css.getPropertyValue('--tblr-border-color').trim() || '#e5e7eb';
@@ -46,7 +46,7 @@
             xAxis: {type: 'category', data: d.days.labels, axisLabel: {color: muted}, axisLine: {lineStyle: {color: grid}}},
             yAxis: {type: 'value', minInterval: 1, splitLine: {lineStyle: {color: grid}}, axisLabel: {color: muted}},
             series: [
-                {name: 'Abertos', type: 'line', smooth: true, symbolSize: 6, data: d.days.opened, itemStyle: {color: '#3769B2'}, areaStyle: {color: 'rgba(55,105,178,.18)'}},
+                {name: 'Abertos', type: 'line', smooth: true, symbolSize: 6, data: d.days.opened, itemStyle: {color: '#8fb5ef'}, areaStyle: {color: 'rgba(143,181,239,.2)'}},
                 {name: 'Solucionados', type: 'line', smooth: true, symbolSize: 6, data: d.days.solved, itemStyle: {color: '#22c55e'}},
             ],
         });

@@ -168,3 +168,61 @@
 /* Visão 360 completa (o dashboard do SI 360 servido pelo GLPI) */
 .si360-frame { display: block; width: 100%; height: calc(100vh - 205px); min-height: 640px; border: 0; border-radius: 12px; background: #081428;
     box-shadow: 0 14px 36px rgba(10, 30, 70, .35); }
+
+/* ------------------------------------------------------------------ cartões em azul escuro (tom do #3769B2), mais escuros que o fundo, com texto claro */
+.si360 {
+    --si-surface: #10264b;
+    --tblr-bg-surface: #10264b;
+    --tblr-bg-surface-secondary: #0c1e3d;
+    --tblr-bg-surface-tertiary: #163061;
+    --tblr-bg-forms: #0b1b38;
+    --tblr-body-color: #e7eefb;
+    --tblr-body-color-rgb: 231, 238, 251;
+    --tblr-emphasis-color: #ffffff;
+    --tblr-heading-color: #ffffff;
+    --tblr-secondary-color: #a9bee3;
+    --tblr-muted: #a9bee3;
+    --tblr-border-color: rgba(143, 181, 239, .22);
+    --tblr-border-color-translucent: rgba(143, 181, 239, .22);
+    --tblr-link-color: #9cc0f5;
+    --tblr-link-color-rgb: 156, 192, 245;
+    --tblr-link-hover-color: #c3d9fa;
+    --si-blue-soft: rgba(111, 155, 224, .18);
+    color: var(--tblr-body-color);
+}
+/* o tema de cores do GLPI pinta .card com regra forte: aqui vale sempre o azul escuro do departamento */
+.si360 .card.si360-card, .si360 .si360-kpi, [data-bs-theme] .si360 .card.si360-card { background: rgba(16, 38, 75, .92) !important; color: var(--tblr-body-color) !important;
+    border-color: rgba(143, 181, 239, .25) !important; box-shadow: 0 10px 28px rgba(5, 15, 35, .35); }
+.si360-card .card-header, .si360-card .card-footer { background: transparent; color: #fff; border-color: rgba(143, 181, 239, .2); }
+.si360-card .card-title, .si360 h3, .si360 h4, .si360 .h3 { color: #fff; }
+.si360-card .card-title i, .si360-matrix th i { color: #8fb5ef; }
+.si360-kpi { border-left-color: #6f9be0; }
+.si360-kpi-ico { background: rgba(111, 155, 224, .2); color: #a9c6f3; }
+.si360-kpi-value { color: #fff; }
+.si360-kpi.ok .si360-kpi-ico { background: rgba(34, 197, 94, .2); color: #4ade80; } .si360-kpi.ok .si360-kpi-value { color: #4ade80; }
+.si360-kpi.warn .si360-kpi-ico { background: rgba(245, 158, 11, .22); color: #fbbf24; } .si360-kpi.warn .si360-kpi-value { color: #fbbf24; }
+.si360-kpi.bad .si360-kpi-ico { background: rgba(239, 68, 68, .22); color: #f87171; } .si360-kpi.bad .si360-kpi-value { color: #f87171; }
+.si360 .table { --tblr-table-color: var(--tblr-body-color); --tblr-table-bg: transparent; --tblr-table-border-color: rgba(143, 181, 239, .16);
+    --tblr-table-striped-bg: rgba(143, 181, 239, .06); --tblr-table-hover-bg: rgba(143, 181, 239, .1); --tblr-table-hover-color: #fff; color: var(--tblr-body-color); }
+.si360 .table thead th { color: var(--tblr-secondary-color); background: transparent; }
+.si360 .table > :not(caption) > * > * { background-color: transparent; color: inherit; border-bottom-color: rgba(143, 181, 239, .14); }
+.si360 .text-secondary, .si360 .text-muted, .si360 .form-hint, .si360-foot, .si360-matrix th { color: var(--tblr-secondary-color) !important; }
+.si360 .form-control, .si360 .form-select { background-color: var(--tblr-bg-forms); color: var(--tblr-body-color); border-color: rgba(143, 181, 239, .3); }
+.si360 .form-control::placeholder { color: rgba(169, 190, 227, .6); }
+.si360 .form-label, .si360 .form-check-label { color: var(--tblr-body-color); }
+.si360 .nav-tabs { border-bottom-color: rgba(143, 181, 239, .22); }
+.si360 .nav-tabs .nav-link { color: var(--tblr-secondary-color); }
+.si360 .nav-tabs .nav-link.active { color: #fff; background: transparent; border-color: rgba(143, 181, 239, .3) rgba(143, 181, 239, .3) transparent; border-bottom: 2px solid #8fb5ef; }
+.si360 .btn-outline-secondary, .si360 .btn-ghost-secondary { color: var(--tblr-body-color); border-color: rgba(143, 181, 239, .35); }
+.si360-pill { background: rgba(169, 190, 227, .16); color: var(--tblr-secondary-color); }
+.si360-pill.ok { background: rgba(34, 197, 94, .2); color: #4ade80; }
+.si360-pill.warn { background: rgba(245, 158, 11, .2); color: #fbbf24; }
+.si360-pill.bad { background: rgba(239, 68, 68, .2); color: #fca5a5; }
+.si360-chip { background: rgba(16, 38, 75, .9); color: var(--tblr-body-color); } .si360-chip.ok { color: #4ade80; } .si360-chip.bad { color: #fca5a5; }
+.si360-howto, .si360-keep, .si360-focus { background: rgba(111, 155, 224, .14); color: var(--tblr-body-color); }
+.si360-matrix-group td { background: rgba(111, 155, 224, .16); color: #a9c6f3; }
+.si360-test-row.ok { background: rgba(34, 197, 94, .16); color: #4ade80; }
+.si360-test-row.warn { background: rgba(245, 158, 11, .16); color: #fbbf24; }
+.si360-test-row.bad { background: rgba(239, 68, 68, .16); color: #fca5a5; }
+.si360 .alert { background: rgba(16, 38, 75, .92); color: var(--tblr-body-color); }
+.si360 .empty, .si360 .empty-title { color: var(--tblr-secondary-color); }

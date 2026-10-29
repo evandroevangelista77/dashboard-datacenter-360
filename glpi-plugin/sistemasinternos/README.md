@@ -62,6 +62,7 @@ Tabelas `glpi_plugin_sistemasinternos_profilegroups`, `_logs` (auditoria) e `_se
 
 ## Versões
 
+- **1.2.2**: cartões, tabelas e formulários das telas do plugin em azul escuro (tom do #3769B2) com texto claro, legíveis sobre o fundo; gráficos com letras claras.
 - **1.2.1**: o menu *Topologia* volta a abrir o mapa direto.
 - **1.2.0**: a Visão 360 passa a rodar inteira dentro do GLPI, sem o servidor do SI 360 e sem os painéis das portas 8090 e 8091 (sai o campo *Servidor do SI 360*). Resumo operacional guardado no banco do GLPI, acionamento configurável, teste de conexão compatível com o Zabbix 7.2.
 - **1.1.0**: Visão 360 e Topologia com o dashboard completo do SI 360 (mapa, APs do Wi-Fi, vulnerabilidades, resumo operacional, voz, book), opção de cor (azul do departamento ou original) e correção da atualização do plugin (direitos duplicados).
