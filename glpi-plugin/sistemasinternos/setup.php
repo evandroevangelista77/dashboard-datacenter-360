@@ -16,7 +16,7 @@ use GlpiPlugin\Sistemasinternos\Painel;
 use GlpiPlugin\Sistemasinternos\ProfileTab;
 use GlpiPlugin\Sistemasinternos\Settings;
 
-define('PLUGIN_SISTEMASINTERNOS_VERSION', '1.2.3');
+define('PLUGIN_SISTEMASINTERNOS_VERSION', '1.2.4');
 define('PLUGIN_SISTEMASINTERNOS_MIN_GLPI', '12.0.0');
 define('PLUGIN_SISTEMASINTERNOS_MAX_GLPI', '12.0.99');
 

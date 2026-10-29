@@ -229,10 +229,14 @@
 
 /* lista do clique nos gráficos do Resumo rápido, com filtros */
 .si360-chart { cursor: pointer; }
-.si360-drill { position: fixed; inset: 0; z-index: 1080; display: none; align-items: flex-start; justify-content: center; padding: 5vh 16px; background: rgba(5, 12, 28, .6); backdrop-filter: blur(3px); }
-.si360-drill.on { display: flex; }
-.si360-drill-box { width: min(1100px, 100%); max-height: 88vh; display: flex; flex-direction: column; border-radius: 14px; overflow: hidden; color: #e7eefb;
-    background: #10264b; border: 1px solid rgba(143, 181, 239, .3); box-shadow: 0 24px 60px rgba(0, 0, 0, .45); }
+/* gaveta pela direita, com a altura toda da tela */
+.si360-drill { position: fixed; inset: 0; z-index: 1080; display: flex; justify-content: flex-end; background: rgba(5, 12, 28, 0); pointer-events: none; transition: background .25s; }
+.si360-drill.on { background: rgba(5, 12, 28, .5); pointer-events: auto; }
+.si360-drill-box { width: min(880px, 100%); height: 100%; display: flex; flex-direction: column; overflow: hidden; color: #e7eefb;
+    background: #10264b; border-left: 1px solid rgba(143, 181, 239, .3); box-shadow: -24px 0 60px rgba(0, 0, 0, .45);
+    transform: translateX(100%); transition: transform .28s ease; }
+.si360-drill.on .si360-drill-box { transform: none; }
+.si360-drill-body { flex: 1; }
 .si360-drill-head { display: flex; align-items: center; gap: .75rem; padding: .8rem 1rem; background: linear-gradient(135deg, #3769B2, #1f3f73); color: #fff; }
 .si360-drill-head [data-n] { font-size: .8rem; opacity: .85; }
 .si360-drill-filters { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding: .7rem 1rem; border-bottom: 1px solid rgba(143, 181, 239, .2); }

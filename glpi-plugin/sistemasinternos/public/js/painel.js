@@ -141,7 +141,7 @@
         $$('[data-f]', box).forEach((el) => el.addEventListener('input', () => { f[el.dataset.f] = el.value; render(); }));
         $('[data-clear]', box).addEventListener('click', () => { Object.keys(f).forEach((k) => { f[k] = ''; }); $$('[data-f]', box).forEach((el) => { el.value = ''; }); render(); });
         render();
-        box.classList.add('on');
+        requestAnimationFrame(() => box.classList.add('on')); // a gaveta desliza da direita
         $('[data-f=q]', box).focus();
     }
     if (data) {

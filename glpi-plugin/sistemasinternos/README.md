@@ -62,6 +62,7 @@ Tabelas `glpi_plugin_sistemasinternos_profilegroups`, `_logs` (auditoria) e `_se
 
 ## Versões
 
+- **1.2.4**: a lista do clique nos gráficos abre numa gaveta pela direita, na altura toda da tela.
 - **1.2.3**: no Resumo rápido, clicar numa fatia, barra ou ponto dos gráficos abre a lista dos alertas (com o link de cada alerta no Zabbix), dos hosts ou dos chamados do dia, com filtros de busca (host, problema, chamado), período, severidade, reconhecimento, estado e aberto/solucionado. O link da tabela de problemas abre o próprio alerta.
 - **1.2.2**: cartões, tabelas e formulários das telas do plugin em azul escuro (tom do #3769B2) com texto claro, legíveis sobre o fundo; gráficos com letras claras.
 - **1.2.1**: o menu *Topologia* volta a abrir o mapa direto.
