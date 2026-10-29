@@ -1285,5 +1285,5 @@
     if (e.key !== "Escape" || !topo.classList.contains("on") || document.querySelector("#drawer.on") || document.querySelector("#iaAsk.on")) return;
     if (info.classList.contains("on")) closeInfo(); else closeTopo();
   });
-  if (new URLSearchParams(location.search).get("topologia")) setTimeout(openTopo, 300);
+  if (new URLSearchParams(location.search).get("topologia") || /[?&]topologia=1/.test(new URLSearchParams(location.search).get("p") || "")) setTimeout(openTopo, 300);
 })();
