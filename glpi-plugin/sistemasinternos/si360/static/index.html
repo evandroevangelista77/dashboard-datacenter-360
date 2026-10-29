@@ -1,0 +1,1782 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NOC</title>
+<style>
+  /* ---- tokens: verde escuro (padrão) e claro (paleta de referência do skill dataviz) ---- */
+  :root {
+    color-scheme: dark;
+    --page:#07130d; --surface:#0e2118; --surface2:#143024; --ink:#e8f2ec; --ink2:#b5cbbf;
+    --muted:#7e9a8b; --grid:#1d382b; --axis:#2e4f3e; --border:rgba(255,255,255,.09);
+    --good:#0ca30c; --good-text:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+    --warn-text:#fab219; --serious-text:#ec835a; --crit-text:#f0716f;
+    --info:#3987e5; --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#d55181;
+    --sev0:#898781; --sev1:#3987e5; --sev2:#fab219; --sev3:#ec835a; --sev4:#d03b3b; --sev5:#e0457b;
+    --on-sev:#0b0b0b; --accent:#1f7a52; --link:#6fd3a2;
+    --side-bg:#0a1d14; --side-ink:#e6f1ea; --side-muted:#8fb0a0; --side-hover:#12302a; --side-line:rgba(255,255,255,.08);
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --page:#f1f6f3; --surface:#ffffff; --surface2:#eef4f0; --ink:#0b1a12; --ink2:#47594f;
+    --muted:#7a8c82; --grid:#e0e9e3; --axis:#c5d3ca; --border:rgba(11,26,18,.12);
+    --good-text:#006300; --warn-text:#a56a00; --serious-text:#c2561f; --crit-text:#d03b3b;
+    --info:#2a78d6; --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#e87ba4;
+    --sev1:#2a78d6; --sev5:#8f1d4a; --link:#1f7a52;
+  }
+
+  :root[data-theme="light"] :is(.card, .kpi, .gcard, .xsum > div, #tip) {
+    color-scheme: dark;
+    --surface:#0e2118; --surface2:#143024; --ink:#e8f2ec; --ink2:#b5cbbf;
+    --muted:#7e9a8b; --grid:#1d382b; --axis:#2e4f3e; --border:rgba(255,255,255,.09);
+    --good-text:#0ca30c; --warn-text:#fab219; --serious-text:#ec835a; --crit-text:#f0716f;
+    --info:#3987e5; --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#d55181;
+    --sev1:#3987e5; --sev5:#e0457b; --link:#6fd3a2;
+    color: var(--ink);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: linear-gradient(color-mix(in srgb, var(--page) 86%, transparent), color-mix(in srgb, var(--page) 86%, transparent)), url(/static/brand/fundo-painel.jpg) center / cover fixed, var(--page); color: var(--ink);
+         font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  button, select, input { font: inherit; color: inherit; }
+  a { color: var(--link); }
+
+  .app { display: grid; grid-template-columns: 310px 1fr; min-height: 100vh; }
+  aside { background: var(--side-bg); color: var(--side-ink); border-right: 1px solid var(--side-line); position: sticky; top: 0;
+          height: 100vh; display: flex; flex-direction: column; }
+  .brand { padding: 18px 16px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; border-bottom: 1px solid var(--side-line); margin-bottom: 6px; }
+  .brandlogo { width: 150px; max-width: 100%; height: auto; max-height: 104px; object-fit: contain; }
+  .brandname { font-weight: 700; letter-spacing: 1.6px; font-size: 15px; color: var(--side-ink); }
+  .brand small:empty { display: none; }
+  .side-search { margin: 8px 14px; padding: 8px 10px; border: 1px solid var(--side-line); border-radius: 8px;
+                 background: rgba(255,255,255,.06); color: var(--side-ink); width: calc(100% - 28px); }
+  nav { overflow: auto; padding: 0 8px 16px; flex: 1; }
+  .nav-title { font-size: 11px; letter-spacing: .6px; text-transform: uppercase; color: var(--side-muted); padding: 12px 10px 4px; }
+  .nav-item { display: flex; align-items: center; gap: 9px; padding: 6px 10px; border-radius: 8px; color: var(--side-ink);
+              text-decoration: none; cursor: pointer; }
+  .nav-item:hover { background: var(--side-hover); }
+  .nav-item[aria-current="page"] { background: var(--side-hover); box-shadow: inset 3px 0 0 var(--link); font-weight: 600; }
+  .nav-item .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nav-item .pc { font-size: 12px; color: var(--side-muted); font-variant-numeric: tabular-nums; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .dot.good { background: var(--good); } .dot.warn { background: var(--warn); }
+  .dot.crit { background: var(--crit-text); border-radius: 2px; transform: rotate(45deg) scale(.85); }
+
+  main { padding: 18px 24px 40px; min-width: 0; }
+  .topbar { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  h1 { margin: 0; font-size: 22px; font-weight: 650; }
+  .sub { color: var(--ink2); font-size: 13px; margin-top: 2px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; background: var(--surface); }
+  .seg button { border: 0; background: none; padding: 6px 11px; cursor: pointer; color: var(--ink2); }
+  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+  .btn { border: 1px solid var(--border); background: var(--surface); padding: 6px 12px; border-radius: 9px; cursor: pointer; }
+  .btn:hover { background: var(--surface2); }
+  .status { font-size: 12px; color: var(--ink2); display: inline-flex; align-items: center; gap: 6px; }
+  .badge { background: #3a2b10; color: #fab219; border-radius: 999px; padding: 2px 9px; font-size: 12px; }
+
+  .grid { display: grid; gap: 14px; margin-bottom: 14px; }
+  .g6 { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+  .g2 { grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); }
+  .g3 { grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; min-width: 0; }
+  .card h2 { margin: 0 0 10px; font-size: 12px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; color: var(--ink2); }
+  .card h2 .hint { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--muted); margin-left: 6px; }
+  .section-title { font-size: 15px; font-weight: 650; margin: 22px 0 10px; }
+
+  .gauge { text-align: center; padding: 10px 8px 12px; }
+  .gauge svg { width: 100%; max-width: 230px; height: auto; display: block; margin: 0 auto; }
+  .gauge .gl { font-size: 13px; color: var(--ink2); margin-top: 4px; }
+  .gauge .gs { font-size: 12px; color: var(--muted); }
+
+  .kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-bottom: 14px; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+  .kpi .l { font-size: 12px; color: var(--ink2); }
+  .kpi .v { font-size: 26px; font-weight: 650; line-height: 1.2; margin-top: 2px; }
+  .kpi .s { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .v.good { color: var(--good-text); } .v.crit { color: var(--crit-text); } .v.warn { color: var(--warn-text); }
+
+  .chart { width: 100%; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .ax text { fill: var(--muted); font-size: 11px; }
+  .ax text.hlab { fill: var(--ink2); cursor: default; } .hstripe { fill: var(--surface2); opacity: .55; }
+  .ax line, .gridline { stroke: var(--grid); }
+  .baseline { stroke: var(--axis); }
+  .bar { transition: opacity .1s; } .bar:hover, .cell:hover { opacity: .75; }
+  .cell { stroke: var(--surface); stroke-width: 1.5; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink2); margin-top: 8px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+  .hb { display: grid; grid-template-columns: minmax(80px, 38%) 1fr auto; align-items: center; gap: 4px 10px; font-size: 13px; }
+  .hb .lab { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+  .hb .trk { background: var(--surface2); border-radius: 4px; height: 12px; position: relative; }
+  .hb .fil { height: 12px; border-radius: 0 4px 4px 0; min-width: 2px; }
+  .hb .val { color: var(--ink2); font-variant-numeric: tabular-nums; text-align: right; }
+  .empty { color: var(--muted); padding: 18px 0; text-align: center; }
+
+  .donutwrap { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .donutwrap ul { list-style: none; padding: 0; margin: 0; font-size: 13px; }
+  .donutwrap li { display: flex; gap: 8px; align-items: center; padding: 2px 0; }
+  .donutwrap li b { margin-left: auto; padding-left: 14px; font-variant-numeric: tabular-nums; }
+
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  select { background: var(--surface2); color: var(--ink); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; }
+  select option { background: var(--surface); color: var(--ink); }
+  .tools input[type=search], .tools select { padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface2); }
+  .tr-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 470px); gap: 16px; align-items: start; }
+  .tr-ana { display: flex; flex-direction: column; gap: 10px; max-height: 330px; overflow: auto; } .tr-host { font-weight: 700; }
+  .tr-c { border: 1px solid var(--border); border-left: 4px solid var(--good); border-radius: 10px; padding: 9px 12px; background: var(--surface2); }
+  .tr-c.atencao { border-left-color: var(--warn); } .tr-c.risco { border-left-color: var(--crit); } .tr-c .h { font-weight: 700; margin-bottom: 6px; }
+  .tr-c .g { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 10px; } .tr-c .g > div { display: flex; flex-direction: column; min-width: 0; }
+  .tr-c .g span { color: var(--muted); font-size: 11px; } .tr-c .g b { font-size: 14px; } .tr-c .g small { color: var(--muted); font-size: 11px; } .tr-c p { margin: 8px 0 0; font-size: 12.5px; color: var(--ink2); }
+  .tr-rh { font-size: 14px; margin: 16px 0 8px; } #trRank .tr-r { cursor: pointer; } #trRank .muted { color: var(--muted); }
+  @media (max-width: 1000px) { .tr-wrap { grid-template-columns: 1fr; } .tr-ana { max-height: none; } }
+  .tablewrap { overflow: auto; max-height: 560px; border: 1px solid var(--border); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th { position: sticky; top: 0; background: var(--surface2); text-align: left; font-weight: 600; color: var(--ink2);
+       padding: 8px 10px; white-space: nowrap; cursor: pointer; user-select: none; border-bottom: 1px solid var(--border); }
+  th.nosort { cursor: default; }
+  th[aria-sort="ascending"]::after { content: " ▲"; font-size: 10px; } th[aria-sort="descending"]::after { content: " ▼"; font-size: 10px; }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; vertical-align: middle; }
+  td.wrap { white-space: normal; min-width: 240px; }
+  tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr:hover { background: var(--surface2); }
+  a.hostlink { color: var(--ink); text-decoration: underline dotted; cursor: pointer; }
+
+  .chip { display: inline-block; border-radius: 6px; padding: 1px 8px; font-size: 12px; font-weight: 600; color: var(--on-sev); }
+  .sev0 { background: var(--sev0); } .sev1 { background: var(--sev1); color: #fff; } .sev2 { background: var(--sev2); }
+  .sev3 { background: var(--sev3); } .sev4 { background: var(--sev4); color: #fff; } .sev5 { background: var(--sev5); color: #fff; }
+  .st { display: inline-flex; align-items: center; gap: 6px; }
+  .st i { font-style: normal; font-size: 11px; }
+  .st.up i { color: var(--good-text); } .st.down { color: var(--crit-text); font-weight: 600; } .st.down i { color: var(--crit-text); }
+  .st.maintenance i { color: var(--info); } .st.disabled { color: var(--muted); }
+  .av-good { color: var(--good-text); } .av-warn { color: var(--warn-text); } .av-serious { color: var(--serious-text); } .av-crit { color: var(--crit-text); font-weight: 600; }
+  .open { color: var(--crit-text); font-weight: 600; }
+
+  /* visão geral: cartões de grupos */
+  /* ---- visão executiva ---- */
+  .g4 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .xc { display: flex; flex-direction: column; gap: 10px; }
+  .xc h2 { display: flex; align-items: center; gap: 8px; margin: 0; }
+  .xc h2 .tag { margin-left: auto; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 650; text-transform: none; letter-spacing: 0; white-space: nowrap; }
+  .tag.good { background: rgba(12,163,12,.16); color: var(--good-text); } .tag.warn { background: rgba(250,178,25,.16); color: var(--warn-text); }
+  .tag.serious { background: rgba(236,131,90,.16); color: var(--serious-text); } .tag.crit { background: rgba(208,59,59,.2); color: var(--crit-text); }
+  .tag.mut { background: var(--surface2); color: var(--muted); }
+  .tag.info { background: rgba(57,135,229,.16); color: var(--info); }
+  .xv { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .xv .big { font-size: 40px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.5px; }
+  .xv .big small { font-size: 18px; font-weight: 500; color: var(--ink2); margin-left: 2px; }
+  .xv .aside { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .xv .aside small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); }
+  .pbar { position: relative; height: 8px; border-radius: 4px; background: var(--grid); }
+  .pbar i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; }
+  .pbar b { position: absolute; top: -4px; width: 2px; height: 16px; background: var(--ink); opacity: .8; border-radius: 1px; }
+  .xcap { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); }
+  .xcap b { color: var(--ink); font-weight: 600; }
+  .spark { height: 44px; margin: 0 -4px -6px; }
+  .spark svg { width: 100%; height: 100%; display: block; overflow: visible; }
+  .xseg { display: flex; height: 10px; border-radius: 5px; overflow: hidden; gap: 2px; background: var(--grid); }
+  .xseg i { display: block; height: 100%; }
+  .xseglg { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; color: var(--muted); }
+  .xseglg span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; background: var(--c); }
+  .xseglg b { color: var(--ink); }
+  .health { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 18px; }
+  .health .hm .l { font-size: 12px; color: var(--ink2); display: flex; justify-content: space-between; }
+  .health .hm .v { font-size: 24px; font-weight: 650; margin: 2px 0 6px; font-variant-numeric: tabular-nums; }
+  .health .hm .v small { font-size: 13px; color: var(--ink2); font-weight: 400; }
+  .health .hm .s { font-size: 11px; color: var(--muted); margin-top: 5px; }
+  .xsum { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .xsum > div { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--c); border-radius: 10px; padding: 10px 14px; cursor: pointer; }
+  .xsum > div.on { box-shadow: inset 0 0 0 1px var(--c); }
+  .xsum > div { display: flex; align-items: center; gap: 12px; }
+  .xsum .xs-t { flex: 1; min-width: 0; }
+  .xsum .xs-ic { flex: none; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--c);
+                 background: color-mix(in srgb, var(--c) 16%, transparent); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); }
+  .xsum .xs-ic svg { width: 24px; height: 24px; }
+  .xsum .l { font-size: 12px; color: var(--ink2); } .xsum .v { font-size: 24px; font-weight: 700; color: var(--c); } .xsum .s { font-size: 11px; color: var(--muted); }
+  .gcard.xg { border-left: 4px solid var(--c, var(--border)); display: flex; flex-direction: column; gap: 9px; }
+  .gcard.xg .gname { margin: 0; }
+  .gcard.xg .gname .pct { margin-left: auto; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--c); flex: none; overflow: visible; }
+  .gcard.xg dl { grid-template-columns: repeat(4, 1fr); gap: 2px 8px; border-top: 1px solid var(--border); padding-top: 8px; margin: 0; }
+  .gcard.xg dt { font-size: 10px; text-transform: uppercase; letter-spacing: .3px; color: var(--muted); grid-row: 1; white-space: nowrap; }
+  .gcard.xg dd { text-align: left; font-size: 13px; font-weight: 650; grid-row: 2; white-space: nowrap; }
+  .gcard.xg dd.open { color: var(--crit-text); }
+  .gcard.xg.na { opacity: .7; }
+  /* ---- OAK IA ---- */
+  .nav-ia { margin: 4px 0 2px; background: linear-gradient(135deg, rgba(31,122,82,.35), rgba(31,122,82,.12)); border: 1px solid rgba(111,211,162,.25); font-weight: 650; }
+  .nav-ia img { height: 18px; width: auto; }
+  .nav-ia .spark-ia { margin-left: auto; color: var(--link); }
+  .iahero { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; background: linear-gradient(135deg, #17332a, #122822) !important; border-color: #2a5245 !important; }
+  .ialogo { height: 64px; width: auto; }
+  .iabrain { width: 72px; height: 72px; flex: none; border-radius: 18px; display: flex; align-items: center; justify-content: center; color: #8ff0c4;
+             background: radial-gradient(circle at 35% 30%, #2f8f6d 0%, #1b4d3b 55%, #10291f 100%); border: 1px solid rgba(143,240,196,.35);
+             box-shadow: 0 0 0 4px rgba(76,197,154,.08), 0 0 24px rgba(76,197,154,.25), inset 0 1px 0 rgba(255,255,255,.08); }
+.iabrain{position:relative;isolation:isolate;animation:iapulse 2.4s ease-in-out infinite}
+.iabrain::before,.iabrain::after{content:"";position:absolute;inset:-1px;border-radius:19px;border:2px solid rgba(143,240,196,.7);opacity:0;pointer-events:none;animation:iaring 2.4s ease-out infinite;z-index:-1}
+.iabrain::after{animation-delay:1.2s}
+.iabrain svg{width:44px;height:44px;animation:iaglow 2.4s ease-in-out infinite !important;transform-origin:center}
+@keyframes iapulse{0%,100%{box-shadow:0 0 0 4px rgba(76,197,154,.08),0 0 16px rgba(76,197,154,.22),inset 0 1px 0 rgba(255,255,255,.08)}
+  50%{box-shadow:0 0 0 7px rgba(76,197,154,.2),0 0 42px rgba(76,197,154,.65),inset 0 0 18px rgba(143,240,196,.25)}}
+@keyframes iaring{0%{transform:scale(1);opacity:.75}100%{transform:scale(1.45);opacity:0}}
+@keyframes iaglow{0%,100%{color:#8ff0c4;filter:drop-shadow(0 0 4px rgba(143,240,196,.5));transform:scale(1)}
+  50%{color:#d6fff0;filter:drop-shadow(0 0 10px rgba(143,240,196,.95)) drop-shadow(0 0 22px rgba(76,197,154,.7));transform:scale(1.07)}}
+@media (prefers-reduced-motion:reduce){.iabrain,.iabrain svg,.iabrain::before,.iabrain::after{animation:none !important}}
+  .iah { flex: 1; min-width: 240px; } .iah h2 { margin: 0 !important; font-size: 22px !important; letter-spacing: .5px !important; text-transform: none !important; color: var(--ink) !important; }
+  .iah h2::after { content: " ✦"; color: var(--link); font-size: 16px; } .iah p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+  .iameta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; font-size: 12px; color: var(--muted); text-align: right; }
+  .iameta select { height: 32px; font-size: 12px; max-width: 320px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0 8px; }
+  .iast { display: inline-block; padding: 3px 12px; border-radius: 12px; font-size: 12px; font-weight: 700; }
+  .iast.estavel { background: rgba(12,163,12,.18); color: var(--good-text); } .iast.atencao { background: rgba(250,178,25,.18); color: var(--warn-text); } .iast.critico { background: rgba(208,59,59,.22); color: var(--crit-text); }
+  .iares { font-size: 16px; line-height: 1.6; margin: 0; } .iares b { color: var(--link); }
+  .iaold { background: #2a2614; border: 1px solid #6b5a22; color: #f0dfa8; border-radius: 10px; padding: 9px 14px; font-size: 13px; margin: 14px 0 0; display: flex; gap: 10px; align-items: center; }
+  .iaold button { margin-left: auto; }
+  .iainds { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+  .iaind .v { font-size: 24px; font-weight: 700; margin: 2px 0; } .iaind .d { font-size: 12px; font-weight: 600; }
+  .iaind .d.good { color: var(--good-text); } .iaind .d.bad { color: var(--crit-text); } .iaind .d.neu { color: var(--muted); }
+  .iachips { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 12px; }
+  .iachips button { height: 30px; font-size: 12px; border-radius: 15px; padding: 0 12px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; }
+  .iachips button.on { background: var(--accent); color: #fff; border-color: transparent; }
+  /* insights em 3 colunas = cada uma com a largura de 2 indicadores, para as bordas baterem com a linha de cima */
+  .iains { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
+  @media (max-width: 1280px) { .iainds { grid-template-columns: repeat(3, minmax(0, 1fr)); } .iains { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 1000px) { .iainds { grid-template-columns: repeat(2, minmax(0, 1fr)); } .iains { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 640px) { .iains { grid-template-columns: 1fr; } }
+  .iain { --c: var(--info); border-left: 4px solid var(--c) !important; display: flex; flex-direction: column; gap: 8px; }
+  .iain.risco { --c: var(--crit); } .iain.atencao { --c: var(--warn); } .iain.melhora { --c: var(--good); } .iain.info { --c: var(--info); }
+  .iain .t { display: flex; gap: 8px; align-items: flex-start; font-weight: 700; font-size: 14px; line-height: 1.35; }
+  .iain .t .nv { margin-left: auto; flex: none; font-size: 10px; font-weight: 700; background: var(--accent); color: #fff; padding: 2px 7px; border-radius: 8px; letter-spacing: .4px; }
+  .iain .dt { font-size: 13px; line-height: 1.5; } .iain .rc { font-size: 13px; background: var(--surface2); border-radius: 8px; padding: 8px 10px; line-height: 1.45; } .iain .rc b { color: var(--link); }
+  .iain .ft { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); margin-top: auto; padding-top: 4px; }  /* rodapé sempre embaixo */
+  .iain .hostc { background: var(--surface2); border-radius: 6px; padding: 1px 7px; font-size: 11px; color: var(--ink2); }
+  .iain .ft .btn { margin-left: auto; padding: 4px 10px; font-size: 12px; }
+  .iain { cursor: pointer; transition: border-color .2s, box-shadow .2s; } .iain:hover { box-shadow: 0 0 0 1px rgba(143,240,196,.18); }
+  .iain.fechado .dt, .iain.fechado .rc { display: none; } .iain .iahint { display: none; font-size: 12px; color: #8ff0c4; opacity: .85; } .iain.fechado .iahint { display: block; }
+  .iain.abrindo { animation: iaopen .9s ease-out; } @keyframes iaopen { 0% { box-shadow: 0 0 0 0 rgba(143,240,196,.6); } 100% { box-shadow: 0 0 0 14px rgba(143,240,196,0); } }
+  .iaask { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 16px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .iaask.on { opacity: 1; pointer-events: auto; } .iaask .bg { position: absolute; inset: 0; background: rgba(3,12,9,.72); backdrop-filter: blur(3px); }
+  .iaask .box { position: relative; width: min(560px, 100%); background: linear-gradient(160deg, #17332a, #0f231c); border: 1px solid #2f6b55; border-radius: 16px; padding: 26px 24px 20px; text-align: center;
+                box-shadow: 0 20px 60px rgba(0,0,0,.6), 0 0 40px rgba(76,197,154,.15); transform: translateY(10px) scale(.97); transition: transform .25s; }
+  .iaask.on .box { transform: none; } .iaask .iabrain { margin: 0 auto 12px; }
+  .iaask .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: #8ff0c4; margin-bottom: 8px; }
+  .iaask .tt { font-size: 19px; font-weight: 700; line-height: 1.35; color: #e8f2ec; } .iaask .tt .ic { margin-right: 8px; }
+  .iaask .q { margin: 14px 0 18px; color: #b5cbbf; font-size: 14px; }
+  .iaask .bt { display: flex; gap: 10px; justify-content: center; } .iaask .bt .btn { min-width: 130px; height: 40px; font-size: 14px; border-radius: 10px; }
+  .iaask .bt .yes { background: #1f8a62; border-color: #2fb07f; color: #fff; font-weight: 700; } .iaask .bt .yes:hover { background: #25a374; }
+  .iaask .bt .no { background: #143024; color: #e8f2ec; } .iaask.risco .box { border-color: #7a3333; } .iaask.risco .lbl { color: #f0908c; }
+  .iamud li { margin: 4px 0; font-size: 13px; }
+  .iahist { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow: auto; }
+  .iahist button { display: flex; gap: 10px; align-items: center; text-align: left; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-size: 13px; cursor: pointer; }
+  .iahist button.on { border-color: var(--link); } .iahist .when { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .iaempty { text-align: center; padding: 40px 20px; color: var(--muted); } .iaempty b { display: block; color: var(--ink); font-size: 16px; margin-bottom: 6px; }
+  /* cartões de cliente da visão geral: maiores e com o nome completo */
+  .gcards.big { grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
+  .gcards.big .gcard.xg { padding: 16px 18px; gap: 11px; }
+  .gcards.big .gcard.xg .gname { align-items: center; font-size: 15px; gap: 10px; }
+  .gcards.big .gcard.xg .gname > span[title] { white-space: normal; overflow: hidden; text-overflow: clip; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; line-height: 1.25; }
+  .gcards.big .gcard.xg .gname .pct { font-size: 25px; }
+  .gcards.big .gcard.xg .gname .lg { width: 38px !important; height: 38px !important; }
+  .gcards.big .gcard.xg dd { font-size: 15px; }
+  .gcards.big .gcard.xg .pbar { height: 9px; }
+  .gcards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+  .gcard { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; cursor: pointer; text-decoration: none; color: inherit; display: block; }
+  .gcard:hover { border-color: var(--link); }
+  .gcard .gname { font-weight: 600; margin-bottom: 4px; display: flex; gap: 8px; align-items: center; }
+  .gcard .gname span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gcard dl { display: grid; grid-template-columns: 1fr auto; gap: 1px 10px; margin: 6px 0 0; font-size: 12px; color: var(--ink2); }
+  .gcard dd { margin: 0; text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  .slacard { margin-bottom: 14px; }
+  .slahead { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; }
+  .slahead .gauge { width: 210px; padding: 0; }
+
+  #tip { position: fixed; z-index: 50; pointer-events: none; background: var(--surface); color: var(--ink);
+         border: 1px solid var(--axis); border-radius: 8px; padding: 7px 10px; font-size: 12px; max-width: 320px;
+         box-shadow: 0 4px 14px rgba(0,0,0,.25); display: none; }
+  #tip b { font-weight: 650; } #tip .r { display: flex; justify-content: space-between; gap: 16px; }
+  .err { background: rgba(208,59,59,.12); border: 1px solid var(--crit); color: var(--ink); border-radius: 10px; padding: 12px 14px; margin: 10px 0; }
+  .loading { color: var(--muted); padding: 40px 0; text-align: center; }
+
+  body.tv aside, body.tv .controls .notv { display: none; }
+  .tvbrand { display: none; width: 100%; align-items: center; gap: 14px; margin-bottom: 4px; }
+  .tvbrand img { height: 46px; width: auto; } .tvbrand b { letter-spacing: 1.6px; font-size: 18px; }
+  body.tv .tvbrand { display: flex; }
+  body.tv .app { grid-template-columns: 1fr; }
+  body.tv main { padding: 14px 18px; }
+  body.tv .kpi .v { font-size: 32px; }
+  @media (max-width: 900px) { .app { grid-template-columns: 1fr; } aside { position: static; height: auto; max-height: 260px; } }
+  @media print { aside, .controls { display: none; } .app { display: block; } }
+  /* logos dos clientes e iniciais */
+  .lg { display: inline-flex; align-items: center; justify-content: center; flex: none; border-radius: 7px; background: #fff; overflow: hidden; }
+  .lg img { max-width: 84%; max-height: 84%; object-fit: contain; }
+  .lg.ini { color: #fff; font-weight: 700; letter-spacing: .3px; }
+  h1 .tl { display: inline-flex; align-items: center; gap: 12px; }
+  /* exportação */
+  .btn.primary { background: var(--accent); color: #fff; border-color: transparent; font-weight: 600; padding: 9px 18px; }
+  .btn.primary:hover { filter: brightness(1.12); background: var(--accent); }
+  .btn[disabled] { opacity: .6; cursor: wait; }
+  /* ---------- detalhamento (gaveta lateral) ---------- */
+  [data-dd] { cursor: pointer; }
+  .card[data-dd]:hover, .kpi[data-dd]:hover, .hm[data-dd]:hover { border-color: var(--link); }
+  .hb .hbr[data-dd]:hover > * { color: var(--ink); } .hb .hbr[data-dd]:hover .fil { filter: brightness(1.2); }
+  rect.colhit:hover { fill: rgba(127,127,127,.08); } rect.cell[data-dd]:hover { stroke: var(--ink); stroke-width: 1.5; }
+  .chart .hit.clk { cursor: pointer; }
+  #ddScrim { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 60; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  #ddScrim.on { opacity: 1; pointer-events: auto; }
+  #drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(600px, 100vw); background: var(--page); border-left: 1px solid var(--border);
+            z-index: 61; display: flex; flex-direction: column; transform: translateX(100%); transition: transform .22s ease; box-shadow: -12px 0 32px rgba(0,0,0,.35); }
+  #drawer.on { transform: none; }
+  #drawer:not(.on) { visibility: hidden; }  /* fechada: some de vez (em janelas largas ou com zoom um pedaço ficava à mostra) */
+  #drawer .dh { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+  #drawer .dh h3 { margin: 0; font-size: 17px; flex: 1; min-width: 0; overflow-wrap: anywhere; } #drawer .dh .sub { flex-basis: 100%; }
+  #drawer .dh .btn { padding: 4px 10px; } #ddBack[hidden] { display: none; }
+  #drawer .dt { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+  #drawer .dt input { flex: 1; min-width: 160px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface2); color: var(--ink); }
+  #ddList { flex: 1; overflow: auto; padding: 12px 16px 24px; display: flex; flex-direction: column; gap: 10px; }
+  .ddc { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--c, var(--border)); border-radius: 10px; padding: 10px 12px; }
+  .ddc .t1 { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; }
+  .ddc .t1 .go { margin-left: auto; font-size: 12px; color: var(--link); text-decoration: none; white-space: nowrap; }
+  .ddc .t1 .go:hover { text-decoration: underline; }
+  .ddc .tt { font-weight: 650; margin: 6px 0 2px; overflow-wrap: anywhere; }
+  .ddc .hs { font-size: 13px; color: var(--ink2); overflow-wrap: anywhere; } .ddc .hs b { color: var(--ink); }
+  .ddc dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 12px; margin: 8px 0 0; }
+  .ddc dl > div { min-width: 0; } .ddc dt { font-size: 11px; color: var(--muted); } .ddc dd { margin: 0; font-size: 13px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .ddc .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; } .ddc .acts .btn { font-size: 12px; padding: 3px 10px; }
+  .ddc details { margin-top: 8px; border-top: 1px dashed var(--border); padding-top: 6px; }
+  .ddc summary { cursor: pointer; font-size: 13px; color: var(--link); font-weight: 600; }
+  .ddx { font-size: 13px; margin-top: 8px; display: flex; flex-direction: column; gap: 10px; }
+  .ddx h4 { margin: 0 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .ddx table { width: 100%; border-collapse: collapse; font-size: 12.5px; } .ddx td { padding: 3px 6px; border-bottom: 1px solid var(--grid); white-space: normal; vertical-align: top; }
+  .ddx td:first-child { color: var(--ink2); width: 38%; } .ddx code { font-size: 12px; overflow-wrap: anywhere; }
+  .ddx .tags { display: flex; flex-wrap: wrap; gap: 4px; } .ddx .tags span { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 1px 7px; font-size: 12px; }
+  .ddx .ack { border-left: 2px solid var(--link); padding: 2px 0 2px 8px; margin-bottom: 6px; } .ddx .ack small { color: var(--muted); }
+  .ddx .pre { white-space: pre-wrap; color: var(--ink2); }
+  .ddmore { align-self: center; }
+  #drawer.sheet .dt { display: none; }
+  #drawer a.btn { text-decoration: none; color: var(--ink); white-space: nowrap; display: inline-block; }
+  .hsheet .ddx { margin-top: 0; } .hsheet .ddx > div { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+  .hsheet .top { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .hsheet .nm { font-size: 18px; font-weight: 700; margin: 6px 0 2px; overflow-wrap: anywhere; }
+  .hsheet .kv { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 12px; }
+  .hsheet .kv dt { font-size: 11px; color: var(--muted); } .hsheet .kv dd { margin: 0; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .hsheet .notes p { margin: 0 0 4px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .hsheet .prob { display: flex; gap: 8px; align-items: baseline; padding: 4px 0; border-bottom: 1px solid var(--grid); font-size: 13px; }
+  .hsheet .prob:last-child { border-bottom: 0; }
+  .hsheet .hist .prob { cursor: default; } .hsheet .hist .when { margin-left: auto; text-align: right; white-space: nowrap; font-size: 12px; color: var(--muted); }
+  .hsheet .hist .when b { color: var(--ink2); font-weight: 600; } .hsheet .hist .rep { font-size: 11px; } .hsheet .prob small { color: var(--muted); margin-left: auto; white-space: nowrap; }
+  .hostlink { cursor: pointer; }
+  @media (max-width: 560px) { .hsheet .kv { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .ddc dl { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .btn.blocked { border-color: var(--warn); color: var(--warn-text); font-weight: 600; animation: sndBlink 1.4s ease-in-out infinite; }
+  @keyframes sndBlink { 50% { background: rgba(250,178,25,.18); } }
+  .btn.on { border-color: var(--crit); color: var(--crit); font-weight: 600; }
+  #alertStack { position: fixed; right: 16px; bottom: 16px; z-index: 50; display: flex; flex-direction: column; gap: 8px; max-width: min(420px, calc(100vw - 32px)); }
+  .alert-toast { background: var(--surface); border: 1px solid var(--border); border-left: 5px solid var(--crit); border-radius: 10px;
+                 padding: 10px 14px; box-shadow: 0 6px 24px rgba(0,0,0,.25); cursor: pointer; animation: alertIn .25s ease-out; }
+  .alert-toast b { display: block; } .alert-toast small { color: var(--ink2); }
+  .alert-toast.unlock { border-left-color: var(--warn); }
+  .alert-toast.clk { position: relative; padding-right: 34px; } .alert-toast.clk:hover { border-color: var(--link); }
+  .alert-toast .tx { position: absolute; top: 6px; right: 6px; border: 0; background: none; color: var(--muted); font-size: 15px; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+  .alert-toast .tx:hover { background: var(--surface2); color: var(--ink); }
+  .alert-toast .hint { display: block; margin-top: 4px; color: var(--link); font-size: 12px; }
+  @keyframes alertIn { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
+  body.alarm main > .topbar { animation: alarmFlash 1s ease-in-out 4; }  /* só a barra superior da página, não as barras de seção */
+  @keyframes alarmFlash { 50% { box-shadow: inset 0 0 0 3px var(--crit); } }
+  .chk { display: flex; gap: 8px; align-items: flex-start; padding: 5px 0; cursor: pointer; }
+  .chk small { display: block; color: var(--muted); }
+  .explist { max-height: 340px; overflow: auto; border: 1px solid var(--border); border-radius: 10px; padding: 4px 10px; margin-top: 8px; background: var(--surface2); }
+  .explist .chk { align-items: center; padding: 4px 0; }
+  .explist[hidden] { display: none; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <img class="brandlogo" src="/static/brand/oakmont.png" alt="Oakmont Group" onerror="this.style.display='none'">
+      <div class="brandname">NOC</div>
+      <small id="demoTag"></small>
+    </div>
+    <input class="side-search" id="sideSearch" type="search" placeholder="Buscar cliente…" aria-label="Buscar cliente">
+    <nav id="nav" aria-label="Hostgroups"></nav>
+  </aside>
+  <main>
+    <div class="topbar">
+      <div class="tvbrand"><img src="/static/brand/oakmont.png" alt="" onerror="this.style.display='none'"><b>NOC</b></div>
+      <div><h1 id="title">Carregando…</h1><div class="sub" id="subtitle"></div></div>
+      <div class="controls">
+        <span class="status"><span class="dot good" id="sdot"></span><span id="updated">–</span></span>
+        <div class="seg" id="periodSeg" role="group" aria-label="Período"></div>
+        <button class="btn notv" id="expBtn" style="display:none" title="Exportar os dados desta tela em XLSX">⬇ XLSX</button>
+        <button class="btn notv" id="clrBtn" title="Voltar período, buscas, ordenação e filtros ao padrão">✕ Limpar filtros</button>
+        <button class="btn notv" id="themeBtn" title="Alternar tema claro/escuro">Tema</button>
+        <button class="btn" id="sndBtn" title="Anunciar por voz cada alerta novo">🔇 Som</button>
+        <button class="btn" id="tvBtn" title="Modo TV (Esc sai)">Modo TV</button>
+        <button class="btn" id="rotBtn" style="display:none" title="Girar entre os grupos">▶ Girar grupos</button>
+      </div>
+    </div>
+    <div id="view"><div class="loading">Carregando…</div></div>
+  </main>
+</div>
+<div id="tip" role="tooltip"></div>
+<div id="alertStack" aria-live="assertive"></div>
+<div id="iaAsk" class="iaask" role="dialog" aria-modal="true" aria-labelledby="iaAskT" aria-hidden="true"><div id="iaAskBg" class="bg"></div>
+  <div class="box"><span class="iabrain" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/><path d="M17.599 6.5a3 3 0 0 0 .399-1.375"/><path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/><path d="M3.477 10.896a4 4 0 0 1 .585-.396"/><path d="M19.938 10.5a4 4 0 0 1 .585.396"/><path d="M6 18a4 4 0 0 1-1.967-.516"/><path d="M19.967 17.484A4 4 0 0 1 18 18"/><path d="M12 5v13"/></svg></span>
+    <div class="lbl">OAK IA · <span id="iaAskLvl">Insight</span></div><div class="tt" id="iaAskT"></div>
+    <div class="q">Deseja que eu abra este insight?</div>
+    <div class="bt"><button type="button" class="btn no" id="iaAskNo">Agora não</button><button type="button" class="btn yes" id="iaAskYes">Sim, abrir</button></div></div></div>
+<div id="ddScrim"></div>
+<aside id="drawer" aria-hidden="true" aria-labelledby="ddTitle" role="dialog">
+  <div class="dh"><button class="btn" id="ddBack" type="button" title="Voltar à lista anterior" hidden>←</button><h3 id="ddTitle">Detalhes</h3><button class="btn" id="ddClose" type="button" title="Fechar (Esc)">✕</button><div class="sub" id="ddSub"></div></div>
+  <div class="dt"><input type="search" id="ddQ" placeholder="Filtrar por host, problema ou cliente…" aria-label="Filtrar lista"><select id="ddSort" aria-label="Ordenar"></select><button class="btn" id="ddCsv" type="button" title="Baixar a lista em CSV (abre no Excel)">⬇ CSV</button></div>
+  <div id="ddList"></div>
+</aside>
+
+<script>
+"use strict";
+/* ===================== utilidades ===================== */
+const $ = s => document.querySelector(s);
+const esc = t => String(t ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const nf = (v, d = 2) => v == null || isNaN(v) ? "–" : Number(v).toLocaleString("pt-BR", {minimumFractionDigits: d, maximumFractionDigits: d});
+const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+const SEVN = {0:"Não classificado",1:"Informação",2:"Atenção",3:"Média",4:"Alta",5:"Desastre"};
+
+function fmtDur(s) {
+  if (s == null) return "–";
+  s = Math.round(s);
+  if (s <= 0) return "0";
+  const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+  if (d) return `${d}d ${h}h`;
+  if (h) return `${h}h ${m}min`;
+  if (m) return m < 10 && x ? `${m}min ${x}s` : `${m}min`;
+  return `${x}s`;
+}
+const fmtAv = v => v == null ? "–" : nf(v, 3) + "%";
+function tzOpts(o) { return Object.assign({timeZone: S.cfg ? S.cfg.timezone : undefined}, o); }
+const fmtDT = ts => ts ? new Date(ts * 1000).toLocaleString("pt-BR", tzOpts({day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})) : "–";
+const fmtDay = ts => new Date(ts * 1000).toLocaleDateString("pt-BR", tzOpts({day:"2-digit",month:"2-digit"}));
+const fmtHour = ts => new Date(ts * 1000).toLocaleTimeString("pt-BR", tzOpts({hour:"2-digit",minute:"2-digit"}));
+const fmtDayFull = ts => new Date(ts * 1000).toLocaleDateString("pt-BR", tzOpts({day:"2-digit",month:"2-digit",year:"numeric"}));
+const fmtMonth = ts => new Date(ts * 1000).toLocaleDateString("pt-BR", tzOpts({month:"2-digit",year:"numeric"}));
+const ago = ts => fmtDur(Date.now() / 1000 - ts);
+
+function avClass(v, slo) { return v == null ? "" : v >= slo ? "av-good" : v >= 99 ? "av-warn" : v >= 95 ? "av-serious" : "av-crit"; }
+function avVar(v, slo) { return v == null ? "var(--grid)" : v >= slo ? "var(--good)" : v >= 99 ? "var(--warn)" : v >= 95 ? "var(--serious)" : "var(--crit)"; }
+
+/* ===================== estado ===================== */
+const S = {
+  cfg: null, ov: null, view: null, period: lsGet("period") || "30d", timer: null, rot: null, draw: [],
+  ui: {search: "", sortK: "avail", sortDir: 1, state: "all", incSev: 0, incHost: "", incStatus: "all", incMax: 150, incGroup: true,
+       trendMetric: "cpu", trendHours: 168, trendHost: "", ovSort: "nome", sideSearch: "",
+       exp: {all: true, sel: [], q: "", sheets: {resumo: true, hosts: true, incidentes: true, diario: true, sla: true}}},
+  logos: {}, expTarget: "all",
+};
+
+async function api(path) {
+  const r = await fetch(path);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.erro || r.statusText);
+  return j;
+}
+
+/* ===================== tooltip ===================== */
+const tip = $("#tip");
+function showTip(html, x, y) {
+  tip.innerHTML = html; tip.style.display = "block";
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = Math.min(x + 14, innerWidth - w - 8) + "px";
+  tip.style.top = Math.min(Math.max(y - h - 10, 6), innerHeight - h - 6) + "px";
+}
+const hideTip = () => { tip.style.display = "none"; };
+document.addEventListener("mousemove", e => {
+  const t = e.target.closest && e.target.closest("[data-tip]");
+  if (t) showTip(t.getAttribute("data-tip"), e.clientX, e.clientY);
+  else if (!e.target.closest || !e.target.closest(".hit")) hideTip();
+});
+
+/* ===================== gráficos SVG ===================== */
+const bandColor = (v, bands) => { for (const [lim, c] of bands) if (v < lim) return c; return bands[bands.length - 1][1]; };
+const availBands = slo => { const b = [[95, "crit"]]; if (slo > 99) b.push([99, "serious"]); b.push([slo, "warn"], [Infinity, "good"]); return b; };
+const polar = (cx, cy, r, deg) => { const a = (deg - 90) * Math.PI / 180; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; };
+function arc(cx, cy, r, a0, a1) {
+  const [x0, y0] = polar(cx, cy, r, a0), [x1, y1] = polar(cx, cy, r, a1);
+  return `M${x0.toFixed(2)} ${y0.toFixed(2)}A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+}
+
+/* Gauge: arco de 240°, anel fino com as faixas (bom/atenção/crítico) e marca de meta. */
+function gauge(o) {
+  const {value, min, max, bands, label, sub, unit = "%", dec = 2, target, tipExtra = ""} = o;
+  const W = 220, H = 158, cx = 110, cy = 96, r = 74, A0 = -120, A1 = 120;
+  const ang = v => A0 + (A1 - A0) * Math.min(1, Math.max(0, (v - min) / (max - min)));
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}: ${value == null ? "sem dados" : nf(value, dec) + unit}">`;
+  s += `<path d="${arc(cx, cy, r, A0, A1)}" fill="none" style="stroke:var(--grid)" stroke-width="14" stroke-linecap="round"/>`;
+  // anel das faixas
+  let prev = min;
+  bands.forEach(([lim, c]) => {
+    const hi = Math.min(lim, max);
+    if (hi > prev) { s += `<path d="${arc(cx, cy, r + 13, ang(prev), ang(hi))}" fill="none" style="stroke:var(--${c})" stroke-width="3"/>`; prev = hi; }
+  });
+  if (value != null) {
+    const col = bandColor(value, bands);
+    if (value > min) s += `<path d="${arc(cx, cy, r, A0, ang(value))}" fill="none" style="stroke:var(--${col})" stroke-width="14" stroke-linecap="round"/>`;
+  }
+  if (target != null && target > min && target < max) {
+    const [x0, y0] = polar(cx, cy, r - 12, ang(target)), [x1, y1] = polar(cx, cy, r + 17, ang(target));
+    s += `<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" style="stroke:var(--ink)" stroke-width="2"/>`;
+  }
+  const txt = value == null ? "–" : nf(value, dec);
+  s += `<text x="${cx}" y="${cy + 6}" text-anchor="middle" style="fill:var(--ink)" font-size="${txt.length > 6 ? 27 : 32}" font-weight="650">${txt}<tspan font-size="14" style="fill:var(--ink2)" font-weight="400">${value == null ? "" : unit}</tspan></text>`;
+  const [lx, ly] = polar(cx, cy, r, A0), [rx, ry] = polar(cx, cy, r, A1);
+  s += `<text x="${lx + 2}" y="${ly + 16}" text-anchor="middle" font-size="11" style="fill:var(--muted)">${nf(min, min % 1 ? 1 : 0)}</text>`;
+  s += `<text x="${rx - 2}" y="${ry + 16}" text-anchor="middle" font-size="11" style="fill:var(--muted)">${nf(max, max % 1 ? 1 : 0)}</text>`;
+  s += `</svg>`;
+  return `<div class="card gauge"${o.dd ? ddAttr(o.dd) : ""} data-tip="${esc(`<b>${esc(label)}</b><br>${value == null ? "sem dados" : nf(value, dec) + unit}${target != null ? `<br>Meta: ${nf(target, 2)}${unit}` : ""}${tipExtra}`)}">${s}<div class="gl">${esc(label)}</div><div class="gs">${sub || "&nbsp;"}</div></div>`;
+}
+
+function niceTicks(min, max, n = 5) {
+  if (max <= min) max = min + 1;
+  const raw = (max - min) / n, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+  const step = (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * p;
+  const out = [];
+  for (let v = Math.ceil(min / step) * step; v <= max + 1e-9; v += step) out.push(+v.toFixed(10));
+  return out;
+}
+function pickIdx(n, k) { if (n <= k) return [...Array(n).keys()]; const o = []; for (let i = 0; i < k; i++) o.push(Math.round(i * (n - 1) / (k - 1))); return [...new Set(o)]; }
+
+/* Linha/pontos com hover (crosshair + tooltip). */
+function lineChart(box, o) {
+  const W = Math.max(320, box.clientWidth || 600), H = o.h || 240, m = {l: o.ml || 50, r: 14, t: 12, b: 26};
+  const n = o.x.length, iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const all = o.series.flatMap(s => s.vals).concat(o.band ? [...o.band.lo, ...o.band.hi] : []).filter(v => v != null);
+  if (!n || !all.length) { box.innerHTML = '<div class="empty">Sem dados no período.</div>'; return; }
+  let lo = o.ymin != null ? o.ymin : Math.min(...all), hi = o.ymax != null ? o.ymax : Math.max(...all);
+  if (o.ref) { lo = Math.min(lo, o.ref.y); hi = Math.max(hi, o.ref.y); }
+  if (hi === lo) hi = lo + 1;
+  const px = i => m.l + (n === 1 ? iw / 2 : iw * i / (n - 1)), py = v => m.t + ih * (1 - (v - lo) / (hi - lo));
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria || "gráfico")}">`;
+  s += `<g class="ax">`;
+  niceTicks(lo, hi, 4).forEach(t => { s += `<line class="gridline" x1="${m.l}" x2="${W - m.r}" y1="${py(t)}" y2="${py(t)}"/><text x="${m.l - 8}" y="${py(t) + 4}" text-anchor="end">${o.fmtY(t)}</text>`; });
+  pickIdx(n, Math.max(2, Math.floor(iw / 70))).forEach(i => { s += `<text x="${px(i)}" y="${H - 7}" text-anchor="middle">${esc(o.xl[i])}</text>`; });
+  s += `</g><line class="baseline" x1="${m.l}" x2="${W - m.r}" y1="${m.t + ih}" y2="${m.t + ih}"/>`;
+  if (o.band) {
+    let d = "", pts = [];
+    o.band.hi.forEach((v, i) => { if (v != null) pts.push([px(i), py(v)]); });
+    const lows = []; o.band.lo.forEach((v, i) => { if (v != null) lows.push([px(i), py(v)]); });
+    d = "M" + pts.map(p => p.join(" ")).join("L") + "L" + lows.reverse().map(p => p.join(" ")).join("L") + "Z";
+    s += `<path d="${d}" style="fill:var(--${o.band.color || "s1"})" opacity=".14"/>`;
+  }
+  if (o.ref) s += `<line x1="${m.l}" x2="${W - m.r}" y1="${py(o.ref.y)}" y2="${py(o.ref.y)}" style="stroke:var(--ink2)" stroke-dasharray="5 4"/>`;
+  o.series.forEach(se => {
+    let d = "", pen = false;
+    se.vals.forEach((v, i) => { if (v == null) { pen = false; return; } d += (pen ? "L" : "M") + px(i).toFixed(1) + " " + py(v).toFixed(1); pen = true; });
+    if (se.area) { const pts = se.vals.map((v, i) => v == null ? null : [px(i), py(v)]).filter(Boolean); if (pts.length) s += `<path d="M${pts[0][0]} ${m.t + ih}L${pts.map(p => p.join(" ")).join("L")}L${pts[pts.length - 1][0]} ${m.t + ih}Z" style="fill:var(--${se.color})" opacity=".13"/>`; }
+    s += `<path d="${d}" fill="none" style="stroke:var(--${se.color})" stroke-width="2" stroke-linejoin="round" ${se.dash ? 'stroke-dasharray="4 3"' : ""}/>`;
+    if (se.points) se.vals.forEach((v, i) => { if (v != null) s += `<circle cx="${px(i)}" cy="${py(v)}" r="4" style="fill:${se.pointColor ? se.pointColor(v) : "var(--" + se.color + ")"};stroke:var(--surface)" stroke-width="2"/>`; });
+  });
+  s += `<line class="cross" y1="${m.t}" y2="${m.t + ih}" style="stroke:var(--ink2);display:none" stroke-width="1"/>`;
+  s += `<rect class="hit" x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent"/></svg>`;
+  box.innerHTML = s;
+  const hit = box.querySelector(".hit"), cross = box.querySelector(".cross");
+  hit.addEventListener("mousemove", e => {
+    const r = hit.getBoundingClientRect(), f = (e.clientX - r.left) / r.width;
+    const i = Math.min(n - 1, Math.max(0, Math.round(f * (n - 1))));
+    cross.setAttribute("x1", px(i)); cross.setAttribute("x2", px(i)); cross.style.display = "";
+    showTip(o.tip(i), e.clientX, e.clientY);
+  });
+  hit.addEventListener("mouseleave", () => { cross.style.display = "none"; hideTip(); });
+  if (o.dd) {  // clique no ponto: abre o detalhamento daquela janela
+    hit.classList.add("clk");
+    hit.addEventListener("click", e => { const r = hit.getBoundingClientRect(); openDrill(o.dd(Math.min(n - 1, Math.max(0, Math.round((e.clientX - r.left) / r.width * (n - 1)))))); });
+  }
+}
+
+function fmtShort(s) {
+  s = Math.round(s);
+  if (s >= 86400) { const d = Math.floor(s / 86400), h = Math.round(s % 86400 / 3600); return h ? `${d}d${h}h` : `${d}d`; }
+  if (s >= 3600) { const h = Math.floor(s / 3600), m = Math.round(s % 3600 / 60); return m ? `${h}h${m}m` : `${h}h`; }
+  return s >= 60 ? Math.round(s / 60) + "min" : s + "s";
+}
+
+/* Colunas a partir do zero; com o.label, o valor aparece no topo de cada barra (girado quando as barras são estreitas). */
+function columnChart(box, o) {
+  const W = Math.max(320, box.clientWidth || 600), H = o.h || 240, n = o.vals.length;
+  const ml = o.ml || 50, bw0 = Math.max(2, (W - ml - 10) / n - 2), rot = !!o.label && bw0 < 34;
+  const m = {l: ml, r: 10, t: o.label ? (rot ? 50 : 26) : 12, b: 26};
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const mx = Math.max(...o.vals.filter(v => v != null), 0);
+  if (!n || mx <= 0) { box.innerHTML = '<div class="empty">Nenhuma indisponibilidade no período 🎉</div>'; return; }
+  const ticks = o.ticks ? o.ticks(mx) : niceTicks(0, mx, 4), top = Math.max(mx, ticks[ticks.length - 1]);
+  const py = v => m.t + ih * (1 - v / top), bw = Math.max(2, iw / n - 2);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria || "gráfico")}"><g class="ax">`;
+  ticks.forEach(t => { s += `<line class="gridline" x1="${m.l}" x2="${W - m.r}" y1="${py(t)}" y2="${py(t)}"/><text x="${m.l - 8}" y="${py(t) + 4}" text-anchor="end">${o.fmtY(t)}</text>`; });
+  pickIdx(n, Math.max(2, Math.floor(iw / 60))).forEach(i => { s += `<text x="${m.l + iw * (i + .5) / n}" y="${H - 7}" text-anchor="middle">${esc(o.xl[i])}</text>`; });
+  s += `</g><line class="baseline" x1="${m.l}" x2="${W - m.r}" y1="${m.t + ih}" y2="${m.t + ih}"/>`;
+  o.vals.forEach((v, i) => {
+    if (!v) return;
+    const x = m.l + iw * i / n + 1, y = py(v), h = m.t + ih - y, rr = Math.min(4, bw / 2, h);
+    s += `<path class="bar" data-tip="${esc(o.tip(i))}" d="M${x} ${m.t + ih}V${y + rr}Q${x} ${y} ${x + rr} ${y}H${x + bw - rr}Q${x + bw} ${y} ${x + bw} ${y + rr}V${m.t + ih}Z" style="fill:var(--${o.color || "s2"})"/>`;
+    if (o.label) {
+      const cx = x + bw / 2, t = esc(o.label(v));
+      s += rot ? `<text transform="translate(${cx + 3.5} ${y - 5}) rotate(-90)" font-size="10.5" style="fill:var(--ink2)">${t}</text>`
+               : `<text x="${cx}" y="${y - 6}" text-anchor="middle" font-size="10.5" style="fill:var(--ink2)">${t}</text>`;
+    }
+  });
+  if (o.dd) o.vals.forEach((v, i) => { if (v) s += `<rect class="colhit" x="${m.l + iw * i / n}" y="${m.t}" width="${iw / n}" height="${ih}" fill="transparent" data-tip="${esc(o.tip(i))}"${ddAttr(o.dd(i))}/>`; });
+  box.innerHTML = s + "</svg>";
+}
+
+/* Mapa de calor: hosts × tempo, cor por faixa de disponibilidade (com legenda). */
+function heatmap(box, o) {
+  const rows = o.hosts, cols = o.buckets.length;
+  if (!rows.length) { box.innerHTML = '<div class="empty">Sem hosts.</div>'; return; }
+  const W = Math.max(480, box.clientWidth || 800), lab = Math.round(Math.min(280, Math.max(170, W * 0.24))), rh = 20, top = 22, rightPad = 8;
+  const maxCh = Math.floor((lab - 16) / 6.4);  // quantas letras cabem na coluna de nomes (fonte 11px)
+  const cw = (W - lab - rightPad) / cols, H = top + rows.length * rh + 4;
+  const grid = {}; o.cells.forEach(([x, y, ...v]) => { grid[y * cols + x] = v.length > 1 ? v : v[0]; });
+  // visão padrão = disponibilidade (%); outras visões passam cor, texto e clique próprios
+  const color = o.color || (v => avVar(v, o.slo)), tipv = o.tipv || (v => `Disponibilidade: ${v == null ? "sem dados" : nf(v, 3) + "%"}`), clk = o.clickable || (v => v != null && v < 100);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria || "Disponibilidade por host ao longo do período")}">`;
+  rows.forEach((h, y) => { if (y % 2 === 0) s += `<rect class="hstripe" x="0" y="${top + y * rh}" width="${lab - 4}" height="${rh}" rx="3"/>`; });  // faixas para guiar a leitura
+  s += `<g class="ax">`;
+  pickIdx(cols, Math.max(2, Math.floor((W - lab) / 90))).forEach(i => { s += `<text x="${lab + cw * (i + .5)}" y="12" text-anchor="middle">${esc(o.xl[i])}</text>`; });
+  rows.forEach((h0, y) => { const h = String(h0).replace(/\s+/g, " ").trim();  // nomes do Zabbix às vezes têm espaço duplo
+    s += `<text class="hlab" x="4" y="${top + y * rh + 14}" text-anchor="start" data-tip="${esc(esc(h))}">${esc(h.length > maxCh ? h.slice(0, maxCh - 1).trimEnd() + "…" : h)}</text>`; });
+  s += "</g>";
+  rows.forEach((h, y) => {
+    for (let x = 0; x < cols; x++) {
+      const v = grid[y * cols + x];
+      const t = `<b>${esc(h)}</b><br>${esc(o.tl[x])}<br>${tipv(v, x)}`, c = color(v, x);
+      s += `<rect class="cell" data-tip="${esc(t)}"${o.dd && clk(v) ? ddAttr(o.dd(h, x)) : ""} x="${lab + x * cw}" y="${top + y * rh}" width="${Math.max(1, cw)}" height="${rh}" rx="2" style="fill:${typeof c === "string" ? c : c.fill}${c.op != null ? `;fill-opacity:${c.op}` : ""}"/>`;
+    }
+  });
+  box.innerHTML = s + "</svg>";
+}
+
+function donut(box, items, total, centerLabel) {
+  const R = 52, C = 2 * Math.PI * R;
+  let off = 0, s = `<svg viewBox="0 0 140 140" width="140" height="140" role="img" aria-label="${esc(centerLabel)}"><circle cx="70" cy="70" r="${R}" fill="none" style="stroke:var(--grid)" stroke-width="16"/>`;
+  items.forEach(it => {
+    if (!it.v) return;
+    const len = C * it.v / total;
+    s += `<circle class="bar" data-tip="${esc(`<b>${esc(it.l)}</b><br>${it.v} hosts (${nf(100 * it.v / total, 1)}%)`)}"${it.dd ? ddAttr(it.dd) : ""} cx="70" cy="70" r="${R}" fill="none" style="stroke:var(--${it.c})" stroke-width="16" stroke-dasharray="${Math.max(0, len - 2)} ${C}" stroke-dashoffset="${-off}" transform="rotate(-90 70 70)"/>`;
+    off += len;
+  });
+  s += `<text x="70" y="68" text-anchor="middle" font-size="24" font-weight="650" style="fill:var(--ink)">${total}</text><text x="70" y="86" text-anchor="middle" font-size="11" style="fill:var(--ink2)">${esc(centerLabel)}</text></svg>`;
+  box.innerHTML = `<div class="donutwrap">${s}<ul>${items.map(it => `<li${it.dd && it.v ? ddAttr(it.dd) : ""}><i style="width:10px;height:10px;border-radius:3px;background:var(--${it.c})"></i>${esc(it.l)}<b>${it.v}</b></li>`).join("")}</ul></div>`;
+}
+
+function hbars(rows, fmt, empty) {
+  if (!rows.length) return `<div class="empty">${empty || "Sem dados."}</div>`;
+  const mx = Math.max(...rows.map(r => r.v), 1e-9);
+  return `<div class="hb">${rows.map(r => `<div class="hbr" style="display:contents"${r.dd && r.v ? ddAttr(r.dd) : ""}><span class="lab" title="${esc(r.l)}">${esc(r.l)}</span><span class="trk"><span class="fil" style="display:block;width:${Math.max(1, 100 * r.v / mx)}%;background:var(--${r.c || "s1"})"></span></span><span class="val">${fmt(r.v, r)}</span></div>`).join("")}</div>`;
+}
+
+/* ===================== logos dos clientes ===================== */
+const dn = n => String(n).replace(/^\s*oakmont\s*[-–—:]\s*/i, "");
+const slug = s => String(s).normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+const GENERIC = new Set(["de", "da", "do", "das", "dos", "e", "cliente", "clientes", "oakmont", "grupo", "group"]);
+function logoUrl(name) {
+  const L = S.logos || {}, sl = slug(name);
+  if (L[sl]) return L[sl];
+  let best = null;
+  for (const k in L) if (k.length >= 2 && ("-" + sl + "-").includes("-" + k + "-") && (!best || k.length > best.length)) best = k;
+  return best ? L[best] : null;
+}
+function initials(name) {
+  const w = slug(name).split("-").filter(x => x && !GENERIC.has(x));
+  const a = w[0] || "?", b = w[1] || "";
+  return (a[0] + (b[0] || a[1] || "")).toUpperCase();
+}
+function logoChip(name, size) {
+  size = size || 26;
+  const u = logoUrl(name);
+  if (u) return `<span class="lg" style="width:${size}px;height:${size}px"><img src="${esc(u)}" alt="" loading="lazy"></span>`;
+  let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) % 360;
+  return `<span class="lg ini" aria-hidden="true" style="width:${size}px;height:${size}px;background:hsl(${h} 32% 34%);font-size:${Math.round(size * .42)}px">${esc(initials(name))}</span>`;
+}
+
+/* ===================== exportação XLSX ===================== */
+async function doExport(groups, period, sheets) {
+  const r = await fetch(`/api/export.xlsx?groups=${encodeURIComponent(groups)}&period=${period}&sheets=${sheets}`);
+  if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.erro || r.statusText); }
+  const blob = await r.blob(), cd = r.headers.get("Content-Disposition") || "";
+  const m = cd.match(/filename\*?=(?:UTF-8'')?"?([^";]+)/i);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = m ? decodeURIComponent(m[1]) : "NOC-Oakmont.xlsx";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 8000);
+}
+$("#expBtn").onclick = async () => {
+  const b = $("#expBtn"), t = b.textContent; b.disabled = true; b.textContent = "Gerando…";
+  try { await doExport(S.expTarget || "all", S.period, "resumo,hosts,incidentes,diario,sla"); }
+  catch (e) { alert("Não foi possível exportar: " + e.message); }
+  finally { b.disabled = false; b.textContent = t; }
+};
+
+function viewExport() {
+  $("#title").textContent = "Exportar dados";
+  $("#subtitle").textContent = "Gere uma planilha XLSX com os dados do painel";
+  const gs = [...S.ov.groups].sort((a, b) => a.name.localeCompare(b.name)), ex = S.ui.exp;
+  const sheetsDef = [["resumo", "Resumo por cliente", "disponibilidade, tempo fora, quedas, MTTR e problemas ativos"],
+    ["hosts", "Hosts", "estado, disponibilidade, tempo fora, última queda, CPU, memória, latência e perda"],
+    ["incidentes", "Incidentes", "início, fim, duração, severidade e reconhecimento (até 1.000 por cliente)"],
+    ["diario", "Disponibilidade por dia/hora", "disponibilidade e tempo fora em cada intervalo do período"],
+    ["sla", "SLA / Serviços", "SLI, SLO, uptime, downtime e error budget por período"]];
+  $("#view").innerHTML = `<div class="grid g2">
+    <div class="card"><h2>1 · Clientes</h2>
+      <label class="chk"><input type="radio" name="scope" value="all" ${ex.all ? "checked" : ""}><span>Todos os clientes (${gs.length})</span></label>
+      <label class="chk"><input type="radio" name="scope" value="sel" ${ex.all ? "" : "checked"}><span>Selecionar clientes</span></label>
+      <div id="expSel" ${ex.all ? "hidden" : ""}>
+        <div class="tools" style="margin:8px 0 0"><input type="search" id="expQ" placeholder="Buscar cliente…" aria-label="Buscar cliente"><button class="btn" id="expAll" type="button">Marcar todos</button><button class="btn" id="expNone" type="button">Limpar</button></div>
+        <div class="explist" id="expList"></div></div></div>
+    <div class="card"><h2>2 · Período</h2>
+      <select id="expPeriod" aria-label="Período">${S.cfg.periods.map(p => `<option value="${p.id}" ${p.id === S.period ? "selected" : ""}>${esc(p.label)}</option>`).join("")}</select>
+      <h2 style="margin-top:18px">3 · Conteúdo</h2>
+      ${sheetsDef.map(([k, l, d]) => `<label class="chk"><input type="checkbox" data-sheet="${k}" ${ex.sheets[k] ? "checked" : ""}><span>${l}<small>${d}</small></span></label>`).join("")}
+      <div style="margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn primary" id="expGo" type="button">⬇ Baixar XLSX</button><span class="sub" id="expMsg"></span></div>
+    </div></div>
+    <div class="sub">A planilha traz uma aba "Sobre" com período, data de geração e meta. Exportar todos os clientes com incidentes pode levar alguns segundos.</div>`;
+  const drawList = () => {
+    const q = ex.q.toLowerCase();
+    $("#expList").innerHTML = gs.filter(g => !q || g.name.toLowerCase().includes(q)).map(g =>
+      `<label class="chk"><input type="checkbox" data-g="${g.id}" ${ex.sel.includes(g.id) ? "checked" : ""}>${logoChip(g.name, 22)}<span>${esc(dn(g.name))}</span></label>`).join("") || '<div class="empty">Nenhum cliente.</div>';
+    document.querySelectorAll("#expList [data-g]").forEach(c => c.onchange = () => {
+      const id = c.getAttribute("data-g"); ex.sel = ex.sel.filter(x => x !== id); if (c.checked) ex.sel.push(id);
+    });
+  };
+  drawList();
+  document.querySelectorAll('input[name="scope"]').forEach(r => r.onchange = () => { ex.all = r.value === "all"; $("#expSel").hidden = ex.all; });
+  $("#expQ").oninput = e => { ex.q = e.target.value; drawList(); };
+  $("#expAll").onclick = () => { ex.sel = gs.map(g => g.id); drawList(); };
+  $("#expNone").onclick = () => { ex.sel = []; drawList(); };
+  document.querySelectorAll("[data-sheet]").forEach(c => c.onchange = () => { ex.sheets[c.getAttribute("data-sheet")] = c.checked; });
+  $("#expGo").onclick = async () => {
+    const sheets = Object.keys(ex.sheets).filter(k => ex.sheets[k]), msg = $("#expMsg"), b = $("#expGo");
+    if (!sheets.length) { msg.textContent = "Marque ao menos um conteúdo."; return; }
+    if (!ex.all && !ex.sel.length) { msg.textContent = "Selecione ao menos um cliente."; return; }
+    b.disabled = true; b.textContent = "Gerando…"; msg.textContent = "";
+    try { await doExport(ex.all ? "all" : ex.sel.join(","), $("#expPeriod").value, sheets.join(",")); msg.textContent = "Planilha gerada ✔"; }
+    catch (e) { msg.textContent = "Erro: " + e.message; }
+    finally { b.disabled = false; b.textContent = "⬇ Baixar XLSX"; }
+  };
+  S.draw = [];
+}
+
+/* ===================== tema ===================== */
+function applyTheme(t) { if (t === "light") document.documentElement.setAttribute("data-theme", "light"); else document.documentElement.removeAttribute("data-theme"); }
+applyTheme(lsGet("theme"));
+$("#themeBtn").onclick = () => {
+  const nx = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+  applyTheme(nx); lsSet("theme", nx);
+};
+
+/* ===================== barra lateral ===================== */
+function groupStatus(g) { return g.states.down > 0 ? "crit" : (g.avail != null && g.avail < S.cfg.slo) ? "warn" : "good"; }
+function renderNav() {
+  if (!S.ov) return;
+  const q = S.ui.sideSearch.toLowerCase();
+  const cur = location.hash || "#/overview";
+  const li = (href, name, extra, status, logo) => `<a class="nav-item" href="${href}" ${cur === href ? 'aria-current="page"' : ""}>${status ? `<span class="dot ${status}" title="${status === "crit" ? "Há hosts fora do ar" : status === "warn" ? "Abaixo da meta" : "Dentro da meta"}"></span>` : ""}${logo ? logoChip(name, 24) : ""}<span class="nm">${esc(dn(name))}</span><span class="pc">${extra || ""}</span></a>`;
+  const gs = S.ov.groups.filter(g => !q || g.name.toLowerCase().includes(q));
+  const pin = gs.filter(g => /sistemas internos/i.test(g.name)), rest = gs.filter(g => !pin.includes(g));
+  const item = g => li("#/g/" + g.id, g.name, nf(g.avail, 2) + "%", groupStatus(g), true);
+  let h = `<a class="nav-item nav-ia" href="#/ia" ${cur === "#/ia" ? 'aria-current="page"' : ""}><img src="/static/brand/oakmont.png" alt="">OAK IA<span class="spark-ia">✦</span></a>` +
+    `<div class="nav-title">Geral</div>` + li("#/overview", "Visão geral", "") + li("#/sla", "SLA / Serviços", "") + li("#/exportar", "Exportar XLSX", "");
+  if (pin.length) h += `<div class="nav-title">Em destaque</div>` + pin.map(item).join("");
+  h += `<div class="nav-title">Clientes Monitorados (${rest.length})</div>` + rest.map(item).join("");
+  $("#nav").innerHTML = h;
+}
+$("#sideSearch").addEventListener("input", e => { S.ui.sideSearch = e.target.value; renderNav(); });
+/* limpar filtros: período padrão, buscas, ordenação, filtro de clientes e filtros da página do cliente */
+const UI_DEFAULT = {search: "", sortK: "avail", sortDir: 1, state: "all", incSev: 0, incHost: "", incStatus: "all", incMax: 150, incGroup: true, ovSort: "nome", ovFilter: "", sideSearch: ""};
+function clearFilters() {
+  Object.assign(S.ui, UI_DEFAULT);
+  $("#sideSearch").value = ""; renderNav();
+  S.period = "30d"; lsSet("period", S.period); buildPeriods();
+  render(true);
+}
+$("#clrBtn").addEventListener("click", clearFilters);
+
+/* ===================== seções reutilizáveis ===================== */
+function gaugeRow(sm, slo) {
+  const lo = Math.max(90, Math.floor(slo - 2));
+  const onl = sm.monitored ? 100 * (sm.monitored - sm.states.down) / sm.monitored : null;
+  return `<div class="grid g6">` +
+    gauge({value: sm.avail, min: lo, max: 100, bands: availBands(slo), label: "Disponibilidade média", dec: 3, target: slo, sub: `Meta ${nf(slo, 2)}% · pior host ${fmtAv(sm.avail_min)}`, dd: {kind: "hosts", state: "monitored", title: "Disponibilidade por host", sub: "piores primeiro"}}) +
+    gauge({value: onl, min: 0, max: 100, bands: [[90, "crit"], [99, "warn"], [Infinity, "good"]], label: "Hosts online agora", dec: 1, sub: `${sm.states.down} fora · ${sm.monitored} monitorados`, dd: sm.states.down ? {kind: "hosts", state: "down", title: "Hosts fora do ar agora"} : {kind: "hosts", state: "online", title: "Hosts online agora"}}) +
+    gauge({value: sm.cpu, min: 0, max: 100, bands: [[60, "good"], [85, "warn"], [Infinity, "crit"]], label: "CPU média", dec: 1, sub: "último valor dos hosts", dd: {kind: "hosts", state: "monitored", sort: "cpu", title: "Hosts por uso de CPU"}}) +
+    gauge({value: sm.mem, min: 0, max: 100, bands: [[70, "good"], [90, "warn"], [Infinity, "crit"]], label: "Memória média", dec: 1, sub: "último valor dos hosts", dd: {kind: "hosts", state: "monitored", sort: "mem", title: "Hosts por uso de memória"}}) +
+    gauge({value: sm.ping, min: 0, max: 200, bands: [[50, "good"], [150, "warn"], [Infinity, "crit"]], label: "Latência ICMP", unit: " ms", dec: 1, sub: "média dos hosts", dd: {kind: "hosts", state: "monitored", sort: "ping", title: "Hosts por latência ICMP"}}) +
+    gauge({value: sm.loss, min: 0, max: 10, bands: [[1, "good"], [5, "warn"], [Infinity, "crit"]], label: "Perda ICMP", dec: 2, sub: "média dos hosts", dd: {kind: "hosts", state: "monitored", sort: "loss", title: "Hosts por perda de pacotes"}}) + `</div>`;
+}
+function kpiRow(sm, slo, extra) {
+  const k = (l, v, s, c, dd) => `<div class="kpi"${dd ? ddAttr(dd) : ""}><div class="l">${l}</div><div class="v ${c || ""}">${v}</div><div class="s">${s || "&nbsp;"}</div></div>`;
+  const st = sm.states, crit = (sm.problems[4] || 0) + (sm.problems[5] || 0);
+  return `<div class="kpis">` +
+    k("Hosts", sm.hosts, `${st.up} online · ${st.down} fora · ${st.maintenance} manutenção · ${st.disabled} desativados`, "", {kind: "hosts", title: "Todos os hosts"}) +
+    k("Tempo total fora", fmtDur(sm.downtime), "soma de todos os hosts", sm.downtime ? "warn" : "good", sm.outages ? {kind: "outages", sort: "dur", title: "Quedas no período", sub: "maiores primeiro"} : null) +
+    k("Indisponibilidades", sm.outages, "quedas no período", sm.outages ? "" : "good", sm.outages ? {kind: "outages", title: "Quedas no período"} : null) +
+    k("Tempo médio de recuperação", fmtDur(sm.mttr), "MTTR das quedas resolvidas", "", sm.outages ? {kind: "outages", sort: "dur", title: "Quedas no período", sub: "base do MTTR"} : null) +
+    k("Maior queda", fmtDur(sm.longest), "um único host", "", sm.outages ? {kind: "outages", sort: "dur", title: "Maiores quedas do período"} : null) +
+    k("Hosts abaixo da meta", sm.hosts_below_slo, `disponibilidade < ${nf(slo, 2)}%`, sm.hosts_below_slo ? "crit" : "good", sm.hosts_below_slo ? {kind: "hosts", state: "below", title: "Hosts abaixo da meta", sub: `disponibilidade < ${nf(slo, 2)}%`} : null) +
+    k("Problemas ativos", sm.problems_total, `${crit} críticos (Alta + Desastre)`, crit ? "crit" : "", sm.problems_total ? {kind: "problems", title: "Problemas ativos agora"} : null) +
+    (extra || "") + `</div>`;
+}
+function sevRows(p) { return [5, 4, 3, 2, 1, 0].map(s => ({l: SEVN[s], v: p[s] || 0, c: "sev" + s, dd: {kind: "problems", sev: String(s), title: `Problemas ativos · ${SEVN[s]}`}})); }
+
+function slaSection(slas, title) {
+  slas = slas.filter(sla => sla.services.some(sv => sv.periods.length));  // na página do cliente, só SLAs com dados de SLI
+  if (!slas.length) return "";
+  return `<div class="section-title">${esc(title || "SLA / Serviços")}</div>` + slas.map(slaCard).join("");
+}
+function slaCard(sla) {
+  const monthly = sla.period >= 2, fx = monthly ? fmtMonth : fmtDayFull;
+  const svs = sla.services.filter(s => s.periods.length);
+  if (!svs.length) return `<div class="card slacard"><h2>${esc(sla.name)}</h2><div class="empty">${esc(sla.erro || "Sem dados de SLI para este SLA.")}</div></div>`;
+  return `<div class="card slacard"><h2>${esc(sla.name)}<span class="hint">SLO ${nf(sla.slo, 2)}% · ${["diário", "semanal", "mensal", "trimestral", "anual"][sla.period] || ""}</span></h2>` +
+    svs.map((sv, i) => {
+      const cur = sv.periods[sv.periods.length - 1], rows = [...sv.periods].reverse();
+      const lo = Math.max(90, Math.floor(sla.slo - 2));
+      return `<div class="slahead" style="margin-bottom:12px">${gauge({value: cur.sli, min: lo, max: 100, bands: availBands(sla.slo), label: sv.name, dec: 3, target: sla.slo, sub: `Atual: ${esc(fx(cur.from))}`})}
+        <div class="chart" style="flex:1;min-width:300px" data-sla="${esc(sla.id)}|${esc(sv.id)}"></div></div>
+        <div class="tablewrap" style="max-height:300px"><table><thead><tr><th class="nosort">Período</th><th class="nosort num">SLO</th><th class="nosort num">SLI</th><th class="nosort num">Uptime</th><th class="nosort num">Downtime</th><th class="nosort num">Error budget</th><th class="nosort num">Exclusões</th></tr></thead><tbody>` +
+        rows.map(r => `<tr><td>${esc(fx(r.from))}</td><td class="num">${nf(sla.slo, 2)}</td><td class="num ${avClass(r.sli, sla.slo)}">${r.sli == null ? "–" : nf(r.sli, 4)}</td><td class="num">${fmtDur(r.uptime)}</td><td class="num">${fmtDur(r.downtime)}</td><td class="num ${r.budget < 0 ? "av-crit" : ""}">${r.budget < 0 ? "-" : ""}${fmtDur(Math.abs(r.budget))}</td><td class="num">${r.excluded}</td></tr>`).join("") +
+        `</tbody></table></div>`;
+    }).join("") + `</div>`;
+}
+function drawSla(slas) {
+  document.querySelectorAll("[data-sla]").forEach(box => {
+    const [sid, vid] = box.getAttribute("data-sla").split("|");
+    const sla = slas.find(s => s.id === sid), sv = sla && sla.services.find(x => x.id === vid);
+    if (!sv) return;
+    const monthly = sla.period >= 2, fx = monthly ? fmtMonth : fmtDay;
+    const vals = sv.periods.map(p => p.sli);
+    lineChart(box, {x: sv.periods, xl: sv.periods.map(p => fx(p.from)), h: 170, ml: 56, fmtY: v => nf(v, 2), ymax: 100,
+      ymin: Math.min(sla.slo - 0.05, ...vals.filter(v => v != null)) - 0.02, aria: "SLI por período",
+      ref: {y: sla.slo, label: "SLO " + nf(sla.slo, 2) + "%"},
+      series: [{name: "SLI", color: "s1", vals, points: true, pointColor: v => v >= sla.slo ? "var(--good)" : "var(--crit)"}],
+      tip: i => `<b>${esc((monthly ? fmtMonth : fmtDayFull)(sv.periods[i].from))}</b><div class="r"><span>SLI</span><b>${vals[i] == null ? "–" : nf(vals[i], 4) + "%"}</b></div><div class="r"><span>Downtime</span><b>${fmtDur(sv.periods[i].downtime)}</b></div><div class="r"><span></span><small>clique para ver os alertas</small></div>`,
+      dd: i => ({kind: "events", from: sv.periods[i].from, to: sv.periods[i].to, sev: "2,3,4,5", title: `Alertas · ${sv.name} · ${(monthly ? fmtMonth : fmtDayFull)(sv.periods[i].from)}`, sub: `${curGid() ? "deste cliente" : "todos os clientes"} · severidade Atenção ou maior`})});
+  });
+}
+
+/* ===================== visão executiva: componentes ===================== */
+const clamp01 = x => Math.max(0, Math.min(1, x));
+function pbar(v, min, max, color, target) {
+  const w = v == null ? 0 : 100 * clamp01((v - min) / (max - min));
+  const t = target == null ? "" : `<b style="left:calc(${100 * clamp01((target - min) / (max - min))}% - 1px)"></b>`;
+  return `<div class="pbar"><i style="width:${w}%;background:${color}"></i>${t}</div>`;
+}
+function sparkSvg(vals, color, ref, kind) {
+  const v = vals.map(x => x == null ? null : +x), ok = v.filter(x => x != null);
+  if (ok.length < 2) return "";
+  let lo = Math.min(...ok, ref ?? Infinity), hi = Math.max(...ok, ref ?? -Infinity); if (hi === lo) { hi += 1; lo -= 1; }
+  if (kind === "bar") lo = 0;
+  const W = 200, H = 40, pad = 3, n = v.length, X = i => n === 1 ? W / 2 : pad + i * (W - 2 * pad) / (n - 1), Y = y => H - pad - (H - 2 * pad) * (y - lo) / (hi - lo);
+  let s = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">`;
+  if (ref != null) s += `<line x1="0" x2="${W}" y1="${Y(ref)}" y2="${Y(ref)}" style="stroke:var(--warn)" stroke-width="1" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>`;
+  if (kind === "bar") {  // cada barra dentro da sua fatia, para nao sair do card
+    const slot = W / n, gap = Math.min(slot * 0.3, 6), bw = Math.max(1, slot - gap);
+    v.forEach((y, i) => { if (y) s += `<rect x="${i * slot + gap / 2}" y="${Y(y)}" width="${bw}" height="${H - pad - Y(y)}" rx="1.5" style="fill:${color}" opacity=".85"/>`; });
+  }
+  else {
+    const pts = v.map((y, i) => y == null ? null : [X(i), Y(y)]).filter(Boolean);
+    s += `<path d="M${pts[0][0]} ${H}L${pts.map(p => p.join(" ")).join("L")}L${pts[pts.length - 1][0]} ${H}Z" style="fill:${color}" opacity=".13"/>`;
+    s += `<polyline points="${pts.map(p => p.join(",")).join(" ")}" fill="none" style="stroke:${color}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>`;
+  }
+  return s + `</svg>`;
+}
+const avTag = (v, slo) => v == null ? `<span class="tag mut">Sem dados</span>` : v >= slo ? `<span class="tag good">Na meta</span>` : v >= 99 ? `<span class="tag warn">Atenção</span>` : v >= 95 ? `<span class="tag serious">Abaixo da meta</span>` : `<span class="tag crit">Crítico</span>`;
+const lvl = (v, bands) => bandColor(v, bands);
+function execHero(sm, slo, d) {
+  const lo = Math.max(90, Math.floor(Math.min(sm.avail ?? slo, slo) - 1));
+  const gap = sm.avail == null ? null : slo - sm.avail;
+  const onl = sm.monitored ? 100 * (sm.monitored - sm.states.down) / sm.monitored : null, st = sm.states;
+  const crit = (sm.problems[4] || 0) + (sm.problems[5] || 0);
+  const sevs = [5, 4, 3, 2, 1, 0].map(k => ({k, n: sm.problems[k] || 0}));
+  const onCol = onl == null ? "var(--grid)" : `var(--${lvl(onl, [[90, "crit"], [99, "warn"], [Infinity, "good"]])})`;
+  return `<div class="grid g4">
+    <div class="card xc"${ddAttr({kind: "hosts", state: "monitored", title: "Disponibilidade por host", sub: "piores primeiro"})} data-tip="${esc(`<b>Disponibilidade média</b><br>${fmtAv(sm.avail)} · meta ${nf(slo, 2)}%<br>Pior host: ${fmtAv(sm.avail_min)}`)}">
+      <h2>Disponibilidade média ${avTag(sm.avail, slo)}</h2>
+      <div class="xv"><span class="big" style="color:${avVar(sm.avail, slo)}">${nf(sm.avail, 3)}<small>%</small></span>
+        <span class="aside">${gap == null ? "–" : gap > 0 ? `faltam ${nf(gap, 2)} p.p.` : `${nf(-gap, 2)} p.p. acima`}<small>da meta de ${nf(slo, 2)}%</small></span></div>
+      ${pbar(sm.avail, lo, 100, avVar(sm.avail, slo), slo)}
+      <div class="xcap"><span><b style="color:${sm.hosts_below_slo ? "var(--crit-text)" : "inherit"}">${sm.hosts_below_slo}</b> hosts abaixo da meta</span><span>escala ${lo}–100%</span></div>
+      <div class="spark">${sparkSvg(d.series.avail, avVar(sm.avail, slo), slo)}</div></div>
+    <div class="card xc"${ddAttr(st.down ? {kind: "hosts", state: "down", title: "Hosts fora do ar agora"} : {kind: "hosts", state: "online", title: "Hosts online agora"})}>
+      <h2>Hosts online agora ${st.down ? `<span class="tag crit">${st.down} fora</span>` : `<span class="tag good">Todos online</span>`}</h2>
+      <div class="xv"><span class="big" style="color:${onCol}">${nf(onl, 1)}<small>%</small></span><span class="aside">${st.up + st.maintenance} de ${sm.monitored}<small>hosts monitorados</small></span></div>
+      <div class="xseg">${[["up", "good", "Online"], ["maintenance", "info", "Manutenção"], ["down", "crit", "Fora"]].map(([k, c, l]) => st[k] ? `<i style="flex:${st[k]};background:var(--${c})" title="${l}: ${st[k]}"${ddAttr({kind: "hosts", state: k, title: `Hosts · ${l}`})}></i>` : "").join("")}</div>
+      <div class="xseglg"><span style="--c:var(--good)">Online <b>${st.up}</b></span><span style="--c:var(--crit)">Fora <b>${st.down}</b></span><span style="--c:var(--info)">Manutenção <b>${st.maintenance}</b></span><span style="--c:var(--grid)">Desativados <b>${st.disabled}</b></span></div></div>
+    <div class="card xc"${sm.problems_total ? ddAttr({kind: "problems", title: "Problemas ativos agora"}) : ""}>
+      <h2>Problemas ativos ${crit ? `<span class="tag crit">${crit} críticos</span>` : `<span class="tag good">Sem críticos</span>`}</h2>
+      <div class="xv"><span class="big" style="color:${crit ? "var(--crit-text)" : sm.problems_total ? "var(--warn-text)" : "var(--good-text)"}">${nf(sm.problems_total, 0)}</span><span class="aside">${crit} Alta + Desastre<small>${sm.problems_total - crit} de menor severidade</small></span></div>
+      <div class="xseg">${sevs.map(x => x.n ? `<i style="flex:${x.n};background:var(--sev${x.k})" title="${SEVN[x.k]}: ${x.n}"${ddAttr({kind: "problems", sev: String(x.k), title: `Problemas ativos · ${SEVN[x.k]}`})}></i>` : "").join("")}</div>
+      <div class="xseglg">${sevs.filter(x => x.n).map(x => `<span style="--c:var(--sev${x.k})"${ddAttr({kind: "problems", sev: String(x.k), title: `Problemas ativos · ${SEVN[x.k]}`})}>${SEVN[x.k]} <b>${x.n}</b></span>`).join("") || "<span>Nenhum problema ativo</span>"}</div></div>
+    <div class="card xc"${sm.outages ? ddAttr({kind: "outages", title: "Quedas no período", sub: "indisponibilidades de todos os hosts"}) : ""}>
+      <h2>Indisponibilidade no período ${sm.outages ? `<span class="tag ${sm.downtime > 86400 ? "crit" : "warn"}">${sm.outages} quedas</span>` : `<span class="tag good">Sem quedas</span>`}</h2>
+      <div class="xv"><span class="big" style="color:${sm.downtime ? "var(--serious-text)" : "var(--good-text)"}">${fmtDur(sm.downtime)}</span><span class="aside">tempo fora<small>soma de todos os hosts</small></span></div>
+      <div class="xcap"><span>MTTR <b>${fmtDur(sm.mttr)}</b></span><span>Maior queda <b>${fmtDur(sm.longest)}</b></span></div>
+      <div class="spark">${sparkSvg(d.series.downtime, "var(--serious)", null, "bar")}</div></div>
+  </div>`;
+}
+function execHealth(sm) {
+  const m = (l, v, unit, dec, max, bands, sub, key) => { const c = v == null ? "var(--grid)" : `var(--${lvl(v, bands)})`;
+    return `<div class="hm"${ddAttr({kind: "hosts", state: "monitored", sort: key, title: {cpu: "Hosts por uso de CPU", mem: "Hosts por uso de memória", ping: "Hosts por latência ICMP", loss: "Hosts por perda de pacotes"}[key]})}><div class="l"><span>${l}</span></div><div class="v" style="color:${c}">${nf(v, dec)}<small>${unit}</small></div>${pbar(v, 0, max, c)}<div class="s">${sub}</div></div>`; };
+  return `<div class="card" style="margin-bottom:14px"><h2>Saúde da infraestrutura<span class="hint">média dos hosts monitorados</span></h2><div class="health">
+    ${m("CPU média", sm.cpu, "%", 1, 100, [[60, "good"], [85, "warn"], [Infinity, "crit"]], "último valor · alerta acima de 60%", "cpu")}
+    ${m("Memória média", sm.mem, "%", 1, 100, [[70, "good"], [90, "warn"], [Infinity, "crit"]], "último valor · alerta acima de 70%", "mem")}
+    ${m("Latência ICMP", sm.ping, " ms", 1, 200, [[50, "good"], [150, "warn"], [Infinity, "crit"]], "boa até 50 ms · crítica acima de 150 ms", "ping")}
+    ${m("Perda de pacotes", sm.loss, "%", 2, 10, [[1, "good"], [5, "warn"], [Infinity, "crit"]], "boa até 1% · crítica acima de 5%", "loss")}
+  </div></div>`;
+}
+
+/* ===================== página: OAK IA (análise a cada 6 horas, escrita pela tarefa agendada do Claude) ===================== */
+const NIA = {data: null, view: null, filtro: "", cli: undefined, t: 0};
+const IA_ICON = {risco: "🔴", atencao: "🟡", melhora: "🟢", info: "🔵"}, IA_ST = {estavel: "Estável", atencao: "Atenção", critico: "Crítico"};
+const iaN = x => String(x || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toUpperCase().trim();
+const iaMd = t => esc(t || "").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+function iaNext() { const n = new Date(), hs = [0, 6, 12, 18], d = new Date(n);
+  const h = hs.find(x => x > n.getHours() || (x === n.getHours() && n.getMinutes() < 35));
+  if (h == null) { d.setDate(d.getDate() + 1); d.setHours(0, 35, 0, 0); } else d.setHours(h, 35, 0, 0); return d; }
+async function viewIA() {
+  $("#title").textContent = "OAK IA"; $("#subtitle").textContent = "Leitura executiva do ambiente monitorado";
+  if (!NIA.data || Date.now() - NIA.t > 60000) { NIA.data = await api("/api/ia"); NIA.t = Date.now(); }
+  const d = NIA.data, A = NIA.view || d.ultima, hist = d.historico || [];
+  const names = A && A.clientes ? Object.keys(A.clientes) : [];
+  if (NIA.cli === undefined) { const g = S.lastGid && S.ov.groups.find(x => x.id === S.lastGid); NIA.cli = g ? (names.find(n => iaN(n) === iaN(g.name)) || g.name) : ""; }
+  const C = NIA.cli && A && A.clientes ? Object.entries(A.clientes).find(([k]) => iaN(k) === iaN(NIA.cli)) : null;
+  const a = A ? (NIA.cli ? (C ? C[1] : null) : A) : null, st = a || A;
+  const sel = A ? `<label style="display:flex;gap:8px;align-items:center">Cliente <select id="iaCli"><option value="">Visão geral (todos os clientes)</option>${
+    [...new Set([...names, ...(NIA.cli && !C ? [NIA.cli] : [])])].map(n => `<option value="${esc(n)}" ${iaN(n) === iaN(NIA.cli) ? "selected" : ""}>${esc(dn(n))}${A.clientes && A.clientes[n] ? " · " + (IA_ST[A.clientes[n].status_geral] || "") : " · sem análise própria"}</option>`).join("")}</select></label>` : "";
+  const hero = `<div class="card iahero"><span class="iabrain" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/><path d="M17.599 6.5a3 3 0 0 0 .399-1.375"/><path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/><path d="M3.477 10.896a4 4 0 0 1 .585-.396"/><path d="M19.938 10.5a4 4 0 0 1 .585.396"/><path d="M6 18a4 4 0 0 1-1.967-.516"/><path d="M19.967 17.484A4 4 0 0 1 18 18"/><path d="M12 5v13"/></svg></span><div class="iah"><h2>OAK IA</h2><p>Leitura executiva do ambiente monitorado no Zabbix, atualizada a cada 6 horas. Destaca o que mudou desde a última análise.</p></div>
+    <div class="iameta">${st ? `<span class="iast ${esc(st.status_geral)}">${IA_ST[st.status_geral] || esc(st.status_geral)}</span><span>Análise de <b style="color:var(--ink)">${esc(A.gerado_em)}</b></span>` : ""}<span>Próxima prevista: ${iaNext().toLocaleString("pt-BR", {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"})}</span>${sel}</div></div>`;
+  if (!A) { $("#view").innerHTML = hero + `<div class="card iaempty" style="margin-top:14px"><b>A primeira análise ainda não foi gerada.</b>A OAK IA analisa o ambiente a cada 6 horas e publica os insights aqui.</div>`; S.draw = []; return; }
+  const mentions = NIA.cli ? (A.insights || []).filter(i => iaN(i.cliente) === iaN(NIA.cli)).map(i => ({...i, geral: true})) : [];
+  const ins = [...(a ? a.insights || [] : []), ...mentions], cnt = k => ins.filter(i => i.nivel === k).length, fl = NIA.filtro;
+  const order = ["risco", "atencao", "info", "melhora"];
+  const shown = ins.filter(i => !fl || (fl === "novo" ? i.novo && !i.geral : i.nivel === fl)).sort((x, y) => order.indexOf(x.nivel) - order.indexOf(y.nivel) || (x.geral ? 1 : 0) - (y.geral ? 1 : 0));
+  const gidOf = n => { const g = S.ov.groups.find(x => iaN(x.name) === iaN(n)); return g && g.id; };
+  NIA.open = NIA.open || new Set(); const iaKey = i => (i.geral ? "g:" : "") + (i.titulo || "");
+  const card = i => `<div class="card iain ${esc(i.nivel)}${NIA.open.has(iaKey(i)) ? "" : " fechado"}" data-k="${esc(iaKey(i))}" data-i="${ins.indexOf(i)}" tabindex="0" role="button" aria-expanded="${NIA.open.has(iaKey(i))}"><div class="t"><span>${IA_ICON[i.nivel] || "•"}</span><span>${iaMd(i.titulo)}</span>${i.geral ? '<span class="nv" style="background:var(--surface2);color:var(--muted)">ANÁLISE GERAL</span>' : i.novo ? '<span class="nv">NOVO</span>' : ""}</div>
+      <div class="iahint">🧠 Toque para a OAK IA apresentar este insight</div>
+      <div class="dt">${iaMd(i.detalhe)}</div>${i.recomendacao ? `<div class="rc"><b>Recomendação:</b> ${iaMd(i.recomendacao)}</div>` : ""}
+      <div class="ft">${i.cliente ? `<span style="display:inline-flex;align-items:center;gap:6px">${logoChip(i.cliente, 20)}${esc(dn(i.cliente))}</span>` : ""}${(i.hosts || []).slice(0, 6).map(h => `<span class="hostc" title="host">${esc(h)}</span>`).join("")}${(i.hosts || []).length > 6 ? `<span class="hostc">+${i.hosts.length - 6}</span>` : ""}
+      ${i.cliente && gidOf(i.cliente) ? `<a class="btn" href="#/g/${gidOf(i.cliente)}">Abrir cliente</a>` : ""}</div></div>`;
+  const head = NIA.cli && !a ? `<div class="card" style="margin-top:14px"><h2>${logoChip(NIA.cli, 22)} ${esc(dn(NIA.cli))}</h2><p class="sub" style="margin:0">Este cliente não recebeu uma análise própria nesta rodada (a OAK IA analisa individualmente os clientes com mais problemas e indisponibilidade). ${mentions.length ? "Abaixo, os insights da análise geral que citam este cliente." : "A análise geral não cita este cliente."}</p></div>`
+    : `<div class="card" style="margin-top:14px"><h2>${NIA.cli ? `Resumo executivo — ${esc(dn(NIA.cli))}` : "Resumo executivo"} ${a.mudou === false ? '<span class="tag mut">sem mudanças relevantes desde a análise anterior</span>' : ""}</h2>
+      <p style="font-size:18px;font-weight:700;margin:0 0 6px">${iaMd(a.titulo)}</p><p class="iares">${iaMd(a.resumo)}</p></div>`;
+  $("#view").innerHTML = hero + (NIA.view ? `<div class="iaold">📅 Você está vendo a análise de ${esc(A.gerado_em)}.<button class="btn" type="button" id="iaBack">Voltar para a mais recente</button></div>` : "") + head +
+    (a && (a.indicadores || []).length ? `<div class="iainds">${a.indicadores.map(i => `<div class="card iaind"><h2>${esc(i.nome)}</h2><div class="v">${esc(i.valor)}</div><div class="d ${i.bom === true ? "good" : i.bom === false ? "bad" : "neu"}">${esc(i.variacao || "")}</div></div>`).join("")}</div>` : "") +
+    (ins.length ? `<div class="iachips">${[["", "Todos", ins.length], ["novo", "Novos", ins.filter(i => i.novo && !i.geral).length], ["risco", "🔴 Riscos", cnt("risco")], ["atencao", "🟡 Atenção", cnt("atencao")], ["melhora", "🟢 Melhoras", cnt("melhora")], ["info", "🔵 Informativos", cnt("info")]]
+      .filter(x => x[0] === "" || x[2]).map(([k, l, n]) => `<button type="button" data-f="${k}" class="${fl === k ? "on" : ""}">${l} (${n})</button>`).join("")}</div><div class="iains">${shown.map(card).join("") || '<div class="empty">Nenhum insight neste filtro.</div>'}</div>` : "") +
+    "";
+  const cs = $("#iaCli"); if (cs) cs.onchange = () => { NIA.cli = cs.value; NIA.filtro = ""; viewIA(); };
+  document.querySelectorAll(".iachips button").forEach(b => b.onclick = () => { NIA.filtro = b.dataset.f; viewIA(); });
+  document.querySelectorAll(".iains .iain").forEach(el => {
+    const it = ins[+el.dataset.i];
+    const act = e => { if (e.target.closest("a,button")) return;
+      if (!el.classList.contains("fechado")) { el.classList.add("fechado"); el.setAttribute("aria-expanded", "false"); NIA.open.delete(el.dataset.k); return; }
+      iaAsk(it, el.dataset.k); };
+    el.onclick = act; el.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); act(e); } };
+  });
+  const bk = $("#iaBack"); if (bk) bk.onclick = () => { NIA.view = null; viewIA(); };
+  S.draw = [];
+}
+
+/* ===================== página: visão geral ===================== */
+async function viewOverview() {
+  const d = S.ov;
+  $("#title").textContent = "Visão geral";
+  $("#subtitle").textContent = `${d.groups.length} clientes · ${d.period.label}`;
+  const sm = d.total, slo = d.slo;
+  const sorters = {nome: (a, b) => a.name.localeCompare(b.name), disp: (a, b) => (a.avail ?? 101) - (b.avail ?? 101), fora: (a, b) => b.states.down - a.states.down || (a.avail ?? 101) - (b.avail ?? 101), tempo: (a, b) => b.downtime - a.downtime};
+  const gs = [...d.groups].sort(sorters[S.ui.ovSort]);
+  const cls = g => g.avail == null ? "na" : g.avail >= slo ? "good" : g.avail >= 99 ? "warn" : "crit";
+  const flt = S.ui.ovFilter || "", shown = gs.filter(g => !flt || (flt === "down" ? g.states.down > 0 : cls(g) === flt));
+  const lo = Math.max(90, Math.floor(slo - 2));
+  const cards = shown.map(g => `<a class="gcard xg ${cls(g) === "na" ? "na" : ""}" style="--c:${g.avail == null ? "var(--border)" : avVar(g.avail, slo)}" href="#/g/${g.id}">
+    <div class="gname"><span class="dot ${groupStatus(g)}"></span>${logoChip(g.name, 30)}<span title="${esc(dn(g.name))}">${esc(dn(g.name))}</span><b class="pct">${g.avail == null ? "–" : nf(g.avail, 3) + "%"}</b></div>
+    ${pbar(g.avail, lo, 100, g.avail == null ? "var(--grid)" : avVar(g.avail, slo), slo)}
+    <div class="xcap"><span><b>${g.states.up + g.states.maintenance}</b> de ${g.monitored} online${g.states.down ? ` · <b style="color:var(--crit-text)">${g.states.down} fora</b>` : ""}</span>${avTag(g.avail, slo)}</div>
+    <dl><dt>Fora</dt><dt>Quedas</dt><dt>MTTR</dt><dt>Problemas</dt>
+      <dd>${fmtShort(g.downtime)}</dd><dd>${g.outages}</dd><dd>${g.outages ? fmtShort(g.mttr) : "–"}</dd><dd class="${g.problems_total ? "open" : ""}">${g.problems_total}</dd></dl></a>`).join("") || `<div class="empty">Nenhum cliente neste filtro.</div>`;
+  const cnt = k => gs.filter(g => k === "down" ? g.states.down > 0 : cls(g) === k).length;
+  const SV = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const ICO = {
+    good: SV('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="m9.5 12 1.8 1.8 3.4-3.6"/>'),
+    warn: SV('<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>'),
+    crit: SV('<path d="m22 17-8.5-8.5-5 5L2 7"/><path d="M16 17h6v-6"/>'),
+    down: SV('<rect x="3" y="3" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 6.5h.01M7 17.5h.01"/><path d="m14 15.5 4 4m0-4-4 4"/>')};
+  const sum = [["good", "var(--good)", "Na meta", `≥ ${nf(slo, 2)}%`], ["warn", "var(--warn)", "Atenção", `99% a ${nf(slo, 2)}%`], ["crit", "var(--crit)", "Abaixo de 99%", "disponibilidade crítica"], ["down", "var(--crit-text)", "Com hosts fora agora", "clientes afetados neste momento"]]
+    .map(([k, c, l, s2]) => `<div data-f="${k}" class="${flt === k ? "on" : ""}" style="--c:${c}" role="button" tabindex="0" title="Filtrar clientes"><div class="xs-t"><div class="l">${l}</div><div class="v">${cnt(k)}</div><div class="s">${s2}</div></div><span class="xs-ic">${ICO[k]}</span></div>`).join("");
+  $("#view").innerHTML =
+    `<div class="topbar" style="margin-top:4px"><div class="section-title" style="margin:0">Clientes Monitorados</div><div class="tools" style="margin:0"><label for="ovSort" class="sub">Ordenar</label><select id="ovSort"><option value="nome">Nome</option><option value="disp">Pior disponibilidade</option><option value="fora">Mais hosts fora</option><option value="tempo">Mais tempo fora</option></select></div></div>
+     <div class="xsum">${sum}</div>
+     <div class="gcards big">${cards}</div>`;
+  document.querySelectorAll(".xsum [data-f]").forEach(e => { e.onclick = () => { S.ui.ovFilter = S.ui.ovFilter === e.dataset.f ? "" : e.dataset.f; viewOverview(); S.draw.forEach(f => f()); }; e.onkeydown = ev => { if (ev.key === "Enter") e.onclick(); }; });
+  $("#ovSort").value = S.ui.ovSort;
+  $("#ovSort").onchange = e => { S.ui.ovSort = e.target.value; viewOverview(); };
+  S.draw = [];
+}
+
+function bucketLabels(d) { return d.buckets.map(b => d.bucket_kind === "hour" ? fmtHour(b.from) : fmtDay(b.from)); }
+function bucketTitles(d) { return d.buckets.map(b => d.bucket_kind === "hour" ? fmtDay(b.from) + " " + fmtHour(b.from) : fmtDayFull(b.from)); }
+function drawSeries(d, availSel, downSel, slo) {
+  const xl = bucketLabels(d), tl = bucketTitles(d), av = d.series.avail, dn = d.series.downtime, oc = d.series.outages;
+  const vals = av.filter(v => v != null);
+  lineChart($(availSel), {x: av, xl, h: 240, ml: 58, fmtY: v => nf(v, 2) + "%", ymax: 100, ymin: Math.min(slo - 0.1, ...vals) - 0.05, aria: "Disponibilidade por período",
+    ref: {y: slo, label: "Meta " + nf(slo, 2) + "%"},
+    series: [{name: "Disponibilidade", color: "s1", vals: av, points: true, pointColor: v => avVar(v, slo)}],
+    tip: i => `<b>${esc(tl[i])}</b><div class="r"><span>Disponibilidade</span><b>${fmtAv(av[i])}</b></div><div class="r"><span>Tempo fora</span><b>${fmtDur(dn[i])}</b></div><div class="r"><span>Quedas iniciadas</span><b>${oc[i]}</b></div><div class="r"><span></span><small>clique para ver os alertas</small></div>`,
+    dd: i => dn[i] ? bucketDD(d, i, "outages") : bucketDD(d, i, "events")});
+  columnChart($(downSel), {xl, vals: dn, h: 260, ml: 58, color: "s2", label: fmtShort, aria: "Tempo fora do ar por período",
+    ticks: mx => { const u = mx >= 7200 ? 3600 : 60, ts = niceTicks(0, mx / u, 4); return ts.map(t => t * u); },
+    fmtY: v => v >= 3600 ? nf(v / 3600, v % 3600 ? 1 : 0) + " h" : Math.round(v / 60) + " min",
+    tip: i => `<b>${esc(tl[i])}</b><div class="r"><span>Tempo fora</span><b>${fmtDur(dn[i])}</b></div><div class="r"><span>Quedas iniciadas</span><b>${oc[i]}</b></div><div class="r"><span></span><small>clique para ver as quedas</small></div>`,
+    dd: i => bucketDD(d, i, "outages")});
+}
+
+/* ===================== página: hostgroup ===================== */
+function hostTable(g) {
+  const slo = g.slo, q = S.ui.search.toLowerCase();
+  let rows = g.hosts.filter(h => (S.ui.state === "all" || h.state === S.ui.state) && (!q || h.name.toLowerCase().includes(q)));
+  const k = S.ui.sortK, dir = S.ui.sortDir;
+  const val = h => k === "name" ? h.name.toLowerCase() : k === "state" ? h.state : h[k] == null ? (dir > 0 ? Infinity : -Infinity) : h[k];
+  rows.sort((a, b) => (val(a) < val(b) ? -1 : val(a) > val(b) ? 1 : 0) * dir);
+  const th = (key, label, cls = "") => `<th class="${cls}" data-k="${key}" ${S.ui.sortK === key ? `aria-sort="${S.ui.sortDir > 0 ? "ascending" : "descending"}"` : ""}>${label}</th>`;
+  const stl = {up: ["Online", "●"], down: ["Fora do ar", "▲"], maintenance: ["Manutenção", "◆"], disabled: ["Desativado", "○"]};
+  const body = rows.map(h => {
+    const [sl, si] = stl[h.state];
+    const worst = [5, 4, 3, 2, 1, 0].find(s => h.problems[s]);
+    const mc = (v, lim1, lim2) => v == null ? "–" : `<span class="${v >= lim2 ? "av-crit" : v >= lim1 ? "av-warn" : ""}">${nf(v, 1)}%</span>`;
+    return `<tr><td><a class="hostlink"${ddAttr({kind: "hostcard", hostid: h.id, title: h.name})} title="Abrir a ficha do host">${esc(h.name)}</a></td>
+      <td><span class="st ${h.state}"><i>${si}</i>${sl}${h.state === "down" && h.open_since ? ` <small>há ${ago(h.open_since)}</small>` : ""}</span></td>
+      <td class="num ${avClass(h.avail, slo)}">${h.state === "disabled" ? "–" : fmtAv(h.avail)}</td><td class="num">${fmtDur(h.downtime)}</td><td class="num">${h.outages}</td><td class="num">${fmtDur(h.longest)}</td>
+      <td class="num">${h.last ? fmtDT(h.last) : "–"}</td><td class="num">${fmtDur(h.mttr)}</td>
+      <td>${h.problems_total ? `<span class="chip sev${worst}">${h.problems_total} · ${SEVN[worst]}</span>` : "–"}</td>
+      <td class="num">${mc(h.cpu, 60, 85)}</td><td class="num">${mc(h.mem, 70, 90)}</td><td class="num">${h.ping == null ? "–" : nf(h.ping, 1) + " ms"}</td><td class="num">${h.loss == null ? "–" : `<span class="${h.loss >= 5 ? "av-crit" : h.loss >= 1 ? "av-warn" : ""}">${nf(h.loss, 1)}%</span>`}</td></tr>`;
+  }).join("");
+  return `<div class="tablewrap"><table id="hostTable"><thead><tr>${th("name", "Host")}${th("state", "Estado")}${th("avail", "Disponibilidade", "num")}${th("downtime", "Tempo fora", "num")}${th("outages", "Quedas", "num")}${th("longest", "Maior queda", "num")}${th("last", "Última queda", "num")}${th("mttr", "MTTR", "num")}${th("problems_total", "Problemas ativos")}${th("cpu", "CPU", "num")}${th("mem", "Memória", "num")}${th("ping", "Latência", "num")}${th("loss", "Perda", "num")}</tr></thead><tbody>${body || `<tr><td colspan="13" class="empty">Nenhum host.</td></tr>`}</tbody></table></div><div class="sub" style="margin-top:6px">${rows.length} de ${g.hosts.length} hosts</div>`;
+}
+
+/* Incidentes do período. Com "agrupar", o mesmo problema no mesmo host vira uma linha (ex.: sensor que alerta a cada minuto). */
+let INC_ROWS = [];
+function incTable(inc) {
+  const q = S.ui.incHost.toLowerCase(), now = Date.now() / 1000;
+  const ev = inc.filter(i => i.sev >= S.ui.incSev && (!q || i.host.toLowerCase().includes(q) || i.name.toLowerCase().includes(q)) &&
+    (S.ui.incStatus === "all" || (S.ui.incStatus === "open") === (i.end == null)));
+  let rows;
+  if (S.ui.incGroup) {
+    const m = new Map();
+    ev.forEach(i => { const k = i.hostid + "|" + i.name; let g = m.get(k);
+      if (!g) m.set(k, g = {items: [], host: i.host, name: i.name, hostid: i.hostid, sev: 0, start: 0, end: 0, open: false, ack: false, down: 0, first: Infinity});
+      g.items.push(i); g.sev = Math.max(g.sev, i.sev); g.down += Math.max(0, (i.end || now) - i.start); g.first = Math.min(g.first, i.start);
+      if (i.end == null) g.open = true; if (i.ack) g.ack = true;
+      if (i.start > g.start) { g.start = i.start; g.end = i.end; g.last = i; } });
+    rows = [...m.values()].sort((a, b) => (b.open - a.open) || b.start - a.start);  // em aberto primeiro, depois os mais recentes
+  } else rows = ev.map(i => ({items: [i], host: i.host, name: i.name, hostid: i.hostid, sev: i.sev, start: i.start, end: i.end, open: i.end == null, ack: i.ack, down: (i.end || now) - i.start, first: i.start, last: i}));
+  const total = rows.length; INC_ROWS = rows.slice(0, S.ui.incMax);
+  const body = INC_ROWS.map((r, ix) => { const n = r.items.length, lastEnd = r.open ? null : r.end;
+    return `<tr data-inc="${ix}" tabindex="0" title="Clique para ver ${n > 1 ? "todas as ocorrências" : "os detalhes do alerta"}"><td>${fmtDT(r.start)}</td><td>${lastEnd ? fmtDT(lastEnd) : '<span class="open">em aberto</span>'}</td>
+      <td class="num">${fmtDur((r.last.end || now) - r.last.start)}${n > 1 ? `<br><small class="sub">${fmtDur(r.down)} no total</small>` : ""}</td><td>${esc(r.host)}</td>
+      <td class="wrap">${esc(r.name)}${n > 1 ? ` <span class="tag ${n >= 20 ? "warn" : "mut"}" title="Primeira vez: ${esc(fmtDT(r.first))}">${n}× no período</span>` : ""}</td>
+      <td><span class="chip sev${r.sev}">${SEVN[r.sev]}</span></td><td>${r.ack ? "✔ sim" : "–"}</td></tr>`; }).join("");
+  const label = S.ui.incGroup ? `${total} ${total === 1 ? "problema" : "problemas"} distintos · ${ev.length} ocorrências` : `${total} incidentes`;
+  return `<div class="tablewrap"><table><thead><tr><th class="nosort">${S.ui.incGroup ? "Última ocorrência" : "Início"}</th><th class="nosort">Fim</th><th class="nosort num">Duração</th><th class="nosort">Host</th><th class="nosort">Problema</th><th class="nosort">Severidade</th><th class="nosort">Reconhecido</th></tr></thead><tbody>${body || `<tr><td colspan="7" class="empty">Nenhum incidente com esses filtros.</td></tr>`}</tbody></table></div>
+    <div class="sub" style="margin-top:6px">${label}${total > INC_ROWS.length ? ` · mostrando ${INC_ROWS.length} <a href="#" id="moreInc">mostrar mais</a>` : ""}</div>`;
+}
+
+async function viewGroup(gid) {
+  const q = `period=${S.period}`;
+  const [g, incR, slaR] = await Promise.all([api(`/api/group/${gid}?${q}`), api(`/api/group/${gid}/incidents?${q}&limit=20000`), api(`/api/sla?group=${gid}`).catch(() => ({slas: []}))]);
+  const sm = g.summary, slo = g.slo, inc = incR.incidents;
+  $("#title").innerHTML = `<span class="tl">${logoChip(g.group.name, 38)}<span>${esc(dn(g.group.name))}</span></span>`;
+  $("#subtitle").textContent = `${sm.hosts} hosts · ${g.period.label} · atualizado ${fmtHour(g.generated)}`;
+  const topHosts = [...g.hosts].filter(h => h.downtime > 0).sort((a, b) => b.downtime - a.downtime).slice(0, 10);
+  const stOpts = (cur, arr) => arr.map(([v, l]) => `<option value="${v}" ${String(cur) === String(v) ? "selected" : ""}>${l}</option>`).join("");
+  $("#view").innerHTML = execHero(sm, slo, g) + execHealth(sm) +
+    `<div class="grid g2"><div class="card"><h2>Disponibilidade no período<span class="hint">meta ${nf(slo, 2)}%</span></h2><div class="chart" id="cAvail"></div></div>
+     <div class="card"><h2>Tempo fora do ar</h2><div class="chart" id="cDown"></div></div></div>
+     <div class="grid g3">
+       <div class="card"><h2>Problemas ativos por severidade</h2>${hbars(sevRows(sm.problems), v => v, "Sem problemas ativos 🎉")}</div>
+       <div class="card"><h2>Estado dos hosts agora</h2><div id="cState"></div></div>
+       <div class="card"><h2>Top 10 · mais tempo fora</h2>${hbars(topHosts.map(h => ({l: h.name, v: h.downtime, c: "s2", av: h.avail, dd: {kind: "outages", host: h.name, title: `Quedas · ${h.name}`, sub: "indisponibilidades do host no período"}})), (v, r) => `${fmtDur(v)} <small>(${nf(r.av, 2)}%)</small>`, "Nenhum host ficou fora do ar 🎉")}</div>
+     </div>
+     <div class="card"><h2><span id="hmTitle">Mapa de disponibilidade por host</span><span class="hint" id="hmHint"></span></h2>
+       <div class="tools" style="margin:-2px 0 8px"><select id="hmMode" aria-label="Visão do mapa"><option value="avail">Disponibilidade (host fora do ar)</option><option value="sev">Problemas graves (Alta e Desastre)</option></select></div>
+       <div class="chart" id="cHeat"></div><div class="legend" id="hmLeg"></div></div>
+     <div class="section-title">Hosts</div>
+     <div class="tools"><input type="search" id="hSearch" placeholder="Buscar host…" value="${esc(S.ui.search)}" aria-label="Buscar host"><select id="hState" aria-label="Estado">${stOpts(S.ui.state, [["all", "Todos os estados"], ["down", "Fora do ar"], ["up", "Online"], ["maintenance", "Em manutenção"], ["disabled", "Desativados"]])}</select><button class="btn" id="hClear" type="button">Limpar filtros</button></div>
+     <div id="hostBox">${hostTable(g)}</div>
+     <div class="section-title" id="incTitle">Incidentes do período</div>
+     <div class="tools"><input type="search" id="iSearch" placeholder="Filtrar por host ou problema…" value="${esc(S.ui.incHost)}" aria-label="Filtrar incidentes">
+       <select id="iSev" aria-label="Severidade mínima">${stOpts(S.ui.incSev, [[0, "Todas as severidades"], [2, "≥ Atenção"], [3, "≥ Média"], [4, "≥ Alta"], [5, "Somente Desastre"]])}</select>
+       <select id="iSt" aria-label="Situação">${stOpts(S.ui.incStatus, [["all", "Abertos e resolvidos"], ["open", "Somente em aberto"], ["closed", "Somente resolvidos"]])}</select>
+       <select id="iGrp" aria-label="Repetições">${stOpts(S.ui.incGroup ? 1 : 0, [[1, "Agrupar repetidos"], [0, "Cada ocorrência"]])}</select><button class="btn" id="iClear" type="button">Limpar filtros</button></div>
+     <div id="incBox">${incTable(inc)}</div>
+     <div class="card" style="margin-top:14px"><h2>Análise de tendência<span class="hint">escolha o host, a métrica e a janela · linha tracejada = tendência (regressão linear)</span></h2>
+       <div class="tools"><select id="trHost" aria-label="Host"><option value="">Todos os hosts do grupo</option></select>
+       <select id="trMetric" aria-label="Métrica">${stOpts(S.ui.trendMetric, [["cpu", "CPU %"], ["mem", "Memória %"], ["disk", "Disco % (ocupação)"], ["ping", "Latência ICMP (ms)"], ["loss", "Perda ICMP %"]])}</select>
+       <select id="trHours" aria-label="Janela">${stOpts(S.ui.trendHours, [[24, "24 horas"], [72, "3 dias"], [168, "7 dias"], [720, "30 dias"]])}</select></div>
+       <div class="tr-wrap"><div><div class="chart" id="cTrend"></div><div class="legend" id="trLeg"></div></div><div id="trAna" class="tr-ana"></div></div><div id="trRank"></div></div>
+     ${slaSection(slaR.slas || [], "SLA / Serviços relacionados")}`;
+
+  const refreshHosts = () => { $("#hostBox").innerHTML = hostTable(g); bindHostTable(); };
+  const refreshInc = () => { $("#incBox").innerHTML = incTable(inc); bindInc(); };
+  function bindHostTable() {
+    document.querySelectorAll("#hostTable th[data-k]").forEach(t => t.onclick = () => {
+      const k = t.getAttribute("data-k");
+      if (S.ui.sortK === k) S.ui.sortDir *= -1; else { S.ui.sortK = k; S.ui.sortDir = (k === "name" || k === "state" || k === "avail") ? 1 : -1; }
+      refreshHosts();
+    });
+  }
+  function bindInc() {
+    const m = $("#moreInc"); if (m) m.onclick = e => { e.preventDefault(); S.ui.incMax += 200; refreshInc(); };
+    document.querySelectorAll("#incBox tr[data-inc]").forEach(tr => { const open = () => { const r = INC_ROWS[+tr.dataset.inc]; if (!r) return;
+        const its = [...r.items].sort((a, b) => b.start - a.start).map(i => Object.assign({}, i, {dur: Math.max(0, (i.end || Date.now() / 1000) - i.start)}));
+        openDrill({kind: "events", title: r.name, sub: r.items.length > 1 ? `${r.host} · ${r.items.length} ocorrências no período` : r.host, items: its, expand: its.length === 1}); };
+      tr.onclick = open; tr.onkeydown = e => { if (e.key === "Enter") open(); }; });
+  }
+  $("#hSearch").oninput = e => { S.ui.search = e.target.value; refreshHosts(); };
+  $("#hState").onchange = e => { S.ui.state = e.target.value; refreshHosts(); };
+  $("#iSearch").oninput = e => { S.ui.incHost = e.target.value; refreshInc(); };
+  $("#iSev").onchange = e => { S.ui.incSev = +e.target.value; refreshInc(); };
+  $("#iSt").onchange = e => { S.ui.incStatus = e.target.value; refreshInc(); };
+  $("#iGrp").onchange = e => { S.ui.incGroup = e.target.value === "1"; S.ui.incMax = 150; refreshInc(); };
+  $("#hClear").onclick = () => { S.ui.search = ""; S.ui.state = "all"; $("#hSearch").value = ""; $("#hState").value = "all"; refreshHosts(); };
+  $("#iClear").onclick = () => { S.ui.incHost = ""; S.ui.incSev = 0; S.ui.incStatus = "all"; S.ui.incMax = 150; S.ui.incGroup = true; $("#iGrp").value = "1";
+    $("#iSearch").value = ""; $("#iSev").value = "0"; $("#iSt").value = "all"; refreshInc(); };
+  bindHostTable(); bindInc();
+
+  const st = sm.states;
+  async function drawTrend() {
+    const box = $("#cTrend"); if (!box) return;
+    const hs = $("#trHost");
+    if (hs && hs.options.length < 2) api(`/api/trend-hosts?group=${gid}`).then(l => { if (!$("#trHost")) return; hs.innerHTML = '<option value="">Todos os hosts do grupo</option>' + l.map(h => `<option value="${esc(h.id)}">${esc(h.nome)}</option>`).join(""); hs.value = S.ui.trendHost || ""; }).catch(() => {});
+    box.innerHTML = '<div class="loading">Calculando a tendência…</div>'; $("#trAna").innerHTML = ""; $("#trRank").innerHTML = ""; $("#trLeg").innerHTML = "";
+    try {
+      const host = S.ui.trendHost || "", r = await api(`/api/trendx?metric=${S.ui.trendMetric}&hours=${S.ui.trendHours}&group=${gid}&host=${host}`);
+      if (!$("#cTrend")) return;
+      const met = S.ui.trendMetric, u = r.unidade, pct = u === "%", dec = met === "ping" || met === "loss" ? 1 : 0, fm = v => v == null ? "–" : nf(v, dec) + u;
+      const ser = r.series || []; if (!ser.length) { box.innerHTML = '<div class="empty">Sem dados desta métrica para a seleção.</div>'; return; }
+      const base = ser.reduce((a, b2) => b2.pts.length > a.pts.length ? b2 : a, ser[0]).pts, idx = new Map(base.map((p, i) => [p.t, i]));
+      const xl = base.map(p => S.ui.trendHours <= 72 ? fmtHour(p.t / 1000) : fmtDay(p.t / 1000));
+      const align = (pts, k) => { const v = new Array(base.length).fill(null); pts.forEach(p => { const i = idx.get(p.t); if (i != null) v[i] = p[k]; }); return v; };
+      const main = ser[0], an = main.analise || {}, cols = ["s1", "s3", "s2", "s4"];
+      const line = a => a ? base.map((_, i) => a.ajuste_inicio + (a.ajuste_fim - a.ajuste_inicio) * (base.length > 1 ? i / (base.length - 1) : 0)) : null;
+      const series = host ? ser.slice(0, 4).map((x, i) => ({name: x.nome, color: cols[i], vals: align(x.pts, "avg"), area: ser.length === 1 && i === 0}))
+        : [{name: "Média do grupo", color: "s1", vals: align(main.pts, "avg")}];
+      if (ser.length === 1 || !host) series.push({name: "Tendência", color: "s2", vals: line(an), dash: true});
+      lineChart(box, {x: base, xl, h: 260, ml: 58, fmtY: fm, ymin: 0, ymax: pct ? 100 : null, aria: `Tendência de ${r.nome}`,
+        ref: pct && met !== "loss" ? {y: 90, label: "90%"} : null,
+        band: host ? null : {lo: align(main.pts, "min"), hi: align(main.pts, "max"), color: "s1"}, series,
+        tip: i => `<b>${fmtDT(base[i].t / 1000)}</b>` + ser.slice(0, 4).map(x => { const v = align(x.pts, "avg")[i], mx = align(x.pts, "max")[i]; return `<div class="r"><span>${esc(x.nome)}</span><b>${fm(v)}</b></div>${host ? "" : `<div class="r"><span>pico entre os hosts</span><b>${fm(mx)}</b></div>`}`; }).join("")});
+      $("#trLeg").innerHTML = series.map(x => `<span><i style="background:var(--${x.color})${x.dash ? ";height:2px" : ""}"></i>${esc(x.name)}</span>`).join("") + (host ? "" : '<span><i style="background:var(--s1);opacity:.25"></i>mínimo–máximo entre os hosts</span>') + (pct && met !== "loss" ? '<span><i style="background:var(--ink2);height:2px"></i>limite de 90%</span>' : "");
+      // leitura da tendência (para cada série: até 4 volumes do disco)
+      const per = met === "ping" ? " ms/dia" : " p.p./dia", dir = a => !a ? "–" : !a.confiavel ? "oscila, sem tendência clara" : Math.abs(a.inclinacao_dia * 30) < (pct ? 2 : 1) ? "estável" : a.inclinacao_dia > 0 ? "subindo" : "caindo";
+      const cls = a => !a ? "" : a.dias_ate_90 != null && a.dias_ate_90 <= 30 ? "risco" : a.dias_ate_90 != null && a.dias_ate_90 <= 90 ? "atencao" : a.atual >= 90 ? "risco" : "melhora";
+      const phrase = (x, a) => { if (!a) return ""; const quem = host ? `${esc(x.nome)}${met === "disk" ? "" : ""}` : `${esc(r.nome)} média do grupo`;
+        let t = `<b>${quem}</b> em <b>${fm(a.atual)}</b> (média ${fm(a.media)}, pico ${fm(a.pico)}): ${dir(a)}`;
+        if (a.confiavel && Math.abs(a.inclinacao_dia * 30) >= (pct ? 2 : 1)) t += `, ${a.inclinacao_dia > 0 ? "+" : ""}${nf(a.inclinacao_dia, 2)}${per}`;
+        if (pct && a.dias_ate_90 === 0) t += ". <b>Já está acima de 90%.</b>"; else if (pct && a.dias_ate_90 != null) t += `. No ritmo atual chega a <b>90% em ~${nf(a.dias_ate_90, 0)} dias</b>${a.dias_ate_100 != null ? ` e a 100% em ~${nf(a.dias_ate_100, 0)} dias` : ""}.`; else t += ".";
+        return t; };
+      const card = (x, a) => !a ? "" : `<div class="tr-c ${cls(a)}"><div class="h">${esc(x.nome)}</div>
+          <div class="g"><div><span>Atual</span><b>${fm(a.atual)}</b></div><div><span>Média</span><b>${fm(a.media)}</b></div><div><span>Pico</span><b>${fm(a.pico)}</b></div><div><span>P95</span><b>${fm(a.p95)}</b></div>
+          <div><span>Tendência</span><b>${a.confiavel ? dir(a) : "sem padrão"}</b><small>${a.inclinacao_dia > 0 ? "+" : ""}${nf(a.inclinacao_dia, 2)}${per} · R² ${nf(a.r2, 2)}</small></div>
+          <div><span>Projeção 30 dias</span><b>${a.confiavel ? fm(a.projecao_30d) : "–"}</b><small>${a.confiavel ? "pela reta de tendência" : "variação sem padrão"}</small></div>
+          ${pct ? `<div><span>Atinge 90%</span><b>${a.dias_ate_90 === 0 ? "já passou" : a.dias_ate_90 != null ? "~" + nf(a.dias_ate_90, 0) + " dias" : "não no ritmo atual"}</b></div>` : ""}</div><p>${phrase(x, a)}</p></div>`;
+      $("#trAna").innerHTML = `${r.host ? `<div class="tr-host">${esc(r.host)}</div>` : ""}${ser.slice(0, host ? 4 : 1).map(x => card(x, x.analise)).join("")}`;
+      // ranking: hosts / volumes que mais preocupam (só na visão do grupo)
+      const rk = main.ranking || [];
+      if (!host && rk.length) $("#trRank").innerHTML = `<h3 class="tr-rh">Quem mais pesa na tendência <span class="hint">ordenado pela projeção de 30 dias · clique para analisar o host</span></h3>
+        <div class="tablewrap"><table><thead><tr><th class="nosort">Host</th>${met === "disk" ? '<th class="nosort">Volume</th>' : ""}<th class="nosort num">Atual</th><th class="nosort num">Pico</th><th class="nosort">Tendência</th><th class="nosort num">Projeção 30 dias</th>${pct ? '<th class="nosort num">Atinge 90%</th>' : ""}</tr></thead><tbody>
+        ${rk.map(x => `<tr class="tr-r" data-host="${esc(x.hostid)}"><td><b>${esc(x.host)}</b></td>${met === "disk" ? `<td>${esc(x.volume)}</td>` : ""}<td class="num">${fm(x.atual)}</td><td class="num">${fm(x.pico)}</td>
+          <td>${x.confiavel ? `${x.inclinacao_dia > 0 ? "▲" : "▼"} ${nf(Math.abs(x.inclinacao_dia), 2)}${per}` : '<span class="muted">sem tendência clara</span>'}</td><td class="num">${x.confiavel ? fm(x.projecao_30d) : "–"}</td>
+          ${pct ? `<td class="num">${x.dias_ate_90 === 0 ? '<span class="si-badge late">já passou</span>' : x.dias_ate_90 != null ? `<span class="${x.dias_ate_90 <= 30 ? "open" : ""}">~${nf(x.dias_ate_90, 0)} dias</span>` : "–"}</td>` : ""}</tr>`).join("")}</tbody></table></div>`;
+      document.querySelectorAll("#trRank .tr-r").forEach(tr => tr.onclick = () => { S.ui.trendHost = tr.dataset.host; if ($("#trHost")) $("#trHost").value = tr.dataset.host; drawTrend(); });
+    } catch (e) { box.innerHTML = `<div class="empty">Sem dados de tendência (${esc(e.message)}).</div>`; }
+  }
+  $("#trHost").onchange = e => { S.ui.trendHost = e.target.value; drawTrend(); };
+  $("#trMetric").onchange = e => { S.ui.trendMetric = e.target.value; drawTrend(); };
+  /* mapa: "avail" = host fora do ar (base do SLA) · "sev" = tempo com alerta Alta/Desastre (ex.: serviço parado com o host no ar) */
+  async function drawHeat() {
+    const box = $("#cHeat"); if (!box) return;
+    const mode = S.ui.hmMode = S.ui.hmMode || lsGet("hmMode") || "avail"; $("#hmMode").value = mode;
+    const leg = (items) => items.map(([c, l, op]) => `<span><i style="background:${c}${op ? ";opacity:" + op : ""}"></i>${l}</span>`).join("");
+    if (mode === "avail") {
+      $("#hmTitle").textContent = "Mapa de disponibilidade por host";
+      $("#hmHint").textContent = g.heatmap.hosts.length < sm.monitored ? `os ${g.heatmap.hosts.length} hosts com mais tempo fora` : "todos os hosts";
+      $("#hmLeg").innerHTML = leg([["var(--good)", `≥ meta (${nf(slo, 2)}%)`], ["var(--warn)", "≥ 99%"], ["var(--serious)", "≥ 95%"], ["var(--crit)", "&lt; 95%"], ["var(--grid)", "sem dados"]]);
+      heatmap(box, {hosts: g.heatmap.hosts, cells: g.heatmap.cells, buckets: g.buckets, xl: bucketLabels(g), tl: bucketTitles(g), slo,
+        dd: (h, x) => ({kind: "outages", host: h, from: g.buckets[x].from, to: g.buckets[x].to, title: `Quedas · ${h}`, sub: "indisponibilidades do host nesta janela"})});
+      return;
+    }
+    $("#hmTitle").textContent = "Mapa de problemas graves por host";
+    $("#hmLeg").innerHTML = leg([["var(--good)", "sem Alta/Desastre"], ["var(--sev4)", "Alta"], ["var(--sev5)", "Desastre"], ["var(--sev4)", "cor mais fraca = pouco tempo na janela", .5], ["var(--grid)", "sem dados"]]);
+    if (!box.querySelector("svg")) box.innerHTML = '<div class="loading">Buscando os alertas graves no Zabbix…</div>';
+    let d; try { d = await api(`/api/group/${gid}/sevmap?period=${S.period}`); } catch (e) { box.innerHTML = `<div class="empty">Não foi possível montar o mapa (${esc(e.message)}).</div>`; return; }
+    if (S.ui.hmMode !== "sev" || !document.body.contains(box)) return;
+    const comProb = d.total.filter(t => t > 0).length;
+    $("#hmHint").textContent = comProb ? `${comProb} ${comProb === 1 ? "host teve" : "hosts tiveram"} alertas graves no período` : "nenhum alerta grave no período";
+    const bl = g.buckets.map(b => Math.max(1, Math.min(b.to, Date.now() / 1000) - b.from));
+    heatmap(box, {hosts: d.hosts, cells: d.cells, buckets: g.buckets, xl: bucketLabels(g), tl: bucketTitles(g), aria: "Problemas graves por host ao longo do período",
+      color: (v, x) => v == null ? "var(--grid)" : v[0] <= 0 ? "var(--good)" : {fill: v[1] >= 5 ? "var(--sev5)" : "var(--sev4)", op: (0.45 + 0.55 * Math.min(1, v[0] / bl[x])).toFixed(2)},
+      tipv: v => v == null ? "sem dados" : v[0] <= 0 ? "Nenhum alerta Alta ou Desastre" : `Com alerta grave: <b>${fmtDur(v[0])}</b> (${SEVN[v[1]]})<br><small>clique para ver os alertas</small>`,
+      clickable: v => v != null && v[0] > 0,
+      dd: (h, x) => ({kind: "events", host: h, group: "", sev: "4,5", overlap: 1, from: g.buckets[x].from, to: g.buckets[x].to, title: `Alertas graves · ${h}`, sub: "Alta e Desastre ativos nesta janela"})});
+  }
+  $("#hmMode").onchange = e => { S.ui.hmMode = e.target.value; lsSet("hmMode", S.ui.hmMode); $("#cHeat").innerHTML = ""; drawHeat(); };
+  $("#trHours").onchange = e => { S.ui.trendHours = +e.target.value; drawTrend(); };
+
+  S.draw = [() => {
+    drawSeries(g, "#cAvail", "#cDown", slo);
+    donut($("#cState"), [["up", "Online", "good"], ["down", "Fora do ar", "crit"], ["maintenance", "Manutenção", "info"], ["disabled", "Desativados", "muted"]]
+      .map(([k, l, c]) => ({l, v: st[k], c, dd: {kind: "hosts", state: k, title: `Hosts · ${l}`}})), sm.hosts, "hosts");
+    drawHeat();
+    drawSla(slaR.slas || []);
+    drawTrend();
+  }];
+}
+
+/* ===================== página: SLA ===================== */
+async function viewSla() {
+  $("#title").textContent = "SLA / Serviços";
+  const r = await api("/api/sla");
+  $("#subtitle").textContent = `${r.slas.length} SLAs configurados no Zabbix`;
+  $("#view").innerHTML = r.slas.length ? r.slas.map(slaCard).join("") :
+    `<div class="card"><div class="empty">Nenhum SLA encontrado. ${esc(r.aviso || "Configure SLAs em Serviços → SLA no Zabbix (versão 6.0 ou superior).")}</div></div>`;
+  S.draw = [() => drawSla(r.slas)];
+}
+
+/* ===================== roteador / ciclo ===================== */
+let holdT;
+async function render(keepScroll) {
+  const y = scrollY, h = location.hash || "#/overview", view = $("#view");
+  // atualização automática: trava a altura da página enquanto redesenha, para nada subir e descer
+  if (keepScroll && view) { clearTimeout(holdT); view.style.minHeight = view.offsetHeight + "px"; }
+  try {
+    S.ov = await api(`/api/overview?period=${S.period}`); S.gen = S.ov.generated;
+    renderNav();
+    const route = h.startsWith("#/g/") ? "g" : h === "#/sla" ? "sla" : h === "#/exportar" ? "exp" : h === "#/ia" ? "ia" : "ov";
+    if (route === "g") S.lastGid = h.slice(4);
+    $("#expBtn").style.display = route === "g" || route === "ov" ? "" : "none";
+    $("#periodSeg").style.display = route === "ia" ? "none" : "";
+    S.expTarget = route === "g" ? h.slice(4) : "all";
+    if (route === "g") await viewGroup(h.slice(4));
+    else if (route === "sla") await viewSla();
+    else if (route === "exp") { if (!document.getElementById("expGo")) viewExport(); }
+    else if (route === "ia") await viewIA();
+    else await viewOverview();
+    redraw();
+    $("#sdot").className = "dot good";
+    $("#updated").textContent = "atualizado às " + new Date().toLocaleTimeString("pt-BR");
+  } catch (e) {
+    $("#sdot").className = "dot crit";
+    $("#updated").textContent = "erro";
+    $("#view").innerHTML = `<div class="err"><b>Não foi possível carregar os dados.</b><br>${esc(e.message)}</div>`;
+  }
+  if (keepScroll) { scrollTo(0, y); clearTimeout(holdT); holdT = setTimeout(() => { if (view) view.style.minHeight = ""; }, 4000); }  // solta depois que as partes assíncronas desenharem
+}
+const redraw = () => S.draw.forEach(f => f());
+let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(redraw, 150); });
+addEventListener("hashchange", () => { $("#view").innerHTML = '<div class="loading">Carregando…</div>'; render(false); scrollTo(0, 0); });
+
+function buildPeriods() {
+  $("#periodSeg").innerHTML = S.cfg.periods.map(p => `<button type="button" data-p="${p.id}" aria-pressed="${p.id === S.period}">${esc(p.label)}</button>`).join("");
+  $("#periodSeg").onclick = e => { const b = e.target.closest("button"); if (!b) return; S.period = b.dataset.p; lsSet("period", S.period); buildPeriods(); render(true); };
+}
+function setTV(on) {
+  document.body.classList.toggle("tv", on); $("#rotBtn").style.display = on ? "" : "none";
+  if (!on) stopRot(); setTimeout(redraw, 60);
+}
+function stopRot() { clearInterval(S.rot); S.rot = null; $("#rotBtn").textContent = "▶ Girar grupos"; }
+$("#tvBtn").onclick = () => setTV(!document.body.classList.contains("tv"));
+addEventListener("keydown", e => { if (e.key === "Escape") setTV(false); });
+$("#rotBtn").onclick = () => {
+  if (S.rot) return stopRot();
+  $("#rotBtn").textContent = "⏸ Parar";
+  S.rot = setInterval(() => {
+    const ids = S.ov.groups.map(g => "#/g/" + g.id), i = ids.indexOf(location.hash);
+    location.hash = ids[(i + 1) % ids.length];
+  }, 20000);
+};
+
+/* ===================== detalhamento (gaveta lateral) ===================== */
+/* Qualquer elemento com data-dd='{"kind":...}' abre a gaveta com o que está por trás dele:
+   outages = quedas (indisponibilidade) · events = todos os alertas que começaram na janela
+   problems = problemas abertos agora · hosts = lista de hosts. */
+const DD = {open: false, opts: null, items: [], n: 100, front: null, stack: [], seq: 0};
+const curGid = () => location.hash.startsWith("#/g/") ? location.hash.slice(4) : "";
+const ddAttr = o => ` data-dd="${esc(JSON.stringify(o))}" role="button" tabindex="0"`;
+const SORTS = {
+  alert: [["recent", "Mais recentes"], ["old", "Mais antigos"], ["dur", "Maior duração"], ["sev", "Maior severidade"], ["host", "Host (A–Z)"]],
+  hosts: [["avail", "Pior disponibilidade"], ["down", "Mais tempo fora"], ["outages", "Mais quedas"], ["cpu", "Maior CPU"], ["mem", "Maior memória"], ["ping", "Maior latência"], ["loss", "Maior perda"], ["name", "Nome (A–Z)"]],
+};
+const ACK_ACT = [[1, "fechou o problema"], [2, "reconheceu"], [4, "comentou"], [8, "mudou a severidade"], [16, "removeu o reconhecimento"], [32, "suprimiu"], [64, "removeu a supressão"]];
+const winTxt = (a, b) => {
+  if (!a) return "";
+  if (fmtHour(a) === "00:00" && fmtHour(b) === "00:00") return fmtDayFull(a) === fmtDayFull(b - 1) ? fmtDayFull(a) : `${fmtDayFull(a)} a ${fmtDayFull(b - 1)}`;
+  return fmtDayFull(a) === fmtDayFull(b - 1) ? `${fmtDayFull(a)} ${fmtHour(a)}–${fmtHour(b)}` : `${fmtDT(a)} → ${fmtDT(b)}`;
+};
+function bucketDD(d, i, kind, extra) {
+  const b = d.buckets[i], tl = bucketTitles(d)[i], who = curGid() ? dn(d.group ? d.group.name : "") : "todos os clientes";
+  return Object.assign({kind, from: b.from, to: b.to, title: (kind === "outages" ? "Quedas · " : "Alertas · ") + tl,
+    sub: `${who} · ${kind === "outages" ? "hosts que ficaram fora do ar nesta janela" : "alertas que começaram nesta janela"}`}, extra || {});
+}
+
+async function openDrill(o, keepStack) {
+  if (!keepStack) DD.stack = []; else if (DD.opts) DD.stack.push(DD.opts);
+  o = Object.assign({}, o); if (o.group == null) o.group = curGid();
+  DD.opts = o; DD.n = 100; DD.open = true; const my = ++DD.seq;
+  $("#drawer").classList.toggle("sheet", o.kind === "hostcard");
+  $("#ddTitle").textContent = o.title || "Detalhes"; $("#ddSub").textContent = "Carregando…"; $("#ddQ").value = "";
+  $("#ddBack").hidden = !DD.stack.length;
+  const kindSort = o.kind === "hosts" ? SORTS.hosts : SORTS.alert;
+  $("#ddSort").innerHTML = kindSort.map(([v, l]) => `<option value="${v}">${l}</option>`).join("");
+  $("#ddSort").value = o.sort || (o.kind === "problems" ? "sev" : kindSort[0][0]);
+  $("#ddList").innerHTML = '<div class="loading">Buscando no Zabbix…</div>';
+  $("#drawer").classList.add("on"); $("#ddScrim").classList.add("on"); $("#drawer").setAttribute("aria-hidden", "false"); hideTip();
+  try {
+    let r;
+    if (o.kind === "hostcard") {
+      const h = await api(`/api/host/${encodeURIComponent(o.hostid)}?period=${S.period}`);
+      if (my !== DD.seq) return;
+      DD.host = h; $("#ddTitle").textContent = "Ficha do host"; $("#ddSub").textContent = h.groups && h.groups.length ? h.groups.map(dn).join(" · ") : "";
+      $("#ddList").innerHTML = hostSheet(h); $("#ddList").scrollTop = 0; return;
+    }
+    if (o.items) r = {items: o.items, total: o.items.length, front: DD.front};
+    else {
+      const q = new URLSearchParams({period: S.period, kind: o.kind});
+      ["group", "host", "from", "to", "sev", "state", "overlap"].forEach(k => { if (o[k] != null && o[k] !== "") q.set(k, o[k]); });
+      r = await api("/api/drill?" + q);
+    }
+    if (my !== DD.seq) return;
+    DD.items = r.items || []; DD.total = r.total || DD.items.length; if (r.front !== undefined) DD.front = r.front;
+    drawDrill();
+    if (o.expand && DD.items.length === 1) { const d = $("#ddList details"); if (d) d.open = true; }
+  } catch (e) { if (my === DD.seq) { $("#ddSub").textContent = ""; $("#ddList").innerHTML = `<div class="err">${esc(e.message)}</div>`; } }
+}
+function closeDrill() { DD.open = false; DD.seq++; $("#drawer").classList.remove("on"); $("#ddScrim").classList.remove("on"); $("#drawer").setAttribute("aria-hidden", "true"); }
+function drillRows() {
+  const q = $("#ddQ").value.trim().toLowerCase(), k = $("#ddSort").value, hosts = DD.opts.kind === "hosts";
+  let a = DD.items.filter(x => !q || [x.host, x.name, x.group, x.open_name].join(" ").toLowerCase().includes(q));
+  const by = hosts ? {avail: x => x.avail ?? 101, down: x => -x.downtime, outages: x => -x.outages, cpu: x => -(x.cpu ?? -1), mem: x => -(x.mem ?? -1),
+                      ping: x => -(x.ping ?? -1), loss: x => -(x.loss ?? -1), name: x => x.name.toLowerCase()}[k]
+                   : {recent: x => -x.start, old: x => x.start, dur: x => -x.dur, sev: x => -x.sev * 1e11 - x.start, host: x => (x.host || "").toLowerCase()}[k];
+  return a.sort((x, y) => { const p = by(x), q2 = by(y); return p < q2 ? -1 : p > q2 ? 1 : 0; });
+}
+function alertCard(x) {
+  const open = x.end == null, o = DD.opts, win = o.from && x.in_window != null && x.in_window < x.dur;
+  const zl = DD.front && x.id && !String(x.id).startsWith("demo") ? `<a class="go" href="${esc(DD.front)}/zabbix.php?action=problem.view&filter_set=1&show=0&hostids%5B%5D=${esc(x.hostid)}" target="_blank" rel="noopener" title="Abrir os problemas deste host no Zabbix">Abrir no Zabbix ↗</a>` : "";
+  return `<div class="ddc" style="--c:var(--sev${x.sev})">
+    <div class="t1"><span class="chip sev${x.sev}">${SEVN[x.sev]}</span>${open ? '<span class="tag crit">Em aberto</span>' : '<span class="tag good">Resolvido</span>'}${x.ack ? '<span class="tag mut">✔ Reconhecido</span>' : ""}${zl}</div>
+    <div class="tt">${esc(x.name)}</div>
+    <div class="hs"><b>${esc(x.host || "—")}</b>${x.group ? " · " + esc(dn(x.group)) : ""}</div>
+    <dl><div><dt>Início</dt><dd>${fmtDayFull(x.start)} ${fmtHour(x.start)}</dd></div>
+      <div><dt>${open ? "Situação" : "Fim"}</dt><dd>${open ? `<span class="open">aberto há ${ago(x.start)}</span>` : `${fmtDayFull(x.end)} ${fmtHour(x.end)}`}</dd></div>
+      <div><dt>Duração</dt><dd>${fmtDur(x.dur)}</dd></div>
+      ${win ? `<div><dt>Dentro da janela</dt><dd>${fmtDur(x.in_window)}</dd></div>` : ""}</dl>
+    <div class="acts">${x.hostid ? `<button class="btn" type="button" data-sheet="${esc(x.hostid)}" data-h="${esc(x.host)}">Ficha do host</button>` : ""}${o.host ? "" : `<button class="btn" type="button" data-sub="host" data-h="${esc(x.host)}">Outros alertas deste host</button>`}</div>
+    <details data-ev="${esc(x.id)}"><summary>Mais detalhes</summary><div class="ddx">Carregando…</div></details></div>`;
+}
+function hostCard(h) {
+  const stl = {up: ["Online", "good"], down: ["Fora do ar", "crit"], maintenance: ["Manutenção", "info"], disabled: ["Desativado", "mut"]}[h.state];
+  const slo = S.cfg.slo, m = (v, u, d) => v == null ? "–" : nf(v, d) + u;
+  return `<div class="ddc" style="--c:var(--${stl[1] === "mut" ? "grid" : stl[1]})">
+    <div class="t1"><span class="tag ${stl[1]}">${stl[0]}</span>${h.state === "down" && h.open_since ? `<span class="tag crit">há ${ago(h.open_since)}</span>` : ""}${h.problems_total ? `<span class="tag warn">${h.problems_total} problemas ativos</span>` : ""}</div>
+    <div class="tt">${esc(h.name)}</div><div class="hs">${esc(dn(h.group || ""))}${h.open_name ? ` · <span class="open">${esc(h.open_name)}</span>` : ""}</div>
+    <dl><div><dt>Disponibilidade</dt><dd class="${avClass(h.avail, slo)}">${h.state === "disabled" ? "–" : fmtAv(h.avail)}</dd></div><div><dt>Tempo fora</dt><dd>${fmtDur(h.downtime)}</dd></div><div><dt>Quedas</dt><dd>${h.outages}</dd></div>
+      <div><dt>Maior queda</dt><dd>${fmtDur(h.longest)}</dd></div><div><dt>Última queda</dt><dd>${h.last ? fmtDT(h.last) : "–"}</dd></div><div><dt>MTTR</dt><dd>${fmtDur(h.mttr)}</dd></div>
+      <div><dt>CPU</dt><dd>${m(h.cpu, "%", 1)}</dd></div><div><dt>Memória</dt><dd>${m(h.mem, "%", 1)}</dd></div><div><dt>Latência / perda</dt><dd>${m(h.ping, " ms", 1)} · ${m(h.loss, "%", 1)}</dd></div></dl>
+    <div class="acts"><button class="btn" type="button" data-sheet="${esc(h.id)}" data-h="${esc(h.name)}">Ficha do host</button><button class="btn" type="button" data-sub="outages" data-h="${esc(h.name)}">Quedas no período</button><button class="btn" type="button" data-sub="events" data-h="${esc(h.name)}">Todos os alertas</button>${h.problems_total ? `<button class="btn" type="button" data-sub="problems" data-h="${esc(h.name)}">Problemas ativos</button>` : ""}</div></div>`;
+}
+function drawDrill() {
+  const r = drillRows(), hosts = DD.opts.kind === "hosts", unit = (hosts ? "host" : "alerta") + (r.length === 1 ? "" : "s");
+  const o = DD.opts, win = o.from ? ` · ${winTxt(o.from, o.to)}` : "";
+  $("#ddSub").textContent = `${r.length}${r.length !== DD.items.length ? " de " + DD.items.length : ""} ${unit}${DD.total > DD.items.length ? ` (mostrando os ${DD.items.length} primeiros de ${DD.total})` : ""}${o.sub ? " · " + o.sub : ""}${win}`;
+  $("#ddList").innerHTML = r.length ? r.slice(0, DD.n).map(hosts ? hostCard : alertCard).join("") +
+    (r.length > DD.n ? `<button class="btn ddmore" id="ddMore" type="button">Mostrar mais ${Math.min(100, r.length - DD.n)} (${r.length - DD.n} restantes)</button>` : "")
+    : `<div class="empty">${hosts ? "Nenhum host." : "Nenhum alerta nesta seleção 🎉"}</div>`;
+  const mb = $("#ddMore"); if (mb) mb.onclick = () => { DD.n += 100; drawDrill(); };
+}
+const INV = {type: "Tipo", type_full: "Tipo (detalhado)", name: "Nome", alias: "Apelido", os: "Sistema operacional", os_full: "Sistema operacional (completo)", os_short: "SO (curto)",
+  serialno_a: "Número de série", serialno_b: "Número de série B", tag: "Etiqueta", asset_tag: "Patrimônio", macaddress_a: "MAC", macaddress_b: "MAC B",
+  hardware: "Hardware", hardware_full: "Hardware (detalhado)", software: "Software", software_full: "Software (detalhado)", software_app_a: "Aplicação A", software_app_b: "Aplicação B",
+  software_app_c: "Aplicação C", software_app_d: "Aplicação D", software_app_e: "Aplicação E", contact: "Contato", location: "Localização", location_lat: "Latitude", location_lon: "Longitude",
+  notes: "Observações", chassis: "Chassi", model: "Modelo", hw_arch: "Arquitetura", vendor: "Fabricante", contract_number: "Nº do contrato", installer_name: "Instalado por",
+  deployment_status: "Situação de implantação", url_a: "URL A", url_b: "URL B", url_c: "URL C", host_networks: "Redes", host_netmask: "Máscara", host_router: "Roteador/gateway",
+  oob_ip: "IP fora de banda (OOB)", oob_netmask: "Máscara OOB", oob_router: "Roteador OOB", date_hw_purchase: "Data de compra", date_hw_install: "Data de instalação",
+  date_hw_expiry: "Fim da garantia", date_hw_decomm: "Data de desativação", site_address_a: "Endereço", site_address_b: "Endereço (complemento)", site_address_c: "Endereço (linha 3)",
+  site_city: "Cidade", site_state: "Estado", site_country: "País", site_zip: "CEP", site_rack: "Rack", site_notes: "Observações do local",
+  poc_1_name: "Contato principal", poc_1_email: "E-mail (contato principal)", poc_1_phone_a: "Telefone (contato principal)", poc_1_phone_b: "Telefone 2 (contato principal)",
+  poc_1_cell: "Celular (contato principal)", poc_1_screen: "Usuário (contato principal)", poc_1_notes: "Observações (contato principal)",
+  poc_2_name: "Contato secundário", poc_2_email: "E-mail (contato secundário)", poc_2_phone_a: "Telefone (contato secundário)", poc_2_phone_b: "Telefone 2 (contato secundário)",
+  poc_2_cell: "Celular (contato secundário)", poc_2_screen: "Usuário (contato secundário)", poc_2_notes: "Observações (contato secundário)"};
+const INV_GROUPS = [["Localização e contato", /^(site_|location|contact|poc_)/], ["Equipamento", /^(type|vendor|model|chassis|hw_|hardware|serialno|tag$|asset_tag|macaddress|date_hw)/],
+  ["Sistema e software", /^(os|software|name$|alias$)/], ["Rede", /^(host_net|host_router|oob_)/], ["Outros", /./]];
+/* texto livre do Zabbix: e-mails, telefones e URLs clicáveis; endereço com link para o mapa */
+function linkify(t, mapIt) {
+  let h = esc(t);
+  h = h.replace(/\b(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+  h = h.replace(/\b([\w.+-]+@[\w-]+\.[\w.-]+)\b/g, '<a href="mailto:$1">$1</a>');
+  h = h.replace(/(\(?\+?\d{0,3}\)?[\s-]?\(?\d{2}\)?[\s-]?\d{4,5}[\s-]\d{4})(?![^<]*>)/g, m => `<a href="tel:${m.replace(/[^\d+]/g, "")}">${m}</a>`);
+  if (mapIt) h += ` <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t)}" target="_blank" rel="noopener" title="Abrir no Google Maps">📍 mapa</a>`;
+  return h;
+}
+function notesHtml(txt) {
+  const lines = String(txt || "").split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const rows = [], paras = [];
+  lines.forEach(l => { const m = l.match(/^([^:]{1,40}?)\s*:\s*(.+)$/); if (m && !/^https?$/i.test(m[1])) rows.push([m[1], m[2]]); else paras.push(l); });
+  return (rows.length ? `<table>${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${linkify(v, /endere|logradouro|localiza/i.test(k))}</td></tr>`).join("")}</table>` : "") +
+    paras.map(p => `<p>${linkify(p, /^(rua|r\.|av\.?|avenida|rodovia|rod\.|estrada|travessa|alameda|praça|largo|quadra|setor)\s/i.test(p))}</p>`).join("");
+}
+/* histórico de alertas do host (7 dias): o mesmo alerta repetido vira uma linha com "N×" */
+function histHtml(h) {
+  const hs = h.history || [], now = Date.now() / 1000;
+  if (!hs.length) return `<div class="hist"><h4>Histórico de alertas · 7 dias</h4><span class="sub">Nenhum alerta nos últimos 7 dias.</span></div>`;
+  const m = new Map();
+  hs.forEach(e => { let g = m.get(e.name); if (!g) m.set(e.name, g = {name: e.name, sev: 0, n: 0, start: 0, end: 0, open: false});
+    g.n++; g.sev = Math.max(g.sev, e.sev); if (e.end == null) g.open = true; if (e.start > g.start) { g.start = e.start; g.end = e.end; } });
+  const rows = [...m.values()].sort((a, b) => (b.open - a.open) || b.start - a.start), MAX = 15;
+  const quando = g => { const fim = g.end == null ? '<span class="open">em aberto</span>' : `${fmtHour(g.end)} <span>(${fmtDur(g.end - g.start)})</span>`;
+    return `<b>${fmtDT(g.start)}</b> → ${fim}`; };
+  return `<div class="hist"><h4>Histórico de alertas · 7 dias <span class="sub" style="text-transform:none;letter-spacing:0">${hs.length} ${hs.length === 1 ? "alerta" : "alertas"}${hs.length >= 500 ? " (os 500 mais recentes)" : ""}</span></h4>
+    ${rows.slice(0, MAX).map(g => `<div class="prob"><span class="chip sev${g.sev}">${SEVN[g.sev]}</span><span>${esc(g.name)}${g.n > 1 ? ` <span class="tag ${g.n >= 20 ? "warn" : "mut"} rep">${g.n}×</span>` : ""}</span><span class="when">${quando(g)}</span></div>`).join("")}
+    ${rows.length > MAX ? `<div class="sub" style="margin-top:6px">e mais ${rows.length - MAX} tipos de alerta</div>` : ""}
+    <div class="acts" style="margin-top:8px"><button class="btn" type="button" data-sub="events" data-h="${esc(h.name)}">Ver todos os alertas do período</button></div></div>`;
+}
+function hostSheet(h) {
+  const st = h.stats || {}, slo = S.cfg.slo, row = (l, v) => v == null || v === "" ? "" : `<tr><td>${l}</td><td>${v}</td></tr>`;
+  const stl = {up: ["Online", "good"], down: ["Fora do ar", "crit"], maintenance: ["Manutenção", "info"], disabled: ["Desativado", "mut"]}[h.state] || [h.status, "mut"];
+  const inv = h.inventory || {}, used = new Set();
+  const invHtml = INV_GROUPS.map(([title, re]) => {
+    const ks = Object.keys(inv).filter(k => !used.has(k) && re.test(k)); ks.forEach(k => used.add(k));
+    if (!ks.length) return "";
+    const lat = inv.location_lat, lon = inv.location_lon;
+    return `<div><h4>${title}</h4><table>${ks.map(k => row(esc(INV[k] || k), /notes$/.test(k) ? `<div class="pre">${linkify(inv[k])}</div>` : linkify(inv[k], /^site_address_a$|^location$/.test(k)))).join("")}
+      ${title === "Localização e contato" && lat && lon ? row("Coordenadas", `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lat + "," + lon)}" target="_blank" rel="noopener">📍 ${esc(lat)}, ${esc(lon)}</a>`) : ""}</table></div>`;
+  }).join("");
+  const zv = i => { const n = Number(i.value); if (isNaN(n) || i.value === "") return esc(i.value); if (i.units === "uptime" || i.units === "s") return fmtDur(n); if (i.units === "B") return nf(n / 1073741824, 1) + " GB"; return nf(n, Number.isInteger(n) ? 0 : 2) + (i.units ? " " + esc(i.units) : ""); };
+  const m = h.maintenance;
+  return `<div class="hsheet"><div class="ddx">
+    <div><div class="top"><span class="tag ${stl[1]}">${stl[0]}</span>${h.status === "desativado" && h.state !== "disabled" ? '<span class="tag mut">Monitoramento desativado</span>' : ""}${m ? '<span class="tag info">Em manutenção</span>' : ""}${h.problems.length ? `<span class="tag warn">${h.problems.length} problemas ativos</span>` : ""}</div>
+      <div class="nm">${esc(h.name)}</div><div class="sub">${h.technical && h.technical !== h.name ? `Nome técnico: <b>${esc(h.technical)}</b> · ` : ""}ID ${esc(h.id)}${h.proxy ? ` · via proxy <b>${esc(h.proxy)}</b>` : ""}</div>
+      ${h.stats ? `<h4 style="margin-top:10px">${esc(h.period || "Período")}</h4><dl class="kv">
+        <div><dt>Disponibilidade</dt><dd class="${avClass(st.avail, slo)}">${h.state === "disabled" ? "–" : fmtAv(st.avail)}</dd></div><div><dt>Tempo fora</dt><dd>${fmtDur(st.downtime)}</dd></div>
+        <div><dt>Quedas</dt><dd>${st.outages}</dd></div><div><dt>MTTR</dt><dd>${fmtDur(st.mttr)}</dd></div>
+        <div><dt>CPU</dt><dd>${st.cpu == null ? "–" : nf(st.cpu, 1) + "%"}</dd></div><div><dt>Memória</dt><dd>${st.mem == null ? "–" : nf(st.mem, 1) + "%"}</dd></div>
+        <div><dt>Latência</dt><dd>${st.ping == null ? "–" : nf(st.ping, 1) + " ms"}</dd></div><div><dt>Perda</dt><dd>${st.loss == null ? "–" : nf(st.loss, 1) + "%"}</dd></div></dl>` : ""}
+      <div class="acts"><button class="btn" type="button" data-sub="outages" data-h="${esc(h.name)}">Quedas no período</button><button class="btn" type="button" data-sub="events" data-h="${esc(h.name)}">Todos os alertas</button>
+        ${h.link ? `<a class="btn" href="${esc(h.link)}" target="_blank" rel="noopener">Problemas no Zabbix ↗</a><a class="btn" href="${esc(h.link_latest)}" target="_blank" rel="noopener">Últimos dados ↗</a>` : ""}</div></div>
+    ${h.description ? `<div class="notes"><h4>Observações do host (descrição no Zabbix)</h4>${notesHtml(h.description)}</div>` : ""}
+    ${m ? `<div><h4>Manutenção</h4><table>${row("Nome", esc(m.name))}${row("Desde", m.since ? fmtDT(m.since) : "")}${row("Até", m.till ? fmtDT(m.till) : "")}${row("Descrição", esc(m.description))}</table></div>` : ""}
+    ${h.problems.length ? `<div><h4>Problemas ativos agora</h4>${h.problems.sort((a, b) => b.sev - a.sev || b.start - a.start).map(p => `<div class="prob"><span class="chip sev${p.sev}">${SEVN[p.sev]}</span><span>${esc(p.name)}${p.ack ? ' <small style="margin:0">✔</small>' : ""}</span><small>há ${ago(p.start)}</small></div>`).join("")}</div>` : ""}
+    ${histHtml(h)}
+    <div><h4>Interfaces</h4><table>${h.interfaces.map(i => row(`${esc(i.type)}${i.main ? " (principal)" : ""}`, `<b>${esc(i.address || i.ip || i.dns)}</b>${i.port ? ":" + esc(i.port) : ""} · <span class="${i.available === "indisponível" ? "open" : ""}">${esc(i.available)}</span>${i.ip && i.dns ? `<br><small>IP ${esc(i.ip)} · DNS ${esc(i.dns)}</small>` : ""}${i.error ? `<br><small class="open">${esc(i.error)}</small>` : ""}`)).join("") || row("–", "nenhuma interface")}</table></div>
+    ${h.info.length ? `<div><h4>Informações coletadas</h4><table>${h.info.map(i => row(esc(i.name), `${zv(i)}${i.clock ? ` <small>(${fmtDT(i.clock)})</small>` : ""}`)).join("")}</table></div>` : ""}
+    ${invHtml ? `<div style="background:none;border:0;padding:0;display:flex;flex-direction:column;gap:10px"><h4 style="margin:0">Inventário${h.inventory_mode ? ` (${esc(h.inventory_mode)})` : ""}</h4>${invHtml}</div>` : ""}
+    <div><h4>Grupos, templates e tags</h4><table>${row("Grupos", esc(h.groups.join(", ")))}${row("Templates", esc(h.templates.join(", ")))}</table>
+      ${h.tags.length ? `<div class="tags" style="margin-top:6px">${h.tags.map(t => `<span>${esc(t.tag)}${t.value ? ": " + esc(t.value) : ""}</span>`).join("")}</div>` : ""}</div>
+  </div></div>`;
+}
+function ackText(a) { const acts = ACK_ACT.filter(([b]) => a.action & b).map(([, l]) => l); return acts.length ? acts.join(", ") : "atualizou"; }
+async function loadDetail(det) {
+  const box = det.querySelector(".ddx"); if (det.dataset.loaded) return; det.dataset.loaded = "1";
+  try {
+    const d = await api("/api/event/" + encodeURIComponent(det.dataset.ev)), t = d.trigger || {}, h = d.host || {};
+    const row = (l, v) => v == null || v === "" ? "" : `<tr><td>${l}</td><td>${v}</td></tr>`;
+    const zv = i => { const v = i.value, n = Number(v); if (v == null || v === "") return "–"; if (isNaN(n)) return esc(v);
+      if (i.units === "uptime" || i.units === "s") return fmtDur(n); if (i.units === "unixtime") return fmtDT(n);
+      return nf(n, Number.isInteger(n) ? 0 : 2) + (i.units ? " " + esc(i.units) : ""); };
+    const items = (t.items || []).map(i => row(esc(i.name), `<b>${zv(i)}</b>${i.clock ? ` <small>(${fmtDT(i.clock)})</small>` : ""}<br><code>${esc(i.key)}</code>`)).join("");
+    const ifs = (h.interfaces || []).map(i => row(esc(i.type), `${esc(i.ip || i.dns)}${i.port ? ":" + esc(i.port) : ""} · ${esc(i.available)}`)).join("");
+    const L = d.links || {};
+    box.innerHTML = `
+      <div><h4>Alerta</h4><table>${row("Tipo de alerta", esc(t.description || d.name))}${row("Severidade", `<span class="chip sev${d.sev}">${SEVN[d.sev]}</span>`)}
+        ${row("Data e hora", `${fmtDayFull(d.start)} às ${fmtHour(d.start)}`)}${row("Resolvido em", d.end ? `${fmtDayFull(d.end)} às ${fmtHour(d.end)}` : '<span class="open">ainda em aberto</span>')}
+        ${row("Duração", fmtDur((d.end || Date.now() / 1000) - d.start))}${row("Dados operacionais", esc(d.opdata))}
+        ${row("Recorrência", d.recurrences == null ? "" : d.recurrences > 0 ? `disparou ${d.recurrences}× nos últimos 30 dias` : "não disparou nos últimos 30 dias (aberto há mais tempo)")}${row("Suprimido", d.suppressed ? "sim (manutenção)" : "")}
+        ${row("Fechamento manual", t.manual_close ? "permitido" : "")}${row("ID do evento", esc(d.id))}</table></div>
+      ${t.comments ? `<div><h4>Descrição do trigger</h4><div class="pre">${esc(t.comments)}</div></div>` : ""}
+      ${t.expression ? `<div><h4>Condição</h4><code>${esc(t.expression)}</code></div>` : ""}
+      ${items ? `<div><h4>Itens monitorados (último valor)</h4><table>${items}</table></div>` : ""}
+      <div><h4>Host</h4><table>${row("Nome", esc(h.name || (d.hosts[0] || {}).name))}${row("Nome técnico", esc(h.technical))}${row("Grupos", esc((t.groups || []).join(", ")))}
+        ${row("Em manutenção", h.maintenance ? "sim" : "")}${ifs}${row("Descrição", esc(h.description))}</table></div>
+      ${d.tags && d.tags.length ? `<div><h4>Tags</h4><div class="tags">${d.tags.map(x => `<span>${esc(x.tag)}${x.value ? ": " + esc(x.value) : ""}</span>`).join("")}</div></div>` : ""}
+      <div><h4>Reconhecimentos e comentários</h4>${d.acks && d.acks.length ? d.acks.sort((a, b) => a.clock - b.clock).map(a => `<div class="ack"><small>${fmtDT(a.clock)} · <b>${esc(a.user || "usuário")}</b> ${ackText(a)}</small>${a.message ? `<div>${esc(a.message)}</div>` : ""}</div>`).join("") : '<span class="sub">Ninguém reconheceu este alerta ainda.</span>'}</div>
+      ${L.event || L.host || t.url ? `<div class="acts">${L.event ? `<a class="btn" href="${esc(L.event)}" target="_blank" rel="noopener">Abrir evento no Zabbix ↗</a>` : ""}${L.host ? `<a class="btn" href="${esc(L.host)}" target="_blank" rel="noopener">Problemas do host ↗</a>` : ""}${t.url ? `<a class="btn" href="${esc(t.url)}" target="_blank" rel="noopener">URL do trigger ↗</a>` : ""}</div>` : ""}`;
+  } catch (e) { box.innerHTML = `<div class="err">Não foi possível carregar os detalhes: ${esc(e.message)}</div>`; delete det.dataset.loaded; }
+}
+function exportDrill() {
+  const hosts = DD.opts.kind === "hosts", r = drillRows(), q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const cols = hosts ? [["Host", x => x.name], ["Cliente", x => dn(x.group || "")], ["Estado", x => x.state], ["Disponibilidade %", x => x.avail], ["Tempo fora (s)", x => x.downtime], ["Quedas", x => x.outages], ["Maior queda (s)", x => x.longest], ["MTTR (s)", x => x.mttr == null ? "" : Math.round(x.mttr)], ["CPU %", x => x.cpu], ["Memória %", x => x.mem], ["Latência ms", x => x.ping], ["Perda %", x => x.loss], ["Problemas ativos", x => x.problems_total]]
+                     : [["Início", x => fmtDayFull(x.start) + " " + fmtHour(x.start)], ["Fim", x => x.end ? fmtDayFull(x.end) + " " + fmtHour(x.end) : "em aberto"], ["Duração", x => fmtDur(x.dur)], ["Duração (s)", x => x.dur], ["Host", x => x.host], ["Cliente", x => dn(x.group || "")], ["Alerta", x => x.name], ["Severidade", x => SEVN[x.sev]], ["Reconhecido", x => x.ack ? "sim" : ""], ["ID do evento", x => x.id]];
+  const csv = "﻿" + [cols.map(c => q(c[0])).join(";"), ...r.map(x => cols.map(c => q(typeof c[1](x) === "number" ? String(c[1](x)).replace(".", ",") : c[1](x))).join(";"))].join("\r\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type: "text/csv;charset=utf-8"}));
+  a.download = `NOC_${slug(DD.opts.title || "detalhes")}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 8000);
+}
+$("#ddClose").onclick = closeDrill; $("#ddScrim").onclick = closeDrill;
+$("#ddBack").onclick = () => { const prev = DD.stack.pop(); if (prev) { const st = DD.stack; openDrill(prev).then(() => {}); DD.stack = st; $("#ddBack").hidden = !st.length; } };
+let ddT; $("#ddQ").oninput = () => { clearTimeout(ddT); ddT = setTimeout(() => { DD.n = 100; drawDrill(); }, 150); };
+$("#ddSort").onchange = () => { DD.n = 100; drawDrill(); };
+$("#ddCsv").onclick = exportDrill;
+$("#ddList").addEventListener("toggle", e => { if (e.target.matches("details[data-ev]") && e.target.open) loadDetail(e.target); }, true);
+$("#ddList").addEventListener("click", e => {
+  const sh = e.target.closest("[data-sheet]");
+  if (sh) { openDrill({kind: "hostcard", hostid: sh.dataset.sheet, title: sh.dataset.h}, true); return; }
+  const b = e.target.closest("[data-sub]"); if (!b) return;
+  const h = b.dataset.h, k = b.dataset.sub === "host" ? "events" : b.dataset.sub;
+  const titles = {outages: "Quedas", events: "Alertas", problems: "Problemas ativos"};
+  openDrill({kind: k, host: h, group: "", title: `${titles[k]} · ${h}`, sub: k === "events" ? "todos os alertas do host no período" : k === "outages" ? "indisponibilidades do host no período" : "abertos agora"}, true);
+});
+document.addEventListener("click", e => {
+  const el = e.target.closest && e.target.closest("[data-dd]"); if (!el || e.target.closest("#drawer")) return;
+  e.preventDefault(); try { openDrill(JSON.parse(el.getAttribute("data-dd"))); } catch (err) { console.warn(err); }
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && DD.open) { closeDrill(); e.stopImmediatePropagation(); return; }
+  if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches("[data-dd]")) { e.preventDefault(); e.target.click(); }
+}, true);
+
+/* ===================== voz (estilo Jarvis): neural no servidor, navegador como reserva ===================== */
+function saudacao() { const h = new Date().getHours(); return (h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite") + "."; }
+function vozTexto(t) { return String(t)
+  .replace(/\*\*/g, "").replace(/#(\d{3,9})\b/g, "evento $1")
+  .replace(/\bSLA\b/g, "ésse éle á").replace(/\bSLO\b/g, "ésse éle ó").replace(/\bMTTR\b/g, "tempo médio de recuperação").replace(/\bICMP\b/g, "í cê ême pê")
+  .replace(/(\d+(?:,\d+)?)\s?h\b/g, "$1 horas").replace(/(\d+)\s?d\b/g, "$1 dias").replace(/(\d+)\s?min\b/g, "$1 minutos").replace(/(\d+(?:,\d+)?)\s?ms\b/g, "$1 milissegundos")
+  .replace(/\bp\.p\./g, "pontos percentuais").replace(/≥/g, "maior ou igual a ").replace(/≤/g, "menor ou igual a ").replace(/→/g, " para ").replace(/\s\|\s/g, ", ").replace(/\s?>=\s?/g, " maior ou igual a ").replace(/\s?<=\s?/g, " menor ou igual a ").replace(/\s?>\s?/g, " maior que ").replace(/\s?<\s?/g, " menor que ")
+  .replace(/\s+/g, " ").trim(); }
+const TTS = {ok: null, q: [], busy: false, audio: null, gen: 0, lastGreet: 0};
+TTS.ready = fetch("/api/tts", {cache: "no-store"}).then(r => (TTS.ok = r.ok)).catch(() => (TTS.ok = false));
+const VOZ_M = /antonio|donato|fabio|julio|daniel|felipe|ricardo|eddy|reed|rocko|grandpa/i, VOZ_F = /francisca|thalita|luciana|fernanda|maria|flo\b|grandma|sandy|shelley|google/i;
+function vozNota(v) { const n = v.name; let s = /^pt[-_]BR/i.test(v.lang) ? 20 : 0;
+  if (/natural|neural/i.test(n)) s += 80; if (/premium/i.test(n)) s += 70; if (/enhanced|aprimorad/i.test(n)) s += 60; if (/google/i.test(n)) s += 45; if (/online/i.test(n)) s += 30;
+  if (/compact|eloquence|espeak|^(eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley)\b/i.test(n)) s -= 40;
+  if (VOZ_M.test(n)) s += 60; else if (VOZ_F.test(n)) s -= 30;
+  return s + (/^reed/i.test(n) ? 6 : /^eddy/i.test(n) ? 4 : 0); }
+function vozNavegador() { const vs = ("speechSynthesis" in window ? speechSynthesis.getVoices() : []).filter(v => /^pt[-_]BR/i.test(v.lang) || /^pt$/i.test(v.lang));
+  return vs.sort((a, b) => vozNota(b) - vozNota(a))[0] || null; }
+function sayBrowser(fala, done) {
+  if (!("speechSynthesis" in window)) { done && done(); return; }
+  const v = vozNavegador(), fr = fala.split(/(?<=[.!?])\s+/).filter(Boolean), nat = v && vozNota(v) >= 120;
+  fr.forEach((f, i) => { const u = new SpeechSynthesisUtterance(f); u.lang = v ? v.lang : "pt-BR"; if (v) u.voice = v;
+    u.rate = nat ? 0.95 : 0.9; u.pitch = 0.82; if (i === fr.length - 1 && done) { u.onend = done; u.onerror = done; } speechSynthesis.speak(u); });
+  if (!fr.length && done) done(); }
+function sayStop() { TTS.gen++; TTS.q = []; TTS.busy = false; if (TTS.audio) { try { TTS.audio.pause(); } catch (e) {} TTS.audio = null; } if ("speechSynthesis" in window) speechSynthesis.cancel(); }
+/* Toca a fila sempre com a mesma voz neural. Se o navegador bloquear o áudio (página recarregada, sem clique),
+   a fala espera o primeiro clique em vez de trocar para a voz do navegador. */
+function voiceBlocked() {
+  if (TTS.waiting) return; TTS.waiting = true;
+  const t = toast("<b>🔊 Clique em qualquer lugar para ouvir a OAK IA</b><small>O navegador está segurando o áudio até haver uma interação com a página.</small>", "unlock", 0); t.dataset.keep = "1";
+  const go = () => { ["pointerdown", "keydown", "touchstart"].forEach(ev => removeEventListener(ev, go, true)); TTS.waiting = false; t.remove(); sndUI(); sayPump(); };
+  ["pointerdown", "keydown", "touchstart"].forEach(ev => addEventListener(ev, go, true)); sndUI();
+}
+async function sayPump() {
+  if (TTS.busy || TTS.waiting) return; const it = TTS.q.shift(); if (!it) return;
+  if (it.alerta && !AL.on) { sayPump(); return; }  // silenciado: alerta que estava na fila não toca
+  TTS.busy = true; const g = TTS.gen;
+  const next = () => { if (g !== TTS.gen) return; TTS.busy = false; TTS.audio = null; sayPump(); };
+  let b = null; try { b = await it.audio; } catch (e) { b = null; }
+  if (g !== TTS.gen) return;
+  if (!b) { sayBrowser(it.fala, next); return; }  // só quando o serviço de voz neural está fora do ar
+  const a = new Audio(URL.createObjectURL(b)); TTS.audio = a; a.onended = next; a.onerror = next;
+  try { await a.play(); }
+  catch (e) {
+    if (g !== TTS.gen) return;
+    TTS.busy = false; TTS.audio = null;
+    if (e && e.name === "NotAllowedError") { TTS.q.unshift({fala: it.fala, audio: Promise.resolve(b), alerta: it.alerta}); voiceBlocked(); }
+    else next();
+  }
+}
+/* greet: true ou "auto" = saúda, mas só na primeira fala depois de abrir a página */
+function say(txt, greet, alerta) {
+  if (!AL.on) return;  // som desligado: nenhuma fala (alertas nem OAK IA)
+  greet = !!greet && !TTS.lastGreet; if (greet) TTS.lastGreet = Date.now();  // saúda só na primeira fala da página
+  const fala = (greet ? saudacao() + " " : "") + vozTexto(txt);
+  const gera = () => fetch(`/api/tts?v=pt-BR-AntonioNeural&r=${encodeURIComponent("-6%")}&p=${encodeURIComponent("-10Hz")}&t=${encodeURIComponent(fala)}`)
+    .then(r => { if (!r.ok) throw new Error("tts " + r.status); return r.blob(); });
+  const tenta = () => gera().catch(() => new Promise(r => setTimeout(r, 1500)).then(gera));  // uma nova tentativa antes de desistir da voz neural
+  const audio = TTS.ok ? tenta() : TTS.ok === false ? null : TTS.ready.then(ok => ok ? tenta() : null);  // já gera enquanto a fala anterior toca
+  TTS.q.push({fala, audio, alerta: !!alerta}); sayPump(); }
+if ("speechSynthesis" in window) speechSynthesis.getVoices();
+
+/* pergunta da OAK IA antes de abrir um insight */
+function iaAsk(it, key) {
+  const dlg = $("#iaAsk");
+  $("#iaAskT").innerHTML = `<span class="ic">${IA_ICON[it.nivel] || "•"}</span>${iaMd(it.titulo)}`;
+  $("#iaAskLvl").textContent = {risco: "Risco", atencao: "Atenção", melhora: "Melhora", info: "Informativo"}[it.nivel] || "Insight";
+  dlg.className = "iaask on " + (it.nivel || ""); dlg.setAttribute("aria-hidden", "false"); hideTip();
+  sayStop(); say(`${it.nivel === "risco" ? "Atenção, um risco." : it.nivel === "melhora" ? "Uma boa notícia." : "Insight."} ${it.titulo}. Deseja que eu abra este insight?`, "auto");
+  const card = () => [...document.querySelectorAll(".iains .iain")].find(c => c.dataset.k === key);  // a tela pode ter sido redesenhada
+  const close = () => { dlg.className = "iaask"; dlg.setAttribute("aria-hidden", "true"); document.removeEventListener("keydown", onKey, true); };
+  const yes = () => { close(); sayStop(); say(it.recomendacao ? "Recomendação: " + it.recomendacao : "Este insight não traz recomendação."); NIA.open.add(key); const el = card();
+    if (el) { el.classList.remove("fechado"); el.setAttribute("aria-expanded", "true"); el.classList.add("abrindo"); setTimeout(() => el.classList.remove("abrindo"), 900); el.scrollIntoView({behavior: "smooth", block: "nearest"}); } };
+  const no = () => { close(); sayStop(); const el = card(); if (el) el.focus(); };
+  const onKey = e => { if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); no(); } else if (e.key === "Enter") { e.preventDefault(); e.stopImmediatePropagation(); yes(); } };
+  $("#iaAskYes").onclick = yes; $("#iaAskNo").onclick = no; $("#iaAskBg").onclick = no; document.addEventListener("keydown", onKey, true);
+  setTimeout(() => $("#iaAskYes").focus(), 50);
+}
+
+/* ===================== alerta sonoro ===================== */
+const AL = {on: false, ctx: null, known: null, busy: false, pending: 0};  // a página sempre abre com o som desligado: só fala depois de clicar em "Ativar som"
+function audioCtx() {
+  if (!AL.ctx) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; AL.ctx = new C(); AL.ctx.onstatechange = sndUI; }
+  if (AL.ctx.state === "suspended") AL.ctx.resume().then(sndUI).catch(() => {});
+  return AL.ctx;
+}
+const sndReady = () => !!(AL.ctx && AL.ctx.state === "running");
+/* Sirene de viatura sintetizada (Web Audio).
+   wail = "uóóóuuu" lento, que sobe e desce · yelp = "ui-ui-ui" rápido.
+   nível 1 = amostra curta · 4 = alerta normal (2 wails) · 6 = Alta/Desastre (wail + yelp + wail). */
+function siren(level = 4) {
+  const ctx = audioCtx(); if (!ctx || ctx.state !== "running") return false;
+  if (AL.sirenUntil && ctx.currentTime < AL.sirenUntil - 0.3) return true;  // já está tocando
+  const LO = 540, HI = 1480, t0 = ctx.currentTime + 0.05;
+  const plan = level <= 1 ? [["wail", 1]] : level >= 6 ? [["wail", 1], ["yelp", 9], ["wail", 1]] : [["wail", 2]];
+  // dois osciladores levemente desafinados + distorção suave = timbre de corneta de sirene
+  const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), g1 = ctx.createGain(), g2 = ctx.createGain();
+  o1.type = "square"; o2.type = "sawtooth"; g1.gain.value = 0.5; g2.gain.value = 0.35;
+  const shaper = ctx.createWaveShaper(), curve = new Float32Array(1024);
+  for (let i = 0; i < 1024; i++) { const x = i / 511.5 - 1; curve[i] = Math.tanh(2.2 * x); }
+  shaper.curve = curve;
+  const hp = ctx.createBiquadFilter(), lp = ctx.createBiquadFilter(), body = ctx.createBiquadFilter();
+  hp.type = "highpass"; hp.frequency.value = 320; lp.type = "lowpass"; lp.frequency.value = 3800;
+  body.type = "peaking"; body.frequency.value = 1100; body.Q.value = 0.9; body.gain.value = 5;  // ressonância da corneta
+  const out = ctx.createGain(), comp = ctx.createDynamicsCompressor();
+  o1.connect(g1).connect(shaper); o2.connect(g2).connect(shaper);
+  shaper.connect(hp).connect(body).connect(lp).connect(out).connect(comp).connect(ctx.destination);
+  let t = t0;
+  [o1.frequency, o2.frequency].forEach(f => f.setValueAtTime(LO, t0));
+  const ramp = (f, dt, exp) => { t += dt; [[o1, 1], [o2, 1.007]].forEach(([o, k]) => exp ? o.frequency.exponentialRampToValueAtTime(f * k, t) : o.frequency.linearRampToValueAtTime(f * k, t)); };
+  plan.forEach(([kind, n]) => {
+    for (let i = 0; i < n; i++) {
+      if (kind === "wail") { ramp(HI, 1.35, true); ramp(HI * 0.985, 0.25); ramp(LO, 1.6, true); }
+      else { ramp(HI * 0.93, 0.15); ramp(LO * 1.15, 0.17); }
+    }
+  });
+  const end = t;
+  out.gain.setValueAtTime(0, t0); out.gain.linearRampToValueAtTime(0.42, t0 + 0.12);
+  out.gain.setValueAtTime(0.42, end - 0.3); out.gain.linearRampToValueAtTime(0, end);
+  [o1, o2].forEach(o => { o.start(t0); o.stop(end + 0.05); });
+  AL.sirenUntil = end; AL.sirenNodes = {osc: [o1, o2], out};
+  return true;
+}
+function sirenStop() {
+  const n = AL.sirenNodes, ctx = AL.ctx; if (!n || !ctx) return;
+  const t = ctx.currentTime;
+  n.out.gain.cancelScheduledValues(t); n.out.gain.setValueAtTime(n.out.gain.value, t); n.out.gain.linearRampToValueAtTime(0, t + 0.08);
+  n.osc.forEach(o => { try { o.stop(t + 0.1); } catch (e) {} });
+  AL.sirenNodes = null; AL.sirenUntil = 0;
+}
+function toast(html, cls = "", ms = 30000, onOpen = null) {
+  const el = document.createElement("div"); el.className = "alert-toast " + cls + (onOpen ? " clk" : ""); el.innerHTML = html;
+  if (onOpen) {  // clique no aviso abre os detalhes; o ✕ só fecha
+    el.insertAdjacentHTML("beforeend", '<span class="hint">Clique para ver os detalhes</span><button class="tx" type="button" title="Fechar aviso" aria-label="Fechar aviso">✕</button>');
+    el.setAttribute("role", "button"); el.tabIndex = 0;
+    el.onclick = e => { if (!e.target.closest(".tx")) onOpen(); el.remove(); };
+    el.onkeydown = e => { if (e.key === "Enter") el.click(); };
+  } else el.onclick = () => el.remove();
+  $("#alertStack").prepend(el);
+  if (ms) setTimeout(() => el.remove(), ms);
+  const old = [...$("#alertStack").children].filter(x => !x.dataset.keep); while (old.length > 6) old.pop().remove();
+  return el;
+}
+/* Botão de som com 3 estados: desligado · ligado mas bloqueado pelo navegador · ativo */
+/* Botão de som: ligado = cada alerta novo é falado · silenciado = nenhuma fala automática.
+   O "bloqueado" vem da própria fala (o navegador segurando o áudio até um clique), não do motor da antiga sirene. */
+function sndUI() {
+  const b = $("#sndBtn"), blocked = AL.on && TTS.waiting;
+  b.textContent = !AL.on ? "🔇 Ativar som" : blocked ? "⚠ Clique para liberar o som" : "🔔 Som ativo";
+  b.title = !AL.on ? "Som desligado. Clique para ativar os alertas de voz e a voz da OAK IA." : blocked ? "O navegador está segurando o áudio até um clique na página." : "Alertas de voz ativos. Clique para silenciar.";
+  b.classList.toggle("on", AL.on && !blocked); b.classList.toggle("blocked", !!blocked); b.setAttribute("aria-pressed", AL.on);
+}
+function dropUnlock() {}
+$("#sndBtn").onclick = e => {
+  e.stopPropagation();
+  if (AL.on) {  // silenciar: para a fala na hora e descarta o que estava na fila
+    AL.on = false; AL.pending = 0; AL.waiting = []; sayStop(); sirenStop();
+    document.querySelectorAll(".alert-toast.unlock").forEach(t => t.remove()); TTS.waiting = false;
+  } else {
+    AL.on = true; audioCtx();
+    say(window.VOZ_ATIVADA || "Alertas de voz ativados. Vou avisar sobre cada novo alerta do Zabbix.", true);  // outra página sobre este motor pode trocar a frase
+  }
+  sndUI();
+};
+/* "hoje, às 11:32" · "ontem, às 20:15" · "em 12 de outubro, às 08:05" (no fuso do painel) */
+function quandoFalado(ts) {
+  const tz = S.cfg ? S.cfg.timezone : undefined, day = t => new Date(t * 1000).toLocaleDateString("pt-BR", {timeZone: tz});
+  const hora = new Date(ts * 1000).toLocaleTimeString("pt-BR", {timeZone: tz, hour: "2-digit", minute: "2-digit"}), now = Date.now() / 1000;
+  if (day(ts) === day(now)) return `hoje, às ${hora}`;
+  if (day(ts) === day(now - 86400)) return `ontem, às ${hora}`;
+  return `em ${new Date(ts * 1000).toLocaleDateString("pt-BR", {timeZone: tz, day: "numeric", month: "long"})}, às ${hora}`;
+}
+/* telefone falado: DDD por extenso e o resto dígito a dígito, com pausas ("onze, nove nove nove cinco zero, quatro nove um três") */
+function foneFalado(t) {
+  const D = "zero um dois três quatro cinco seis sete oito nove".split(" "), U = ["", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove"];
+  const T = ["", "dez", "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta", "oitenta", "noventa"];
+  const E = ["dez", "onze", "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove"];
+  const dois = g => g[0] === "1" ? E[+g[1]] : T[+g[0]] + (g[1] === "0" ? "" : " e " + U[+g[1]]);
+  return String(t).split(/[^\d]+/).filter(Boolean).map((g, i) => i === 0 && g.length === 2 ? dois(g) : g.split("").map(d => D[+d]).join(" ")).join(", ");
+}
+function alertSpeech(list) {
+  const MAX = 3, a = [...list].sort((x, y) => y.sev - x.sev || y.clock - x.clock);
+  const um = x => `Severidade ${SEVN[x.sev]}. Host ${x.host || "não identificado"}. Alerta: ${x.name}. Começou ${quandoFalado(x.clock)}.`;
+  if (a.length === 1) return "Novo alerta no Zabbix. " + um(a[0]) + acionamento(a);
+  const ord = ["Primeiro", "Segundo", "Terceiro"];
+  return `Identifiquei ${a.length} alertas novos no Zabbix, do mais grave para o menos grave. ` +
+    a.slice(0, MAX).map((x, i) => `${ord[i]}: ${um(x)}`).join(" ") +
+    (a.length > MAX ? ` E mais ${a.length - MAX} ${a.length - MAX === 1 ? "alerta" : "alertas"}. Os detalhes estão no painel.` : "") + acionamento(a);
+}
+/* final do áudio: alertas Alta/Desastre de Sistemas Internos, ha-datacenter e Applications pedem acionar o responsável */
+function acionamento(list) {
+  const e = AL.escalation; if (!e || !e.name || !list.some(x => x.escalate)) return "";
+  return ` Atenção: acionar o ${e.name} por e-mail, WhatsApp e ligação${e.phone ? `, no contato ${foneFalado(e.phone)}` : ""}.`;
+}
+async function pollAlerts() {
+  if (AL.busy) return; AL.busy = true;
+  try {
+    const r = await api(`/api/alerts?period=${S.period}`), list = r.alerts || []; AL.escalation = r.escalation || null;
+    // servidor ja tem dados mais novos que os da tela (Zabbix mudou): redesenha sem esperar o ciclo
+    if (r.gen && S.gen && r.gen > S.gen && !document.getElementById("expGo")) render(true);
+    if (AL.known === null) { AL.known = new Set(list.map(a => a.id)); return; }  // 1a carga: so memoriza
+    const fresh = list.filter(a => !AL.known.has(a.id));
+    fresh.forEach(a => AL.known.add(a.id));
+    if (!fresh.length) return;
+    const item = a => ({id: a.id, name: a.name, sev: a.sev, start: a.clock, end: null, dur: Math.max(0, Date.now() / 1000 - a.clock),
+                        host: a.host, hostid: (a.hostids || [])[0], ack: a.ack});
+    fresh.slice(0, 5).forEach(a => {
+      const esc1 = a.escalate && AL.escalation ? `<br><small style="color:var(--crit-text);font-weight:600">📞 Acionar ${esc(AL.escalation.name)} (e-mail, WhatsApp e ligação)${AL.escalation.phone ? ": " + esc(AL.escalation.phone) : ""}</small>` : "";
+      const el = toast(`<b><span class="chip sev${a.sev}">${SEVN[a.sev]}</span> ${esc(a.host || "—")}</b>${esc(a.name)}<br><small>${fmtDT(a.clock)}</small>${esc1}`, "", a.escalate ? 120000 : 30000,
+        () => openDrill({kind: "problems", title: a.name, sub: `${a.host || ""} · alerta novo`, items: [item(a)], expand: true}));
+      el.style.borderLeftColor = `var(--sev${a.sev})`;
+    });
+    if (fresh.length > 5) toast(`<b>+${fresh.length - 5} alertas novos</b>`, "", 30000,
+      () => openDrill({kind: "problems", title: `${fresh.length} alertas novos`, sub: `chegaram às ${fmtHour(Date.now() / 1000)}`, items: fresh.map(item)}));
+    document.body.classList.remove("alarm"); void document.body.offsetWidth; document.body.classList.add("alarm");
+    if (AL.on) {  // no lugar da sirene: a voz anuncia severidade, host, tipo de alerta e início
+      say(alertSpeech(fresh), true, true); sndUI();  // se o navegador segurar o áudio, a fala espera o primeiro clique
+    }
+  } catch (e) { /* tenta de novo na proxima rodada */ } finally { AL.busy = false; }
+}
+sndUI();
+
+(async () => {
+  try { S.cfg = await api("/api/config"); } catch (e) { $("#view").innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
+  if (!S.cfg.periods.some(p => p.id === S.period)) S.period = "30d";
+  if (S.cfg.demo) { $("#demoTag").innerHTML = '<span class="badge">DEMONSTRAÇÃO</span>'; }
+  buildPeriods();
+  S.logos = (await api("/api/logos").catch(() => ({logos: {}}))).logos || {};
+  await render(false);
+  S.timer = setInterval(() => { if (!document.hidden) render(true); }, S.cfg.refresh_seconds * 1000);
+  pollAlerts(); setInterval(pollAlerts, (S.cfg.alert_poll_seconds || 15) * 1000);
+  if (AL.on) { audioCtx(); setTimeout(sndUI, 400); }
+})();
+</script>
+</body>
+</html>

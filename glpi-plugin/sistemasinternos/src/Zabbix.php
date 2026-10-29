@@ -21,7 +21,7 @@ class Zabbix
             throw new RuntimeException('Endereço da API do Zabbix não configurado.');
         }
         $headers = ['Content-Type: application/json-rpc'];
-        if ($method !== 'apiinfo.version') { // apiinfo.version recusa autenticação
+        if (!in_array($method, ['apiinfo.version', 'user.checkAuthentication'], true)) { // esses dois recusam o cabeçalho de autenticação
             $headers[] = 'Authorization: Bearer ' . $token;
         }
         $ch = curl_init($url);
@@ -44,7 +44,7 @@ class Zabbix
         }
         $resp = json_decode((string) $raw, true);
         if (!is_array($resp)) {
-            throw new RuntimeException("Resposta inválida do Zabbix (HTTP $code). Confira o endereço da API (termina em api_jsonrpc.php).");
+            throw new RuntimeException("Resposta inválida do Zabbix (HTTP $code). Confira o endereço da API: é o endereço da tela de login do Zabbix seguido de /api_jsonrpc.php.");
         }
         if (isset($resp['error'])) {
             throw new RuntimeException(self::friendly($method, (string) ($resp['error']['data'] ?? $resp['error']['message'] ?? 'erro desconhecido')));

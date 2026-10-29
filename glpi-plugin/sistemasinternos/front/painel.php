@@ -12,9 +12,7 @@ Html::header('Sistemas Internos 360', '', Menu::SECTOR, 'painel');
 $e = fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);
 
 $actions = "<button type='button' class='btn btn-ghost-light' data-si-refresh><i class='ti ti-refresh me-1'></i>Atualizar</button>";
-if (Settings::get('painel_url') !== '') {
-    $actions .= "<a class='btn btn-light' href='" . $e(Menu::url('/front/visao.php')) . "'><i class='ti ti-layout-dashboard me-1'></i>Visão 360 completa</a>";
-}
+$actions .= "<a class='btn btn-light' href='" . $e(Menu::url('/front/visao.php')) . "'><i class='ti ti-layout-dashboard me-1'></i>Visão 360 completa</a>";
 if (Session::haveRight(Menu::RIGHT_HOST, READ)) {
     $actions .= "<a class='btn btn-light' href='" . $e(Menu::url('/front/hosts.php')) . "'><i class='ti ti-server-2 me-1'></i>Hosts do Zabbix</a>";
 }

@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resumo operacional · Sistemas Internos</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { --bg: #07130d; --panel: #0b1a12; --line: #6fd12a; --line2: rgba(111, 209, 42, .55); --ink: #f2f7ef; --muted: #9fb3a5;
+          --good: #8be33a; --bad: #ff4040; --head: #10261a; --ui: #12241a; --uib: #2b4a36; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: linear-gradient(rgba(7,19,13,.9), rgba(7,19,13,.9)), url(/si/fundo-painel.jpg) center / cover fixed, var(--bg);
+         color: var(--ink); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; padding: 12px 16px; position: sticky; top: 0; z-index: 5;
+         background: rgba(7,19,13,.92); border-bottom: 1px solid var(--uib); }
+  .bar h1 { font-size: 17px; margin: 0 auto 0 0; display: flex; align-items: center; gap: 10px; }
+  .bar a { color: var(--muted); text-decoration: none; font-size: 13px; } .bar a:hover { color: var(--ink); }
+  .btn { height: 34px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--uib); background: var(--ui); cursor: pointer; white-space: nowrap; }
+  .btn:hover { border-color: var(--line); } .btn.pri { background: #2f6b16; border-color: var(--line); font-weight: 600; }
+  select.btn { padding-right: 8px; }
+  .wrap { padding: 16px; max-width: 1700px; margin: 0 auto; }
+  .note { color: var(--muted); font-size: 12.5px; margin: 10px 2px 0; }
+
+  /* o "slide": escala junto com a largura (unidades cqw), para ficar igual na tela e na imagem exportada */
+  .stage { container-type: inline-size; }
+  #slide { background: var(--bg); padding: 1.6cqw 1.2cqw 2cqw; font-size: 1.15cqw; border-radius: 6px; color: var(--ink);
+           font-family: "Arial Narrow", "Roboto Condensed", "Helvetica Neue", Arial, sans-serif; letter-spacing: .01em; }
+  .s-top { display: flex; align-items: center; gap: 1cqw; margin-bottom: 1cqw; }
+  .s-top h2 { margin: 0 auto 0 0; font-size: 3cqw; font-weight: 800; letter-spacing: .02em; display: flex; align-items: center; gap: .8cqw; }
+  .s-per { border: 2px solid var(--line); padding: .5cqw 1.2cqw; font-size: 1.6cqw; border-radius: 2px; display: flex; gap: .7cqw; align-items: center; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr 1.2fr 1fr 1.1fr .9fr .9fr; gap: .6cqw; margin-bottom: 1cqw; }
+  .kc { border: 2px solid var(--line); padding: .6cqw .5cqw .5cqw; text-align: center; display: flex; flex-direction: column; justify-content: space-between; min-height: 10.5cqw; }
+  .kc h3 { margin: 0; font-size: 1.22cqw; font-weight: 600; text-transform: uppercase; line-height: 1.25; min-height: 2.6cqw; display: flex; align-items: center; justify-content: center; }
+  .kc .mid { display: flex; align-items: center; justify-content: center; gap: .8cqw; }
+  .kc .ic { font-size: 3.6cqw; line-height: 1; }
+  .kc .val { font-size: 2.5cqw; font-weight: 600; display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
+  .kc .val b { font-weight: 600; display: flex; align-items: center; gap: .5cqw; }
+  .kc .val small { font-size: 1.5cqw; font-weight: 700; }
+  .kc .vs { font-size: 1.45cqw; }
+  .up { color: var(--good); } .down { color: var(--bad); } .eq { color: var(--ink); }
+  .arrow { font-size: 2.2cqw; font-weight: 900; }
+  .grid2 { display: grid; grid-template-columns: 1.02fr 1fr; gap: .7cqw; margin-bottom: 1cqw; }
+  .box { border: 2px solid var(--line); }
+  .box > h4 { margin: 0; text-align: center; font-weight: 500; font-size: 1.6cqw; padding: .55cqw; border-bottom: 2px solid var(--line); letter-spacing: .04em; }
+  table.s { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  table.s th, table.s td { border: 1px solid var(--line2); text-align: center; padding: .25cqw .3cqw; font-size: 1.2cqw; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  table.s th { font-size: 1.02cqw; line-height: 1.2; text-transform: uppercase; }
+  table.s td.l, table.s th.l { text-align: left; padding-left: .7cqw; }
+  table.s tr.tot td { font-size: 1.45cqw; padding: .45cqw .3cqw; border-top: 2px solid var(--line); }
+  table.s td.ok { color: var(--good); font-weight: 700; } table.s td.bad { color: var(--bad); font-weight: 700; }
+  table.s th { white-space: normal; overflow: visible; }
+  table.s th .ci { font-size: 1.5cqw; vertical-align: middle; margin-right: .2cqw; text-transform: none; }
+  .metas { display: grid; grid-template-columns: 1fr 1fr; gap: .6cqw; padding: 0; }
+  .metas table.s th { text-transform: none; font-size: 1.15cqw; }
+  .metas td.l { font-size: 1.05cqw; }
+
+  /* janelas de edição */
+  dialog { border: 1px solid var(--uib); border-radius: 12px; background: #0d1d14; color: var(--ink); padding: 0; width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 40px); }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  .dh { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--uib); position: sticky; top: 0; background: #0d1d14; z-index: 2; }
+  .dh h3 { margin: 0 auto 0 0; font-size: 17px; }
+  .db { padding: 14px 18px 18px; }
+  fieldset { border: 1px solid var(--uib); border-radius: 10px; margin: 0 0 12px; padding: 10px 12px 12px; }
+  legend { padding: 0 6px; color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: .4px; }
+  .fg { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px 12px; }
+  .fg.metas-f { grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); }
+  label.f { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--muted); }
+  label.f input, label.f select, textarea, .mt input, .mt select { background: #07130d; border: 1px solid var(--uib); border-radius: 7px; padding: 6px 9px; color: var(--ink); width: 100%; }
+  label.f input:focus, textarea:focus, .mt input:focus { outline: none; border-color: var(--line); }
+  label.f .hint { font-size: 11.5px; color: #7f9888; }
+  .warn { color: #ffb347; font-size: 12.5px; margin-top: 6px; min-height: 1em; }
+  .mt { width: 100%; border-collapse: collapse; } .mt th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12px; padding: 4px; } .mt td { padding: 3px 4px; }
+  .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #2f6b16; border: 1px solid var(--line); padding: 10px 16px; border-radius: 10px; display: none; z-index: 20; }
+  .hist { font-size: 12.5px; color: var(--muted); }
+  @media print { .bar, .note { display: none; } body { background: #07130d; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .wrap { padding: 0; max-width: none; } @page { size: landscape; margin: 6mm; } }
+</style>
+</head>
+<body>
+<div class="bar">
+  <h1><a href="?p=/" title="Voltar para Sistemas Internos">← Sistemas Internos</a><span>Resumo operacional</span></h1>
+  <label style="font-size:13px;color:var(--muted)">Mês de referência <select class="btn" id="ref" aria-label="Mês de referência"></select></label>
+  <button class="btn pri" id="bEdit" type="button">✎ Lançar / editar mês</button>
+  <button class="btn" id="bMetas" type="button">⚙ Metas</button>
+  <button class="btn" id="bPng" type="button" title="Baixa o slide como imagem para colar no PowerPoint">⬇ Baixar imagem</button>
+  <button class="btn" id="bPrint" type="button">🖨 Imprimir / PDF</button>
+</div>
+<div class="wrap">
+  <div class="stage"><div id="slide"></div></div>
+  <p class="note">Os números são digitados em <b>Lançar / editar mês</b> e ficam guardados mês a mês (com histórico de cada gravação). O slide mostra o semestre do mês de referência; as variações dos cartões comparam com o mês anterior.</p>
+</div>
+
+<dialog id="dEdit" aria-label="Lançar mês">
+  <form method="dialog" id="fEdit">
+    <div class="dh"><h3>Lançar / editar mês</h3>
+      <label class="f" style="flex-direction:row;align-items:center;gap:8px;color:var(--ink)">Mês <input type="month" id="eMes" required style="width:170px"></label>
+      <button class="btn" type="button" id="eCopy" title="Repete os valores das metas do mês anterior">Copiar metas do mês anterior</button>
+      <button class="btn" value="cancel" formnovalidate>Fechar</button><button class="btn pri" type="submit" id="eSave">Salvar</button></div>
+    <div class="db" id="eBody"></div>
+  </form>
+</dialog>
+
+<dialog id="dMetas" aria-label="Metas">
+  <form method="dialog" id="fMetas">
+    <div class="dh"><h3>Metas do acompanhamento</h3><button class="btn" type="button" id="mAdd">+ Métrica</button>
+      <button class="btn" value="cancel" formnovalidate>Fechar</button><button class="btn pri" type="submit">Salvar</button></div>
+    <div class="db">
+      <label class="f" style="max-width:260px;margin-bottom:12px">Meta do SLA geral (%) <input id="mSla" inputmode="decimal"><span class="hint">abaixo disso o SLA aparece em vermelho</span></label>
+      <table class="mt"><thead><tr><th>Métrica</th><th style="width:110px">Meta (texto)</th><th style="width:100px">Alvo (nº)</th><th style="width:150px">Regra</th><th style="width:130px">Quadro</th><th style="width:40px"></th></tr></thead><tbody id="mRows"></tbody></table>
+      <p class="hint" style="color:var(--muted);font-size:12px">"Alvo" é o número usado para pintar de vermelho: <i>mínimo</i> fica vermelho abaixo dele, <i>máximo</i> acima. Deixe vazio para não colorir. Os valores já lançados de cada métrica são mantidos.</p>
+    </div>
+  </form>
+</dialog>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const MES = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+  const nf = (v, d = 2, min = d) => v == null || isNaN(v) ? "-" : Number(v).toLocaleString("pt-BR", {minimumFractionDigits: min, maximumFractionDigits: d});
+  const pct = (v, d = 2) => v == null ? "-" : nf(v, d) + "%";
+  const num = v => v == null || isNaN(v) ? null : Number(v);
+  const ymAdd = (ym, n) => { const [y, m] = ym.split("-").map(Number), t = y * 12 + (m - 1) + n; return `${Math.floor(t / 12)}-${String(t % 12 + 1).padStart(2, "0")}`; };
+  const lab = ym => { const [y, m] = ym.split("-"); return `${MES[+m - 1]}/${y}`; };
+  let B = null;
+  const toast = t => { const e = $("#toast"); e.textContent = t; e.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(() => e.style.display = "none", 2600); };
+  async function load() { B = await (await fetch("/api/si/book", {cache: "no-store"})).json(); fillRef(); draw(); }
+  const months = () => Object.keys(B.meses).sort();
+
+  function fillRef(keep) {
+    const ms = months(), cur = keep || $("#ref").value || ms[ms.length - 1];
+    $("#ref").innerHTML = ms.slice().reverse().map(m => `<option value="${m}">${lab(m)}</option>`).join("");
+    if (ms.includes(cur)) $("#ref").value = cur;
+  }
+
+  // variação do cartão: quantidade em %, percentual em pontos percentuais
+  function vary(cur, prev, pp) {
+    if (cur == null || prev == null) return {cls: "eq", a: "", t: "–"};
+    const d = pp ? cur - prev : (prev === 0 ? (cur === 0 ? 0 : null) : (cur - prev) / prev * 100);
+    if (d == null) return {cls: "up", a: "▲", t: "novo"};
+    if (Math.abs(d) < 0.005) return {cls: "eq", a: "=", t: pp ? "0,00 p.p." : "0,00%"};
+    return {cls: d > 0 ? "up" : "down", a: d > 0 ? "▲" : "▼", t: (d > 0 ? "+" : "") + nf(d) + (pp ? " p.p." : "%")};
+  }
+  function card(title, icon, cur, prev, isPct, prevLab) {
+    const v = vary(cur, prev, isPct);
+    const shown = cur == null ? "-" : isPct ? pct(cur, cur % 1 ? 2 : 0) : nf(cur, 0, 0);
+    return `<div class="kc"><h3>${title}</h3><div class="mid"><span class="ic">${icon}</span><div class="val"><b>${shown} <span class="arrow ${v.cls}">${v.a}</span></b><small class="${v.cls === "eq" ? "eq" : v.cls}">${v.t}</small></div></div><div class="vs">vs. ${prevLab}</div></div>`;
+  }
+
+  function draw() {
+    const ref = $("#ref").value; if (!ref) { $("#slide").innerHTML = '<p style="padding:2cqw">Nenhum mês lançado ainda. Use “Lançar / editar mês”.</p>'; return; }
+    const [y, m] = ref.split("-").map(Number), s0 = m <= 6 ? 1 : 7;
+    const sem = Array.from({length: 6}, (_, i) => `${y}-${String(s0 + i).padStart(2, "0")}`);
+    const get = ym => ym <= ref ? B.meses[ym] : null;
+    const R = B.meses[ref] || {}, prevYm = ymAdd(ref, -1), P = B.meses[prevYm] || {}, pl = lab(prevYm);
+    const last = new Date(y, m, 0).getDate();
+    const okSla = v => v == null ? "" : v >= (B.sla_meta ?? 95) ? "ok" : "bad";
+
+    // indicadores mensais
+    let T = {total: 0, fechados: 0, abertos: 0}, slaW = 0, slaN = 0, acum = null;
+    const rowsT = sem.map(ym => { const d = get(ym), t = d && d.tickets || {};
+      if (d) { ["total", "fechados", "abertos"].forEach(k => T[k] += t[k] || 0); if (t.sla != null && t.total) { slaW += t.sla * t.total; slaN += t.total; } if (d.sla_acum != null) acum = d.sla_acum; }
+      const p = k => t.total ? pct((t[k] || 0) / t.total * 100) : "-";
+      return d ? `<tr><td>${lab(ym)}</td><td>${nf(t.total, 0, 0)}</td><td>${nf(t.fechados, 0, 0)}</td><td>${p("fechados")}</td><td>${nf(t.abertos, 0, 0)}</td><td>${p("abertos")}</td><td class="${okSla(t.sla)}">${pct(t.sla)}</td></tr>`
+               : `<tr><td>${lab(ym)}</td>${"<td>-</td>".repeat(6)}</tr>`; }).join("");
+    const slaTot = acum != null ? acum : slaN ? slaW / slaN : null;
+    const tp = k => T.total ? pct(T[k] / T.total * 100) : "-";
+
+    // categorias
+    const CK = [["hw", "💻", "Hardware"], ["infra", "🌐", "Infraestrutura e servidores"], ["sis", "⚙️", "Sistemas"], ["prest", "👥", "Prestadores"], ["srv", "🗄️", "Servidores"]];
+    const C = {}; CK.forEach(([k]) => C[k] = 0); let CT = 0;
+    const rowsC = sem.map(ym => { const d = get(ym); if (!d) return `<tr><td>${lab(ym)}</td>${"<td>-</td>".repeat(6)}</tr>`;
+      const c = d.cat || {}; CK.forEach(([k]) => C[k] += c[k] || 0); const tot = d.tickets && d.tickets.total; CT += tot || 0;
+      return `<tr><td>${lab(ym)}</td>${CK.map(([k]) => `<td>${nf(c[k], 0, 0)}</td>`).join("")}<td>${nf(tot, 0, 0)}</td></tr>`; }).join("");
+
+    // metas
+    const mcls = (mt, v) => v == null || mt.alvo == null ? "" : (mt.regra === "max" ? v > mt.alvo : v < mt.alvo) ? "bad" : "";
+    const metaTbl = lado => `<table class="s"><colgroup><col style="width:34%"><col style="width:10%">${sem.map(() => "<col>").join("")}</colgroup>
+      <thead><tr><th class="l">MÉTRICA</th><th>META</th>${sem.map(ym => `<th>${MES[+ym.slice(5) - 1]}</th>`).join("")}</tr></thead>
+      <tbody>${B.metas.filter(x => x.lado === lado).map(mt => `<tr><td class="l" title="${esc(mt.nome)}">${esc(mt.nome)}</td><td>${esc(mt.meta)}</td>${sem.map(ym => { const d = get(ym), v = d && d.metas ? num(d.metas[mt.id]) : null;
+        return `<td class="${mcls(mt, v)}">${v == null ? "-" : pct(v, 2).replace(",00%", "%")}</td>`; }).join("")}</tr>`).join("")}</tbody></table>`;
+
+    $("#slide").innerHTML = `
+      <div class="s-top"><h2>📊 RESUMO OPERACIONAL</h2><div class="s-per">📅 Período: 01/${String(s0).padStart(2, "0")} a ${last}/${String(m).padStart(2, "0")}/${y}</div></div>
+      <div class="cards">
+        ${card("Total de tickets", "📋", num(R.tickets && R.tickets.total), num(P.tickets && P.tickets.total), false, pl)}
+        ${card("Total de incidentes", "🛡️", num(R.inc), num(P.inc), false, pl)}
+        ${card("% Incidentes dentro do SLA", "✅", num(R.inc_sla), num(P.inc_sla), true, pl)}
+        ${card("Total de requisições", "📄", num(R.req), num(P.req), false, pl)}
+        ${card("% Requisições dentro do SLA", "🎯", num(R.req_sla), num(P.req_sla), true, pl)}
+        ${card('Total de “não categorizado”', "🏷️", num(R.naocat), num(P.naocat), false, pl)}
+        ${card("Chamados de vulnerabilidade", "🐞", num(R.vuln), num(P.vuln), false, pl)}
+      </div>
+      <div class="grid2">
+        <div class="box"><h4>INDICADORES MENSAIS – TICKETS</h4><table class="s">
+          <thead><tr><th rowspan="2">Mês</th><th rowspan="2">Quantidade<br>de tickets</th><th colspan="2">Fechados</th><th colspan="2">Abertos/pendentes</th><th rowspan="2">SLA geral</th></tr>
+          <tr><th>Qtd</th><th>%</th><th>Qtd</th><th>%</th></tr></thead>
+          <tbody>${rowsT}<tr class="tot"><td><b>TOTAL</b></td><td>${nf(T.total, 0, 0)}</td><td>${nf(T.fechados, 0, 0)}</td><td>${tp("fechados")}</td><td>${nf(T.abertos, 0, 0)}</td><td>${tp("abertos")}</td><td class="${okSla(slaTot)}">${pct(slaTot)}</td></tr></tbody></table></div>
+        <div class="box"><h4>TICKETS POR CATEGORIA</h4><table class="s">
+          <thead><tr><th>Mês</th>${CK.map(([, i, n]) => `<th><span class="ci">${i}</span>${n}</th>`).join("")}<th><span class="ci">📊</span>Total mensal</th></tr></thead>
+          <tbody>${rowsC}<tr class="tot"><td style="font-size:1cqw">TOTAL<br>ACUMULADO</td>${CK.map(([k]) => `<td>${nf(C[k], 0, 0)}</td>`).join("")}<td>${nf(CT, 0, 0)}</td></tr></tbody></table></div>
+      </div>
+      <div class="box"><h4>ACOMPANHAMENTO DE METAS E SLA</h4><div class="metas">${metaTbl("esq")}${metaTbl("dir")}</div></div>`;
+  }
+
+  /* ---------- lançar / editar mês ---------- */
+  const F = (id, l, v, hint) => `<label class="f">${l}<input name="${id}" inputmode="decimal" value="${v == null ? "" : String(v).replace(".", ",")}" autocomplete="off">${hint ? `<span class="hint">${hint}</span>` : ""}</label>`;
+  function editForm(ym) {
+    const d = B.meses[ym] || {}, t = d.tickets || {}, c = d.cat || {}, mt = d.metas || {};
+    $("#eBody").innerHTML = `${B.meses[ym] ? `<p class="hist">Editando ${lab(ym)}${d.atualizado ? ` · última gravação ${new Date(d.atualizado).toLocaleString("pt-BR")}` : ""}.</p>` : `<p class="hist">${lab(ym)} ainda não foi lançado.</p>`}
+      <fieldset><legend>Indicadores mensais – tickets</legend><div class="fg">
+        ${F("t.total", "Quantidade de tickets", t.total)}${F("t.fechados", "Fechados", t.fechados)}${F("t.abertos", "Abertos / pendentes", t.abertos)}${F("t.sla", "SLA geral (%)", t.sla)}
+        ${F("sla_acum", "SLA acumulado do período (%)", d.sla_acum, "opcional; vazio = média ponderada dos meses")}</div></fieldset>
+      <fieldset><legend>Cartões do topo</legend><div class="fg">
+        ${F("inc", "Total de incidentes", d.inc)}${F("inc_sla", "% incidentes dentro do SLA", d.inc_sla)}${F("req", "Total de requisições", d.req)}
+        ${F("req_sla", "% requisições dentro do SLA", d.req_sla)}${F("naocat", "Total “não categorizado”", d.naocat)}${F("vuln", "Chamados de vulnerabilidade", d.vuln)}</div></fieldset>
+      <fieldset><legend>Tickets por categoria</legend><div class="fg">
+        ${F("c.hw", "Hardware", c.hw)}${F("c.infra", "Infraestrutura e servidores", c.infra)}${F("c.sis", "Sistemas", c.sis)}${F("c.prest", "Prestadores", c.prest)}${F("c.srv", "Servidores", c.srv)}</div>
+        <div class="warn" id="eWarn"></div></fieldset>
+      <fieldset><legend>Acompanhamento de metas e SLA (%)</legend><div class="fg metas-f">
+        ${B.metas.map(x => F("m." + x.id, `${esc(x.nome)} <span class="hint">meta ${esc(x.meta)}</span>`, mt[x.id])).join("")}</div></fieldset>
+      <fieldset><legend>Observações do mês</legend><textarea name="obs" rows="3" placeholder="Ex.: Fornecedor 93% por causa do chamado X…">${esc(d.obs || "")}</textarea></fieldset>`;
+    check();
+  }
+  function check() {
+    const f = $("#fEdit"), v = n => { const x = f.elements[n]; return x && x.value !== "" ? parseFloat(x.value.replace(",", ".")) : null; };
+    const tot = v("t.total"), cs = ["c.hw", "c.infra", "c.sis", "c.prest", "c.srv"].reduce((a, k) => a + (v(k) || 0), 0), w = [];
+    if (tot != null && cs && cs !== tot) w.push(`As categorias somam ${cs} e a quantidade de tickets é ${tot}.`);
+    if (tot != null && v("t.fechados") != null && v("t.abertos") != null && v("t.fechados") + v("t.abertos") !== tot) w.push(`Fechados + abertos = ${v("t.fechados") + v("t.abertos")} (quantidade: ${tot}).`);
+    if (tot != null && v("inc") != null && v("req") != null && v("inc") + v("req") !== tot) w.push(`Incidentes + requisições = ${v("inc") + v("req")} (quantidade: ${tot}).`);
+    $("#eWarn").textContent = w.length ? "⚠ " + w.join(" ") : "";
+  }
+  function openEdit() {
+    const ref = $("#ref").value, ms = months(), next = ms.length ? ymAdd(ms[ms.length - 1], 1) : new Date().toISOString().slice(0, 7);
+    // abre no mês seguinte ao último lançado (o normal é lançar o mês que acabou); o seletor troca para qualquer outro
+    $("#eMes").value = ref && ref !== ms[ms.length - 1] ? ref : next;
+    editForm($("#eMes").value); $("#dEdit").showModal();
+  }
+  $("#eMes").onchange = () => $("#eMes").value && editForm($("#eMes").value);
+  $("#fEdit").oninput = check;
+  $("#eCopy").onclick = () => { const p = B.meses[ymAdd($("#eMes").value, -1)]; if (!p) return toast("O mês anterior não foi lançado.");
+    B.metas.forEach(x => { const el = $("#fEdit").elements["m." + x.id]; if (el && p.metas && p.metas[x.id] != null) el.value = String(p.metas[x.id]).replace(".", ","); }); toast("Metas copiadas do mês anterior."); };
+  $("#fEdit").onsubmit = async e => {
+    if (e.submitter && e.submitter.value === "cancel") return;
+    e.preventDefault(); const ym = $("#eMes").value; if (!ym) return;
+    const f = $("#fEdit").elements, body = {tickets: {}, cat: {}, metas: {}};
+    for (const el of f) { if (!el.name) continue; const [a, b] = el.name.split(".");
+      if (b) body[{t: "tickets", c: "cat", m: "metas"}[a]][b] = el.value; else body[a] = el.value; }
+    if (B.meses[ym] && !confirm(`${lab(ym)} já tem dados. Substituir pelos valores do formulário? (a versão anterior fica no histórico)`)) return;
+    const r = await fetch(`/api/si/book/mes/${ym}`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+    if (!r.ok) return toast("Não foi possível salvar.");
+    B = await r.json(); $("#dEdit").close(); fillRef(ym); draw(); toast(`${lab(ym)} salvo.`);
+  };
+
+  /* ---------- metas ---------- */
+  const mRow = x => `<tr data-id="${esc(x.id || "")}"><td><input data-k="nome" value="${esc(x.nome || "")}"></td><td><input data-k="meta" value="${esc(x.meta || "")}"></td>
+    <td><input data-k="alvo" inputmode="decimal" value="${x.alvo == null ? "" : String(x.alvo).replace(".", ",")}"></td>
+    <td><select data-k="regra"><option value="min"${x.regra !== "max" ? " selected" : ""}>mínimo (≥)</option><option value="max"${x.regra === "max" ? " selected" : ""}>máximo (≤)</option></select></td>
+    <td><select data-k="lado"><option value="esq"${x.lado !== "dir" ? " selected" : ""}>esquerdo</option><option value="dir"${x.lado === "dir" ? " selected" : ""}>direito</option></select></td>
+    <td><button class="btn" type="button" data-del title="Remover do slide" style="padding:0 10px">✕</button></td></tr>`;
+  function openMetas() { $("#mSla").value = String(B.sla_meta ?? "").replace(".", ","); $("#mRows").innerHTML = B.metas.map(mRow).join(""); $("#dMetas").showModal(); }
+  $("#mAdd").onclick = () => { $("#mRows").insertAdjacentHTML("beforeend", mRow({lado: "esq", regra: "min"})); $("#mRows").lastElementChild.querySelector("input").focus(); };
+  $("#mRows").onclick = e => { if (e.target.closest("[data-del]")) e.target.closest("tr").remove(); };
+  $("#fMetas").onsubmit = async e => {
+    if (e.submitter && e.submitter.value === "cancel") return;
+    e.preventDefault();
+    const metas = [...$("#mRows").rows].map(tr => { const o = {id: tr.dataset.id}; tr.querySelectorAll("[data-k]").forEach(i => o[i.dataset.k] = i.value); return o; });
+    const r = await fetch("/api/si/book/metas", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({metas, sla_meta: $("#mSla").value})});
+    if (!r.ok) return toast("Não foi possível salvar.");
+    B = await r.json(); $("#dMetas").close(); draw(); toast("Metas salvas.");
+  };
+
+  /* ---------- exportar ---------- */
+  $("#bPng").onclick = async () => {
+    if (!window.html2canvas) return toast("Não deu para carregar o gerador de imagem; use Imprimir / PDF.");
+    const el = $("#slide"), c = await html2canvas(el, {backgroundColor: "#07130d", scale: Math.max(2, 1920 / el.offsetWidth)});
+    const a = document.createElement("a"); a.download = `Resumo operacional ${lab($("#ref").value).replace("/", "-")}.png`; a.href = c.toDataURL("image/png"); a.click();
+  };
+  $("#bPrint").onclick = () => print();
+  $("#bEdit").onclick = openEdit; $("#bMetas").onclick = openMetas; $("#ref").onchange = draw;
+  load().catch(e => $("#slide").innerHTML = `<p style="padding:2cqw">Erro ao carregar: ${esc(e.message)}</p>`);
+})();
+</script>
+</body>
+</html>

@@ -32,7 +32,8 @@ if (isset($_POST['save'])) {
         'entities_id'    => (string) max(0, (int) ($_POST['entities_id'] ?? 0)),
         'title'          => mb_substr(trim((string) ($_POST['title'] ?? '')), 0, 80) ?: 'Sistemas Internos',
         'si_theme'       => ($_POST['si_theme'] ?? '') === 'original' ? 'original' : 'azul',
-        'painel_url'     => preg_match('#^https?://#', trim((string) ($_POST['painel_url'] ?? ''))) ? trim((string) $_POST['painel_url']) : '',
+        'escalation_name'  => mb_substr(trim((string) ($_POST['escalation_name'] ?? '')), 0, 120),
+        'escalation_phone' => mb_substr(trim((string) ($_POST['escalation_phone'] ?? '')), 0, 40),
         'templates'      => $ids($_POST['templates'] ?? []),
         'auto_tag'       => mb_substr(trim((string) ($_POST['auto_tag'] ?? '')), 0, 255),
         'require_desc'   => empty($_POST['require_desc']) ? '0' : '1',
@@ -147,12 +148,12 @@ echo "<div class='si360-tab' id='si-tab-departamento'" . ($tab === 'departamento
     . "<div class='form-hint'>Somados no painel e nos alertas. Também são os grupos que os perfis podem gerenciar, a menos que o perfil tenha grupos próprios (Administração → Perfis → aba Sistemas Internos 360).</div></div>"
     . "<div class='col-12'><label class='form-label'>Prestadores de serviço</label><input class='form-control' name='prestadores' value='" . $e($c['prestadores']) . "' placeholder='Nome do técnico, Outro técnico'>"
     . "<div class='form-hint'>Técnicos do GLPI (separados por vírgula) cujos chamados ficam fora do SLA do departamento e não disparam alerta de SLA.</div></div>"
-    . "<div class='col-12'><label class='form-label'>Servidor do SI 360 (dashboard completo)</label><input class='form-control' name='painel_url' value='" . $e($c['painel_url']) . "' placeholder='http://servidor:8092'>"
-    . "<div class='form-hint'>Endereço do serviço do Sistemas Internos 360 (porta 8092), visto <b>pelo servidor do GLPI</b>. O GLPI repassa o dashboard, com mapa, topologia, APs do wi-fi, vulnerabilidades, voz e book, para a página <i>Visão 360</i>: "
-    . "o navegador só fala com o GLPI, com o login e os direitos do GLPI.</div></div>"
+    . "<div class='col-md-6'><label class='form-label'>Acionamento: quem atende</label><input class='form-control' name='escalation_name' value='" . $e($c['escalation_name']) . "' placeholder='Nome do responsável'></div>"
+    . "<div class='col-md-6'><label class='form-label'>Acionamento: telefone</label><input class='form-control' name='escalation_phone' value='" . $e($c['escalation_phone']) . "' placeholder='11 99999-9999'>"
+    . "<div class='form-hint'>Na Visão 360, alertas Alta e Desastre pedem para acionar esta pessoa. Em branco, sem acionamento.</div></div>"
     . "<div class='col-md-6'><label class='form-label'>Cor do dashboard</label><select class='form-select' name='si_theme'>"
     . "<option value='azul'" . ($c['si_theme'] !== 'original' ? ' selected' : '') . ">Azul do departamento (#3769B2), árvore e marca-d'água em azul</option>"
-    . "<option value='original'" . ($c['si_theme'] === 'original' ? ' selected' : '') . ">Original (verde), igual ao painel da porta 8092</option></select>"
+    . "<option value='original'" . ($c['si_theme'] === 'original' ? ' selected' : '') . ">Original (verde), como o SI 360 antes do GLPI</option></select>"
     . "<div class='form-hint'>Só a cor muda: o layout e as funções são os mesmos.</div></div>"
     . "</div></div>";
 

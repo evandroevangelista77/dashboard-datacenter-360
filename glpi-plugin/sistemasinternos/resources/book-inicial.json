@@ -1,0 +1,118 @@
+{
+ "sla_meta": 98.0,
+ "metas": [
+  {
+   "id": "firewall",
+   "nome": "Atualização de Firewalls",
+   "meta": "100%",
+   "lado": "esq",
+   "alvo": 100.0,
+   "regra": "min"
+  },
+  {
+   "id": "patches",
+   "nome": "Atualização de Softwares e Sistemas",
+   "meta": "95%",
+   "lado": "esq",
+   "alvo": 95.0,
+   "regra": "min"
+  },
+  {
+   "id": "versao_srv",
+   "nome": "Atualização de versão dos Servidores",
+   "meta": "100%",
+   "lado": "esq",
+   "alvo": 100.0,
+   "regra": "min"
+  },
+  {
+   "id": "antivirus",
+   "nome": "Atualização do Antivírus",
+   "meta": "100%",
+   "lado": "esq",
+   "alvo": 100.0,
+   "regra": "min"
+  },
+  {
+   "id": "backup",
+   "nome": "Backup diário",
+   "meta": "100%",
+   "lado": "esq",
+   "alvo": 100.0,
+   "regra": "min"
+  },
+  {
+   "id": "snapshot",
+   "nome": "Criação de SnapShot das VM's",
+   "meta": "100%",
+   "lado": "esq",
+   "alvo": 100.0,
+   "regra": "min"
+  },
+  {
+   "id": "arcond",
+   "nome": "Ar-condicionado",
+   "meta": "100%",
+   "lado": "esq",
+   "alvo": 100.0,
+   "regra": "min"
+  },
+  {
+   "id": "disp_rm",
+   "nome": "Disponibilidade dos Serviços RM",
+   "meta": "99,98%",
+   "lado": "dir",
+   "alvo": 99.98,
+   "regra": "min"
+  },
+  {
+   "id": "internet",
+   "nome": "Qualidade do serviço de internet",
+   "meta": "100%",
+   "lado": "dir",
+   "alvo": 100.0,
+   "regra": "min"
+  },
+  {
+   "id": "fornecedor",
+   "nome": "Fornecedor (Medição de SLA)",
+   "meta": "95%",
+   "lado": "dir",
+   "alvo": 95.0,
+   "regra": "min"
+  },
+  {
+   "id": "satisfacao",
+   "nome": "Satisfação dos usuários",
+   "meta": "95%",
+   "lado": "dir",
+   "alvo": 95.0,
+   "regra": "min"
+  },
+  {
+   "id": "capacidade",
+   "nome": "Taxa de utilização de capacidade",
+   "meta": "<90%",
+   "lado": "dir",
+   "alvo": 90.0,
+   "regra": "max"
+  },
+  {
+   "id": "nb_i5",
+   "nome": "Notebooks i5 (Logística)",
+   "meta": "Meta 3",
+   "lado": "dir",
+   "alvo": null,
+   "regra": "min"
+  },
+  {
+   "id": "nb_i7",
+   "nome": "Notebooks i7 (Logística)",
+   "meta": "Meta 3",
+   "lado": "dir",
+   "alvo": null,
+   "regra": "min"
+  }
+ ],
+ "meses": {}
+}

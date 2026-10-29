@@ -41,7 +41,7 @@ find "$GLPI_DIR/plugins/sistemasinternos" -type d -exec chmod 755 {} + && find "
 [ "$JA_HAVIA" = 1 ] && ok "Arquivos do plugin atualizados em $GLPI_DIR/plugins/sistemasinternos" || ok "Plugin copiado para $GLPI_DIR/plugins/sistemasinternos"
 
 # já instalado (atualização): o install avisa e seguimos
-console plugin:install --username="$GLPI_ADMIN" sistemasinternos || aviso "plugin:install avisou algo acima (normal se já estava instalado)"
+console plugin:install --force --username="$GLPI_ADMIN" sistemasinternos || aviso "plugin:install avisou algo acima (normal se já estava instalado)"
 console plugin:activate sistemasinternos || aviso "plugin:activate avisou algo acima (normal se já estava ativo)"
 console cache:clear >/dev/null 2>&1 || true
 # confere de verdade: o plugin precisa estar ativo e na versão do pacote

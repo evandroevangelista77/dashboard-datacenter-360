@@ -55,6 +55,15 @@ function plugin_sistemasinternos_install(): bool
             `date_mod` timestamp NULL DEFAULT NULL,
             PRIMARY KEY (`id`),
             UNIQUE KEY `users_id` (`users_id`)",
+        // resumo operacional (book mensal) da Visão 360: cada gravação é uma linha, a mais recente vale
+        'glpi_plugin_sistemasinternos_books' => "
+            `id` int $sign NOT NULL AUTO_INCREMENT,
+            `users_id` int $sign NOT NULL DEFAULT 0,
+            `what` varchar(100) DEFAULT NULL,
+            `data` longtext,
+            `date_creation` timestamp NULL DEFAULT NULL,
+            PRIMARY KEY (`id`),
+            KEY `date_creation` (`date_creation`)",
     ];
     foreach ($tables as $table => $def) {
         if (!$DB->tableExists($table)) {
@@ -87,6 +96,8 @@ function plugin_sistemasinternos_install(): bool
     }
 
     Settings::installDefaults();
+    // 1.2.0: a Visão 360 roda dentro do GLPI, sem o servidor do SI 360 à parte
+    Config::deleteConfigurationValues(Settings::CONTEXT, ['painel_url']);
 
     // perfil da sessão atual passa a enxergar o menu sem precisar relogar
     if (isset($_SESSION['glpiactiveprofile']['id'])) {
@@ -103,7 +114,7 @@ function plugin_sistemasinternos_uninstall(): bool
 {
     global $DB;
 
-    foreach (['profilegroups', 'logs', 'seens'] as $t) {
+    foreach (['profilegroups', 'logs', 'seens', 'books'] as $t) {
         $DB->dropTable("glpi_plugin_sistemasinternos_$t", true);
     }
     ProfileRight::deleteProfileRights(Menu::RIGHTS);

@@ -6,7 +6,7 @@ O painel do departamento de Sistemas Internos dentro do GLPI: o que o Zabbix mon
 
 | Recurso | Descrição |
 |---|---|
-| **Visão 360** | **O mesmo dashboard do SI 360** (porta 8092), com o mesmo layout e todas as funções: situação geral, ação necessária, infraestrutura, **access points do Wi-Fi**, disponibilidade e tempo fora, atendimento do GLPI, prestadores, linha do tempo, **vulnerabilidades** (patches e softwares), **resumo operacional**, **topologia** (também no menu, direto), voz e book. O GLPI repassa o dashboard por um proxy (`front/si.php`): o navegador só fala com o GLPI, com o login e os direitos do GLPI. A cor pode ser a do departamento (#3769B2, árvore e marca-d'água em azul) ou a original (verde). |
+| **Visão 360** | **O mesmo dashboard do SI 360**, com o mesmo layout e todas as funções: situação geral, ação necessária, infraestrutura, **access points do Wi-Fi**, disponibilidade e tempo fora, atendimento do GLPI, prestadores, linha do tempo, **vulnerabilidades** (patches e softwares), **resumo operacional** (book mensal), **topologia** (também no menu, direto) e voz. Roda **inteiro dentro do GLPI**, sem servidor à parte: o plugin calcula tudo em PHP (`src/Si360*.php`), com a conta de serviço do Zabbix e o banco do GLPI, e serve a página pela `front/si.php`. O navegador só fala com o GLPI, com o login e os direitos do GLPI. A cor pode ser a do departamento (#3769B2, árvore e marca-d'água em azul) ou a original (verde). |
 | **Resumo rápido** | Disponibilidade agora, hosts indisponíveis, problemas ativos (e os sem reconhecimento), alta e desastre, chamados em aberto, SLA vencido, vence em até 1 h e solucionados em 7 dias. Gráficos de estado dos hosts, problemas por severidade e abertos × solucionados (14 dias). Tabelas de problemas ativos (com atalho para o Zabbix), hosts indisponíveis e chamados em aberto ordenados pelo SLA. Atualiza sozinho a cada 2 minutos. |
 | **Hosts do Zabbix** | Lista dos hosts dos grupos liberados para o perfil, com interface, grupos, templates, situação e problemas; busca e filtro (ativos, desativados, indisponíveis, com problema). |
 | **Incluir e editar** | Nome técnico e visível, descrição, grupos (só os do perfil), interface principal (agente, SNMP v1/v2c/v3, IPMI, JMX; IP ou DNS; porta), proxy, templates (lista aprovada na configuração), tags, macros de texto e vínculo com um computador do GLPI (tag `glpi_computer`). Na edição, grupos e templates que o perfil não alcança são **mantidos**, e macros secretas ou de cofre não são tocadas. |
@@ -51,11 +51,17 @@ Ou o pacote gerado por `tools/empacotar-sistemasinternos.sh` (`sudo bash instala
 
 Tabelas `glpi_plugin_sistemasinternos_profilegroups`, `_logs` (auditoria) e `_seens` (o que cada usuário já recebeu). Desinstalar apaga as três e a configuração. Os hosts no Zabbix não são tocados.
 
-## Servidor do SI 360
+## Visão 360 dentro do GLPI
 
-A Visão 360 precisa do serviço do SI 360 (e dos painéis do Zabbix e do GLPI dos quais ele lê, nas portas 8090 e 8091) acessível **pelo servidor do GLPI**. Informe o endereço em *Configurações → Departamento → Servidor do SI 360*. Hoje esses serviços rodam no Mac do NOC; para produção, rode-os num servidor que o GLPI alcance.
+- **Zabbix**: só os hostgroups do departamento (*Configurações → Departamento*). Disponibilidade e tempo fora vêm dos eventos dos triggers de indisponibilidade (ICMP, agente, SNMP), como no painel original. Pedidos de outros grupos, hosts ou eventos respondem 404.
+- **GLPI**: chamados, interações e inventário de softwares lidos direto do banco, da entidade do departamento e das filhas.
+- **Cache**: no cache do GLPI, compartilhado por todos. Vencido, a tela recebe o anterior na hora e o novo é calculado depois da resposta. A primeira carga depois de instalar pode levar até ~40 s (topologia e bancos de dados); depois fica em poucos segundos.
+- **Resumo operacional**: os números do book ficam na tabela `glpi_plugin_sistemasinternos_books` (cada gravação é uma linha, a mais recente vale). Na instalação entram os meses que já estavam no SI 360. Editar pede o direito *Configurações*.
+- **Acionamento**: em *Configurações → Departamento*, nome e telefone de quem atende. Alertas Alta e Desastre nos grupos Sistemas Internos, ha-datacenter e Applications pedem para acionar essa pessoa.
+- **Voz**: a do navegador (português). A voz neural e a OAK IA rodavam fora do GLPI e não fazem parte do plugin.
 
 ## Versões
 
+- **1.2.0**: a Visão 360 passa a rodar inteira dentro do GLPI, sem o servidor do SI 360 e sem os painéis das portas 8090 e 8091 (sai o campo *Servidor do SI 360*). Resumo operacional guardado no banco do GLPI, acionamento configurável, teste de conexão compatível com o Zabbix 7.2.
 - **1.1.0**: Visão 360 e Topologia com o dashboard completo do SI 360 (mapa, APs do Wi-Fi, vulnerabilidades, resumo operacional, voz, book), opção de cor (azul do departamento ou original) e correção da atualização do plugin (direitos duplicados).
 - **1.0.0**: primeira versão.

@@ -4,10 +4,10 @@ PLUGIN SISTEMAS INTERNOS 360 PARA GLPI 12 · versão @VERSAO@
 O painel do departamento de Sistemas Internos dentro do GLPI 12.0.x
 (seção "Sistemas Internos" do menu lateral, logo abaixo de Dashboard):
 
-- Visão 360: o MESMO dashboard do SI 360 (porta 8092) dentro do GLPI, com
-  mapa, topologia, access points do Wi-Fi, vulnerabilidades, resumo
-  operacional, voz e book (o servidor do SI 360 precisa ser acessível pelo
-  servidor do GLPI: Configurações > Departamento > Servidor do SI 360)
+- Visão 360: o MESMO dashboard do SI 360 dentro do GLPI, com mapa,
+  topologia, access points do Wi-Fi, vulnerabilidades, resumo operacional
+  (book) e voz. Roda inteiro no GLPI, sem servidor à parte: só precisa do
+  Zabbix (conta de serviço) e do banco do GLPI
 - Resumo rápido: disponibilidade, hosts indisponíveis, problemas ativos por
   severidade (Zabbix) e chamados em aberto da entidade com SLA (GLPI)
 - Hosts do Zabbix: incluir, editar, ativar/desativar e excluir hosts sem sair
@@ -60,8 +60,12 @@ INSTALAÇÃO MANUAL
 PRIMEIROS PASSOS
 ----------------
 1) Sistemas Internos > Configurações > Conexão com o Zabbix: endereço da API
-   (termina em api_jsonrpc.php) e o token. Clique em "Testar a conexão".
-2) Aba Departamento: grupos do Zabbix e entidade do GLPI.
+   e o token. Clique em "Testar a conexão". O endereço é o da tela de login
+   do Zabbix seguido de /api_jsonrpc.php (ex.: https://zabbix.empresa.com/
+   zabbix/api_jsonrpc.php; se o login abre em https://servidor/zabbix-oakmont/,
+   a API é https://servidor/zabbix-oakmont/api_jsonrpc.php).
+2) Aba Departamento: grupos do Zabbix, entidade do GLPI, prestadores e
+   acionamento (quem atende os alertas Alta e Desastre).
 3) Aba Alertas: para cada tipo, sinalizador, som, voz e pop-up (botão Testar).
 4) Administração > Perfis > (perfil) > aba "Sistemas Internos 360": direitos
    (ver o painel, ver/incluir/editar/excluir hosts, configurar) e, se quiser,
