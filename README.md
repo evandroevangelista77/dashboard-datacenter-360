@@ -25,16 +25,18 @@ Os quadros e a legenda são clicáveis: clicar num status da legenda filtra todo
 
 ### Topologia (`topologia.html`)
 
-Mapa da rede monitorada, montado automaticamente a partir dos hosts do Zabbix e atualizado a cada 30 s:
+Mapa de rede **dentro do próprio painel** (PHP + JavaScript, sem depender de outro servidor), montado a partir dos hosts do Zabbix e atualizado a cada 30 s:
 
-- **Camadas**: Internet com os serviços externos verificados pelo Zabbix → gateway → switch núcleo da LAN → servidores, Zabbix server, proxy e estações.
-- **Papel de cada ativo**: deduzido de templates, grupos e IP.
-- **Links animados**: pacotes trafegando nos dois sentidos em links ativos; link degradado em âmbar; link sem resposta em vermelho tracejado.
-- **Interação**: passar o mouse destaca o caminho do ativo até a internet; clique abre os detalhes; busca por nome ou IP.
+- **Camadas**: Internet → links das operadoras → firewalls → switches → grupos: Wi-Fi do escritório (APs FortiGate), serviços web, datacenter (servidores físicos, servidores e virtualização) e outros. A camada de cada ativo é deduzida do nome, dos grupos e dos templates; ajuste com `map_tiers` (`'camada' => '/regex/i'`).
+- **Conexões animadas** entre as camadas, na cor do estado (no ar, com problema, fora do ar).
+- **Passar o mouse** num ativo mostra uma prévia: estado, IP, disponibilidade, uptime e os alertas abertos.
+- **Clicar** abre a ficha do ativo: uptime, sistema e hardware (inventário do Zabbix), disponibilidade, tempo fora, quedas, MTTR, CPU, memória, latência e perda em 30 dias, problemas ativos e histórico de alertas de 7 dias, com atalho para o Zabbix. Clicar num link mostra o consumo e num AP, os usuários conectados.
+- O mapa se ajusta à tela (modo TV) e a faixa ao vivo fica no topo.
+- Os ativos vêm dos grupos de hosts de `map_groups` (se vazio, de `si_groups` e `office_groups`; se também vazios, todos os hosts).
 
-Com `topology_url` no `config.php`, a aba mostra, no lugar desse mapa, a topologia de outro painel dentro da moldura (`topologia-embed.html`), por exemplo o mapa do painel de Sistemas Internos. O painel de origem precisa estar acessível a partir do navegador de quem abre a página.
+`topologia-classica.html` mantém a topologia animada anterior. Com `topology_url` no `config.php`, a aba passa a mostrar a topologia de outro painel dentro da moldura (`topologia-embed.html`).
 
-O usuário de API só leitura precisa de leitura também nos **grupos de templates**, senão o papel dos ativos não é identificado.
+O usuário de API só leitura precisa de leitura também nos **grupos de templates**, senão a camada dos ativos pode não ser identificada.
 
 ### Definições das métricas
 
@@ -58,6 +60,7 @@ Criado pelo `instalar.sh` na primeira instalação (fora da pasta web, `root:www
 | `client_child_markers` | Nomes de entidade cujo pai é o cliente (ex.: Cliente A > `PARCEIROS`) |
 | `client_skip_levels`, `client_exclude` | Níveis ignorados ao achar o cliente e nomes que não contam como cliente |
 | `client_groups` | Opcional: grupo do Zabbix de cada cliente, quando o nome não bate (`'Cliente' => ['Grupo 1', ...]`) |
+| `map_groups`, `map_tiers` | Grupos de hosts do mapa da Topologia e regras de camada (`'firewall' => '/regex/i'`) |
 | `office_groups`, `si_groups`, `si_server_prefix` | Grupos de hosts do escritório (links e APs FortiGate) e do departamento interno; prefixo do nome para juntar iDRAC, ESXi e host do mesmo servidor físico |
 | `topology_url` | Opcional: topologia de outro painel dentro da aba Topologia |
 | `cache_ttl`, `glpi_cache`, `glpi_max_tickets` | Cache das respostas (s), cache da lista de chamados (s) e limite de chamados lidos |
@@ -316,7 +319,8 @@ Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](gl
 |---|---|
 | `index.html`, `app.css`, `app.js` | Painel |
 | `aquecer.sh` | Opcional: aquece o cache a cada minuto (`DC360_AQUECER=1`) |
-| `topologia.html`, `topologia.css`, `topologia.js` | Topologia animada da rede |
+| `topologia.html`, `mapa.js`, `mapa.css` | Mapa de rede da aba Topologia |
+| `topologia-classica.html`, `topologia.css`, `topologia.js` | Topologia animada anterior |
 | `topologia-embed.html` | Moldura que mostra a topologia de outro painel (`topology_url`) |
 | `glpi-theme/datacenter360.scss` | Paleta do GLPI com as cores do painel |
 | `glpi-theme/apache-tema-editor.conf` | Apache: paleta sempre atualizada dentro do editor de texto |

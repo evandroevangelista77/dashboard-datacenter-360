@@ -335,6 +335,199 @@ function ticketLog(): array
     return ['id' => $id, 'items' => $out];
 }
 
+/* ---------------- Mapa de rede (tela Topologia): hosts por camada, links e APs, e a ficha de cada ativo */
+
+const MAP_TIERS = [['link', 'Links'], ['firewall', 'Firewalls'], ['switch', 'Switches'], ['fisico', 'Servidores físicos'], ['vm', 'Virtualização'],
+    ['servidor', 'Servidores'], ['web', 'Serviços web'], ['outros', 'Outros']];
+
+/** Camada do ativo. 'map_tiers' (config) = ['camada' => '/regex/i'] vence as regras padrão, que olham nome, grupos e templates. */
+function mapTier(array $h, string $ip, array $groups, array $tpls): string
+{
+    global $cfg;
+    $txt = $h['name'] . ' ' . implode(' ', $tpls);
+    foreach ($cfg['map_tiers'] ?? [] as $tier => $rx) {
+        if (@preg_match($rx, $txt)) {
+            return (string)$tier;
+        }
+    }
+    if (in_array('Website', $groups, true) || $ip === '127.0.0.1' || preg_match('/^web\b/i', $h['name'])) {
+        return 'web';
+    }
+    if (preg_match('/idrac|esxi|\bilo\b|ipmi|hypervisor|f[ií]sico/iu', $h['name'])) {
+        return 'fisico';
+    }
+    if (preg_match('/(^|[\s|])(fw|firewall)\b|fortigate|palo alto|pfsense|sophos/i', $txt)) {
+        return 'firewall';
+    }
+    if (preg_match('/switch|(^|[\s|])sw\d*\b|fortiswitch/i', $txt)) {
+        return 'switch';
+    }
+    if (preg_match('/^vm\b|vmware (guest|vm)|hyper-v guest/i', $txt)) {
+        return 'vm';
+    }
+    if (preg_match('/linux|windows|macos|esxi/i', $txt)) {
+        return 'servidor';
+    }
+    return 'outros';
+}
+
+function mapa(): array
+{
+    global $cfg;
+    return fileCache('mapa', 30, function () use ($cfg) {
+        $want = array_values(array_unique(array_merge($cfg['map_groups'] ?? [], ($cfg['map_groups'] ?? []) ? [] : array_merge($cfg['si_groups'] ?? [], $cfg['office_groups'] ?? []))));
+        $w1 = zbxBatchStrict([
+            'hosts' => ['host.get', ['output' => ['hostid', 'host', 'name', 'active_available', 'maintenance_status'], 'filter' => ['status' => 0],
+                'selectInterfaces' => ['ip', 'type', 'available', 'main'], 'selectHostGroups' => ['name'], 'selectParentTemplates' => ['name'],
+                'selectInventory' => ['os', 'model', 'vendor', 'hardware', 'type'], 'sortfield' => 'name']],
+            'problems' => ['problem.get', ['output' => ['eventid', 'name', 'severity', 'clock', 'acknowledged'], 'severities' => [2, 3, 4, 5], 'sortfield' => ['eventid'], 'sortorder' => 'DESC']],
+            'icmp' => ['item.get', ['output' => ['itemid', 'hostid', 'key_', 'lastvalue', 'lastclock'], 'filter' => ['key_' => ['icmpping']], 'monitored' => true]],
+            'upt' => ['item.get', ['output' => ['hostid', 'key_', 'lastvalue', 'lastclock', 'units'], 'search' => ['key_' => 'uptime'], 'monitored' => true]],
+        ]);
+        $hosts = array_values(array_filter($w1['hosts'], function ($h) use ($want) {
+            return !$want || array_intersect($want, array_column($h['hostgroups'], 'name'));
+        }));
+        $ids = array_flip(array_column($hosts, 'hostid'));
+        $w2 = [];
+        if ($w1['problems']) {
+            $w2['phosts'] = ['event.get', ['output' => ['eventid'], 'eventids' => array_column($w1['problems'], 'eventid'), 'selectHosts' => ['hostid']]];
+        }
+        $icmpIds = array_column(array_filter($w1['icmp'], fn($i) => isset($ids[$i['hostid']])), 'itemid');
+        if ($icmpIds) {
+            $w2['trend'] = ['trend.get', ['output' => ['itemid', 'num', 'value_avg'], 'itemids' => $icmpIds, 'time_from' => time() - 7 * 86400, 'time_till' => time()]];
+        }
+        $w2 = $w2 ? zbxBatchStrict($w2) : [];
+
+        $probHost = [];
+        foreach ($w2['phosts'] ?? [] as $e) {
+            $probHost[$e['eventid']] = $e['hosts'][0]['hostid'] ?? null;
+        }
+        $probs = [];
+        foreach ($w1['problems'] as $p) {
+            if (($h = $probHost[$p['eventid']] ?? null) && isset($ids[$h])) {
+                $probs[$h][] = ['name' => $p['name'], 'severity' => (int)$p['severity'], 'clock' => (int)$p['clock']];
+            }
+        }
+        $ping = [];
+        foreach ($w1['icmp'] as $i) {
+            $ping[$i['hostid']] = ['item' => $i['itemid'], 'up' => (float)$i['lastvalue'] >= 1, 'has' => (int)$i['lastclock'] > 0];
+        }
+        $tr = [];
+        foreach ($w2['trend'] ?? [] as $t) {
+            $tr[$t['itemid']]['n'] = ($tr[$t['itemid']]['n'] ?? 0) + (int)$t['num'];
+            $tr[$t['itemid']]['s'] = ($tr[$t['itemid']]['s'] ?? 0) + (float)$t['value_avg'] * (int)$t['num'];
+        }
+        // uptime: o melhor item de cada host (agente, SNMP ou VMware), ignorando os zerados e os de serviços
+        $pri = fn($k) => $k === 'system.uptime' ? 0 : (stripos($k, 'fgsysuptime') !== false ? 1 : (str_starts_with($k, 'vmware.hv.uptime') ? 2 : (str_starts_with($k, 'system.net.uptime') ? 3 : 9)));
+        $best = [];
+        foreach ($w1['upt'] as $i) {
+            if (!isset($ids[$i['hostid']]) || preg_match('/mysql|wtp|zabbix\[/i', $i['key_']) || !in_array($i['units'], ['uptime', 's'], true) || (float)$i['lastvalue'] <= 0) {
+                continue;
+            }
+            if (!isset($best[$i['hostid']]) || $pri($i['key_']) < $best[$i['hostid']][0]) {
+                $best[$i['hostid']] = [$pri($i['key_']), (int)round((float)$i['lastvalue']), (int)$i['lastclock']];
+            }
+        }
+
+        $nodes = [];
+        foreach ($hosts as $h) {
+            $main = null;
+            foreach ($h['interfaces'] as $if) {
+                if ($if['main'] === '1') {
+                    $main = $if;
+                    break;
+                }
+            }
+            $ip = $main['ip'] ?? '';
+            $groups = array_column($h['hostgroups'], 'name');
+            $tpls = array_column($h['parentTemplates'], 'name');
+            $pr = $probs[$h['hostid']] ?? [];
+            usort($pr, fn($a, $b) => $b['severity'] <=> $a['severity'] ?: $a['clock'] <=> $b['clock']);
+            $worst = $pr ? $pr[0]['severity'] : -1;
+            $pg = $ping[$h['hostid']] ?? null;
+            $stat = hostStatus($h);
+            $state = $h['maintenance_status'] === '1' ? 'maintenance' : ($pg && $pg['has'] ? ($pg['up'] ? 'up' : 'down') : ($stat === 'offline' ? 'down' : 'up'));
+            $t = $pg ? ($tr[$pg['item']] ?? null) : null;
+            $inv = is_array($h['inventory'] ?? null) ? $h['inventory'] : [];
+            $nodes[] = ['id' => $h['hostid'], 'name' => $h['name'], 'ip' => $ip, 'tier' => mapTier($h, $ip, $groups, $tpls), 'state' => $state,
+                'problems' => count($pr), 'worst' => $worst, 'probs' => array_slice($pr, 0, 3),
+                'avail' => $t && $t['n'] ? round(100 * $t['s'] / $t['n'], 3) : null,
+                'open_since' => $state === 'down' ? ($pr ? min(array_column($pr, 'clock')) : null) : null,
+                'uptime' => isset($best[$h['hostid']]) ? $best[$h['hostid']][1] : null, 'uptime_at' => isset($best[$h['hostid']]) ? $best[$h['hostid']][2] : null,
+                'vendor' => $inv['vendor'] ?? '', 'model' => $inv['model'] ?? '', 'os' => $inv['os'] ?? '', 'hw' => $inv['hardware'] ?? ($inv['type'] ?? ''),
+                'groups' => $groups];
+        }
+        try {
+            $net = officeNetwork();
+        } catch (Throwable) {
+            $net = ['links' => [], 'aps' => []];
+        }
+        return ['tiers' => array_map(fn($t) => ['id' => $t[0], 'label' => $t[1]], MAP_TIERS), 'nodes' => $nodes, 'links' => $net['links'] ?? [], 'aps' => $net['aps'] ?? [],
+            'zabbix' => rtrim($cfg['zabbix_front'], '/'), 'generated' => time()];
+    });
+}
+
+/** Ficha de um ativo: disponibilidade e quedas em 30 dias, métricas, problemas ativos e histórico de alertas. */
+function hostFicha(): array
+{
+    global $cfg;
+    $hid = preg_replace('/\D/', '', (string)($_GET['hostid'] ?? ''));
+    if ($hid === '') {
+        fail(400, 'hostid obrigatório');
+    }
+    $now = time();
+    $w = zbxBatchStrict([
+        'host' => ['host.get', ['output' => ['hostid', 'host', 'name', 'maintenance_status', 'monitored_by', 'proxyid'], 'hostids' => [$hid], 'selectInterfaces' => ['ip', 'main'],
+            'selectHostGroups' => ['name'], 'selectParentTemplates' => ['name'], 'selectInventory' => ['os', 'model', 'vendor', 'hardware', 'type', 'location']]],
+        'items' => ['item.get', ['output' => ['itemid', 'key_', 'lastvalue', 'lastclock', 'units'], 'hostids' => [$hid], 'monitored' => true,
+            'filter' => ['key_' => ['icmpping', 'icmppingsec', 'icmppingloss', 'system.cpu.util', 'vm.memory.util', 'vm.memory.utilization', 'system.uptime']]]],
+        'active' => ['problem.get', ['output' => ['eventid', 'name', 'severity', 'clock', 'acknowledged'], 'hostids' => [$hid], 'severities' => [2, 3, 4, 5], 'sortfield' => ['eventid'], 'sortorder' => 'DESC']],
+        'events' => ['event.get', ['output' => ['eventid', 'objectid', 'clock', 'severity', 'name', 'r_eventid', 'acknowledged'], 'hostids' => [$hid], 'source' => 0, 'object' => 0, 'value' => 1,
+            'severities' => [2, 3, 4, 5], 'time_from' => $now - 30 * 86400, 'sortfield' => ['clock'], 'sortorder' => 'DESC', 'limit' => 300]],
+    ]);
+    $h = $w['host'][0] ?? fail(404, 'Host não encontrado');
+    $it = [];
+    foreach ($w['items'] as $i) {
+        $it[$i['key_']] = $i;
+    }
+    $rec = [];
+    $rids = array_values(array_filter(array_column($w['events'], 'r_eventid'), fn($i) => $i !== '0'));
+    if ($rids) {
+        foreach (zbx('event.get', ['output' => ['eventid', 'clock'], 'eventids' => $rids]) as $r) {
+            $rec[$r['eventid']] = (int)$r['clock'];
+        }
+    }
+    $avail = null;
+    if (isset($it['icmpping'])) {
+        $n = $s = 0;
+        foreach (zbx('trend.get', ['output' => ['num', 'value_avg'], 'itemids' => [$it['icmpping']['itemid']], 'time_from' => $now - 30 * 86400, 'time_till' => $now]) as $t) {
+            $n += (int)$t['num'];
+            $s += (float)$t['value_avg'] * (int)$t['num'];
+        }
+        $avail = $n ? round(100 * $s / $n, 3) : null;
+    }
+    $front = rtrim($cfg['zabbix_front'], '/');
+    $ev = array_map(fn($e) => ['clock' => (int)$e['clock'], 'severity' => (int)$e['severity'], 'name' => $e['name'], 'end' => $rec[$e['r_eventid']] ?? null,
+        'acknowledged' => $e['acknowledged'] === '1', 'url' => $front . '/tr_events.php?triggerid=' . $e['objectid'] . '&eventid=' . $e['eventid']], $w['events']);
+    $big = array_values(array_filter($ev, fn($e) => $e['severity'] >= 4));
+    $closed = array_values(array_filter($big, fn($e) => $e['end']));
+    $down = array_sum(array_map(fn($e) => $e['end'] - $e['clock'], $closed));
+    $num = fn($k) => isset($it[$k]) && is_numeric($it[$k]['lastvalue']) ? (float)$it[$k]['lastvalue'] : null;
+    $ip = '';
+    foreach ($h['interfaces'] as $if) {
+        $ip = $if['main'] === '1' ? $if['ip'] : $ip;
+    }
+    return ['hostid' => $hid, 'name' => $h['name'], 'host' => $h['host'], 'ip' => $ip, 'maintenance' => $h['maintenance_status'] === '1',
+        'groups' => array_column($h['hostgroups'], 'name'), 'templates' => array_column($h['parentTemplates'], 'name'),
+        'inventory' => is_array($h['inventory']) ? $h['inventory'] : [],
+        'availability' => $avail, 'drops' => count($big), 'downtime' => $down, 'mttr' => $closed ? (int)round($down / count($closed)) : null,
+        'cpu' => $num('system.cpu.util'), 'memory' => $num('vm.memory.util') ?? $num('vm.memory.utilization'),
+        'latency_ms' => $num('icmppingsec') !== null ? round($num('icmppingsec') * 1000, 2) : null, 'loss' => $num('icmppingloss'), 'uptime' => $num('system.uptime'),
+        'active' => array_map(fn($p) => ['name' => $p['name'], 'severity' => (int)$p['severity'], 'clock' => (int)$p['clock'], 'acknowledged' => $p['acknowledged'] === '1'], $w['active']),
+        'history' => array_slice(array_values(array_filter($ev, fn($e) => $e['clock'] >= $now - 7 * 86400)), 0, 40),
+        'front' => $front . '/zabbix.php?action=problem.view&hostids%5B%5D=' . $hid . '&filter_set=1', 'days' => 30];
+}
+
 function db(): mysqli
 {
     static $conn = null;
@@ -1539,6 +1732,8 @@ try {
         'si' => siServers(),
         'updates' => updates(),
         'topo' => ['url' => $cfg['topology_url'] ?? null],
+        'mapa' => mapa(),
+        'hostficha' => hostFicha(),
         'hostlog' => hostLog(),
         'ticketlog' => ticketLog(),
         'topology' => topology(),

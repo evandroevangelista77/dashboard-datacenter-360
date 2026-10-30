@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NOC 360° · Topologia</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2l12 7v14l-12 7-12-7V9z' fill='none' stroke='%2322d3ee' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%2322d3ee'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2l12 7v14l-12 7-12-7V9z' fill='none' stroke='%23087E83' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23087E83'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="app.css">
-<link rel="stylesheet" href="topologia.css">
+<link rel="stylesheet" href="mapa.css">
 </head>
 <body class="topo-page">
 <div class="grid-bg" aria-hidden="true"></div>
@@ -16,7 +16,7 @@
     <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2l12 7v14l-12 7-12-7V9z"/><circle cx="16" cy="16" r="4"/></svg>
     <div>
       <h1>NOC <span>360°</span></h1>
-      <p>Topologia da rede monitorada</p>
+      <p>Topologia da rede</p>
     </div>
   </div>
   <nav class="views" aria-label="Telas">
@@ -32,7 +32,6 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
     </button>
   </div>
-  <div class="countdown" aria-hidden="true"><span id="countdown"></span></div>
 </header>
 
 <div class="ticker" id="ticker" aria-label="Problemas ativos em tempo real">
@@ -40,64 +39,23 @@
   <div class="ticker-track"><div class="ticker-move" id="tickerMove"></div></div>
 </div>
 
-<div class="topo-toolbar">
-  <div class="topo-summary" id="summary" aria-live="polite"></div>
-  <div class="topo-actions">
-    <input type="search" id="find" placeholder="Localizar ativo (nome ou IP)" aria-label="Localizar ativo">
-    <label class="toggle"><input type="checkbox" id="monitorFlow"> Fluxo de monitoramento</label>
-    <label class="toggle"><input type="checkbox" id="showLatency" checked> Latência nos links</label>
-    <div class="zoom" role="group" aria-label="Zoom">
-      <button type="button" id="zoomOut" aria-label="Diminuir zoom">−</button>
-      <button type="button" id="zoomFit" title="Ajustar à tela">Ajustar</button>
-      <button type="button" id="zoomIn" aria-label="Aumentar zoom">+</button>
-    </div>
-  </div>
+<div class="mp-bar">
+  <span class="mp-sum" id="mpSum">carregando…</span>
+  <span class="mp-lg"><i style="background:var(--good)"></i>no ar <i style="background:var(--warning)"></i>com problema <i style="background:var(--critical)"></i>fora do ar <i style="background:#5598e7"></i>manutenção</span>
+</div>
+<main class="mp-stage" id="mpStage"></main>
+
+<div class="mp-tip" id="mpTip" hidden></div>
+<div class="mp-modal" id="mpModal" aria-hidden="true" role="dialog">
+  <div class="mp-bg" id="mpBg"></div>
+  <div class="mp-box"><div class="mp-hd" id="mpHd"></div><div class="mp-ct" id="mpCt"></div></div>
 </div>
 
-<main class="topo-stage" id="stage">
-  <svg id="map" role="img" aria-label="Mapa de topologia da rede" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-        <feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-      </filter>
-      <radialGradient id="plate" cx="50%" cy="35%" r="70%">
-        <stop offset="0" stop-color="#1b2c48"/><stop offset="1" stop-color="#0b1424"/>
-      </radialGradient>
-    </defs>
-    <g id="viewport">
-      <g id="zones"></g>
-      <g id="linksLayer"></g>
-      <g id="monitorLayer"></g>
-      <g id="nodesLayer"></g>
-    </g>
-  </svg>
-
-  <aside class="legend" aria-label="Legenda">
-    <h3>Legenda</h3>
-    <ul>
-      <li><i class="dot good"></i>Online</li>
-      <li><i class="dot warning"></i>Degradado (perda ou problema alto)</li>
-      <li><i class="dot critical"></i>Offline</li>
-      <li><i class="dot unknown"></i>Sem dados</li>
-      <li><i class="line up"></i>Link ativo (tráfego)</li>
-      <li><i class="line down"></i>Link sem resposta</li>
-      <li><i class="line mon"></i>Coleta do Zabbix</li>
-    </ul>
-  </aside>
-
-  <aside class="drawer" id="drawer" hidden aria-label="Detalhes do ativo">
-    <button type="button" class="ghost small close" id="closeDrawer" aria-label="Fechar">✕</button>
-    <div id="drawerBody"></div>
-  </aside>
-</main>
-
-<div class="toast" id="toast" role="status" hidden></div>
 <script>
-// com topology_url no config.php, a topologia é a de outro painel (ex.: mapa de Sistemas Internos) dentro desta moldura
+// com topology_url no config.php, a topologia é a de outro painel dentro desta moldura
 fetch('api.php?action=topo', { cache: 'no-store' }).then((r) => r.json()).then((r) => { if (r && r.url) location.replace('topologia-embed.html'); }).catch(() => {});
 </script>
-<script src="logos.js"></script>
 <script src="ticker.js"></script>
-<script src="topologia.js"></script>
+<script src="mapa.js"></script>
 </body>
 </html>

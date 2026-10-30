@@ -41,14 +41,14 @@ PHP
     echo "config criado em $CONF"
 fi
 
-for f in api.php index.html app.css app.js logo-zabbix.svg logo-glpi.svg bg-datacenter.svg topologia.html topologia-embed.html topologia.css topologia.js ticker.js logos.js; do
+for f in api.php index.html app.css app.js logo-zabbix.svg logo-glpi.svg bg-datacenter.svg topologia.html topologia-classica.html topologia-embed.html topologia.css topologia.js mapa.css mapa.js ticker.js logos.js; do
     [ -f "$SRC/$f" ] && install -o root -g www-data -m 644 "$SRC/$f" "$WEB/$f"
 done
 
 # versão nos links dos arquivos (?v=...): o navegador nunca mistura HTML novo com JS/CSS antigo em cache
 V=$(date +%s)
-for f in index.html topologia.html topologia-embed.html; do
-    [ -f "$WEB/$f" ] && sed -i -E "s#(href|src)=\"(app\.css|app\.js|topologia\.css|topologia\.js|ticker\.js|logos\.js)(\?v=[0-9]+)?\"#\1=\"\2?v=$V\"#g" "$WEB/$f"
+for f in index.html topologia.html topologia-classica.html topologia-embed.html; do
+    [ -f "$WEB/$f" ] && sed -i -E "s#(href|src)=\"(app\.css|app\.js|topologia\.css|topologia\.js|mapa\.css|mapa\.js|ticker\.js|logos\.js)(\?v=[0-9]+)?\"#\1=\"\2?v=$V\"#g" "$WEB/$f"
 done
 a2enmod -q headers >/dev/null 2>&1 || true
 
