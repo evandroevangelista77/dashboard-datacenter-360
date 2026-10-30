@@ -6,7 +6,7 @@ use CommonGLPI;
 use Session;
 
 /**
- * Seção "Dashboard" do menu lateral, com os itens DataCenter 360 e Topologia.
+ * Seção "NOC" do menu lateral, com os itens NOC 360 e Topologia.
  */
 class Menu extends CommonGLPI
 {
@@ -20,12 +20,12 @@ class Menu extends CommonGLPI
 
     public static function getTypeName($nb = 0)
     {
-        return 'DataCenter 360';
+        return 'NOC 360';
     }
 
     public static function getMenuName()
     {
-        return 'DataCenter 360';
+        return 'NOC 360';
     }
 
     public static function getIcon()
@@ -43,10 +43,10 @@ class Menu extends CommonGLPI
 
         // 'title' dá nome à seção; as demais chaves viram itens dela
         return [
-            'title'            => 'Dashboard',
+            'title'            => 'NOC',
             'is_multi_entries' => true,
             'datacenter360'    => [
-                'title' => 'DataCenter 360',
+                'title' => 'NOC 360',
                 'page'  => "$front/painel.php",
                 'icon'  => 'ti ti-building-broadcast-tower',
             ],
@@ -65,7 +65,7 @@ class Menu extends CommonGLPI
      */
     public static function showFrame(string $page): void
     {
-        $src = htmlspecialchars(self::DASHBOARD_URL . $page, ENT_QUOTES);
+        $src = htmlspecialchars(self::DASHBOARD_URL . $page . '?v=' . time(), ENT_QUOTES);
         echo <<<HTML
             <div class="d-flex align-items-center justify-content-between mb-2">
                 <div class="text-secondary small">
@@ -76,7 +76,7 @@ class Menu extends CommonGLPI
                     <i class="ti ti-external-link me-1"></i>Abrir em tela cheia
                 </a>
             </div>
-            <iframe src="$src" title="DataCenter 360"
+            <iframe src="$src" title="NOC 360"
                     style="width:100%; height:calc(100vh - 190px); min-height:640px; border:0; border-radius:10px; background:#070b14;"
                     allow="fullscreen" allowfullscreen></iframe>
             HTML;

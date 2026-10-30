@@ -9,7 +9,7 @@ use Glpi\Plugin\Hooks;
 use GlpiPlugin\Datacenter360\Menu;
 use GlpiPlugin\Datacenter360\ProfileTab;
 
-define('PLUGIN_DATACENTER360_VERSION', '1.0.0');
+define('PLUGIN_DATACENTER360_VERSION', '1.1.0');
 define('PLUGIN_DATACENTER360_MIN_GLPI', '11.0.0');
 define('PLUGIN_DATACENTER360_MAX_GLPI', '12.0.99');
 
@@ -60,14 +60,24 @@ function plugin_datacenter360_redefine_menus(array $menu): array
         ];
     }
 
-    // "Dashboard" acima de "Ativos"
+    // título atual da seção e do item (o menu guardado na sessão pode ter o nome antigo)
+    $content = Menu::getMenuContent();
+    if ($content) {
+        $menu[Menu::SECTOR]['title'] = $content['title'];
+        $menu[Menu::SECTOR]['content']['title'] = $content['title'];
+        if (isset($menu[Menu::SECTOR]['content']['datacenter360'])) {
+            $menu[Menu::SECTOR]['content']['datacenter360']['title'] = $content['datacenter360']['title'];
+        }
+    }
+
+    // "NOC" acima de "Ativos"
     return [Menu::SECTOR => $menu[Menu::SECTOR]] + $menu;
 }
 
 function plugin_version_datacenter360(): array
 {
     return [
-        'name'         => 'DataCenter 360',
+        'name'         => 'NOC 360',
         'version'      => PLUGIN_DATACENTER360_VERSION,
         'author'       => 'Evandro Evangelista',
         'homepage'     => 'https://github.com/evandroevangelista77/dashboard-datacenter-360',

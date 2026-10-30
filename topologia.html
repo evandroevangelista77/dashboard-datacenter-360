@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DataCenter 360 · Topologia</title>
+<title>NOC 360° · Topologia</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2l12 7v14l-12 7-12-7V9z' fill='none' stroke='%2322d3ee' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%2322d3ee'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="app.css">
 <link rel="stylesheet" href="topologia.css">
@@ -15,7 +15,7 @@
   <div class="brand">
     <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2l12 7v14l-12 7-12-7V9z"/><circle cx="16" cy="16" r="4"/></svg>
     <div>
-      <h1>DATACENTER <span>360</span></h1>
+      <h1>NOC <span>360°</span></h1>
       <p>Topologia da rede monitorada</p>
     </div>
   </div>
@@ -34,6 +34,11 @@
   </div>
   <div class="countdown" aria-hidden="true"><span id="countdown"></span></div>
 </header>
+
+<div class="ticker" id="ticker" aria-label="Problemas ativos em tempo real">
+  <span class="ticker-label"><span class="led ok"></span>AO VIVO</span>
+  <div class="ticker-track"><div class="ticker-move" id="tickerMove"></div></div>
+</div>
 
 <div class="topo-toolbar">
   <div class="topo-summary" id="summary" aria-live="polite"></div>
@@ -87,7 +92,12 @@
 </main>
 
 <div class="toast" id="toast" role="status" hidden></div>
+<script>
+// com topology_url no config.php, a topologia é a de outro painel (ex.: mapa de Sistemas Internos) dentro desta moldura
+fetch('api.php?action=topo', { cache: 'no-store' }).then((r) => r.json()).then((r) => { if (r && r.url) location.replace('topologia-embed.html'); }).catch(() => {});
+</script>
 <script src="logos.js"></script>
+<script src="ticker.js"></script>
 <script src="topologia.js"></script>
 </body>
 </html>

@@ -67,8 +67,8 @@
 .node .name { fill: var(--text); font: 600 13px var(--font); text-anchor: middle; }
 .node .ip { fill: var(--muted); font: 500 11px var(--mono); text-anchor: middle; }
 .node .st { font: 700 10px var(--font); text-anchor: middle; letter-spacing: 0.08em; text-transform: uppercase; }
-.node .badge circle { stroke: #070b14; stroke-width: 2; }
-.node .badge text { fill: #070b14; font: 700 11px var(--font); text-anchor: middle; dominant-baseline: central; }
+.node .badge circle { stroke: #04282b; stroke-width: 2; }
+.node .badge text { fill: #04282b; font: 700 11px var(--font); text-anchor: middle; dominant-baseline: central; }
 .node.online .ring { stroke: var(--good); }
 .node.online .halo { stroke: var(--good); }
 .node.online .st { fill: var(--good); }

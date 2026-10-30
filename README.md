@@ -1,58 +1,85 @@
-# Dashboard DataCenter 360
+# NOC 360 (Dashboard DataCenter 360)
 
-Painel de operações (NOC) que junta **Zabbix** e **GLPI** em uma só tela: alertas, problemas ativos, chamados, hosts, SLA, TMA, MTTD, MTTR e a saúde do banco de dados, com filtros por data, host e chamado.
+Painel de operações (NOC) que junta **Zabbix** e **GLPI** em uma só tela, por **cliente**: alertas por severidade, chamados, tempos de resposta (MTTD e MTTR), tempo em aberto, e quadros por cliente, grupo e responsável. Cada número abre, numa gaveta à direita, a lista do que está por trás dele, com atalho para o alerta no Zabbix, o histórico do host, o chamado no GLPI e as interações do chamado.
 
-Feito para ficar aberto numa TV de sala de operações (modo tela cheia) e também para uso no dia a dia pelo navegador.
+Feito para ficar aberto numa TV de sala de operações (modo tela cheia) e também para uso no dia a dia pelo navegador. Compatível com **GLPI 11 e 12**, escrito em **PHP puro, sem dependências** (sem Composer, npm, frameworks ou bibliotecas de gráficos: só `curl` e `mysqli`, que já vêm com o PHP do GLPI; o front-end é HTML, CSS e JavaScript simples).
 
 ## O que mostra
 
 | Bloco | Origem | Detalhe |
 |---|---|---|
-| **KPIs** | Zabbix + GLPI | Alertas, problemas ativos, chamados, hosts, SLA de solução, TMA, MTTD e MTTR. Clicar leva à seção correspondente |
-| **Ticker ao vivo** | Zabbix | Problemas ativos rolando no topo; clique filtra pelo host |
-| **Banco de dados** | Zabbix (template *MySQL by Zabbix agent 2*) | Gauges de eficiência e uso do buffer pool, conexões em uso e consultas por segundo, mais threads, consultas lentas, tamanho do banco e uptime |
-| **Saúde do GLPI** | Zabbix (template *GLPI by HTTP*) | Aplicação, banco, ações automáticas, sistema de arquivos e página de login |
-| **SLAs de serviço** | Zabbix | SLO × SLI dos SLAs cadastrados |
-| **Hosts** | Zabbix | Status de cada host, problemas e disponibilidade por ICMP no período; clique filtra |
-| **Rankings** | Zabbix + GLPI | Hosts com mais alertas, chamados por categoria e por entidade; clique filtra |
-| **Tabelas** | Zabbix + GLPI | Problemas ativos (filtro por severidade) e chamados (em aberto, solucionados, fora do SLA), ordenáveis |
-| **Chamado em foco** | GLPI + Zabbix | Ao filtrar um chamado: dados do GLPI e a linha do tempo do evento no Zabbix (detecção, reconhecimentos, recuperação) |
+| **Alertas** | Zabbix | Desastre, Alta e Atenção no período (configurável em `severities`) e **sem ACK**, com os ativos agora; clicar abre a lista de alertas na gaveta |
+| **Chamados** | GLPI | Abertos no período, **pendentes** e **atrasados** (prazo de solução do GLPI vencido), só da entidade configurada para baixo (`glpi_entity_prefix`) |
+| **Tempo de resposta** | Zabbix + GLPI | **MTTD** (Zabbix: início do problema até o 1º reconhecimento; GLPI: abertura até o 1º atendimento) e **MTTR** (início até a recuperação; abertura até a solução) |
+| **Tempo em aberto** | GLPI | Chamados abertos agora por faixa de idade (< 1 dia a > 30 dias), por status |
+| **Por cliente** | Zabbix + GLPI | Chamados por status e alertas por severidade de cada cliente; clicar no nome filtra o painel inteiro |
+| **Por grupo e por responsável** | GLPI | Chamados por status do grupo técnico e do técnico atribuído, com abertos, atrasados e o mais antigo |
+| **Hosts e categorias** | Zabbix + GLPI | Hosts com mais alertas e chamados por categoria |
+| **Faixa ao vivo** | Zabbix | Problemas ativos rolando no topo; clicar abre o alerta no Zabbix |
+| **Versões** | Zabbix + GLPI | Versão em uso e aviso de atualização disponível (consulta as tags públicas no GitHub, com cache de 6 h) |
+| **Tabelas** | Zabbix + GLPI | Problemas ativos e chamados, ordenáveis, com filtro por severidade e por status |
+
+Os quadros e a legenda são clicáveis: clicar num status da legenda filtra todos os quadros por aquele status.
+
+**Cliente** é o nome da entidade do GLPI (ver `client_root_markers`, `client_child_markers` e `client_skip_levels` abaixo). Grupos de hosts do Zabbix são ligados ao cliente pelo nome (automático) ou pelo mapa `client_groups`.
 
 ### Topologia (`topologia.html`)
 
 Mapa da rede monitorada, montado automaticamente a partir dos hosts do Zabbix e atualizado a cada 30 s:
 
 - **Camadas**: Internet com os serviços externos verificados pelo Zabbix → gateway → switch núcleo da LAN → servidores, Zabbix server, proxy e estações.
-- **Papel de cada ativo**: deduzido de templates, grupos e IP (*Zabbix server health*, *Zabbix proxy health*, *macOS*/*Windows*, interface `127.0.0.1` ou grupo *Website* para serviços externos, IP terminado em `.1` para o gateway).
-- **Logotipos animados**: cada ativo mostra o logotipo da sua tecnologia (Zabbix, GLPI, Grafana, Prometheus, Vault, Ubuntu, CentOS, Apple, Google, Linux), com anel em órbita na cor do status e logotipo "respirando"; ativos offline ficam apagados.
-- **Links animados**: pacotes trafegando nos dois sentidos em links ativos (mais rápidos com latência menor); link degradado em âmbar; link sem resposta em vermelho tracejado com ✕. Latência ICMP sobre cada link.
-- **Status do nó**: ICMP quando existe; senão, disponibilidade das interfaces; problemas Alta/Desastre marcam como degradado; serviços externos pelo pior problema; proxy pelo último contato com o server.
-- **Interação**: passar o mouse destaca o caminho do ativo até a internet; clique abre os detalhes (latência, perda, problemas, grupos, templates e atalhos para o painel e o Zabbix); busca por nome ou IP; zoom com a roda do mouse e arraste; "Fluxo de monitoramento" mostra a coleta do Zabbix (e do proxy) até cada ativo.
+- **Papel de cada ativo**: deduzido de templates, grupos e IP.
+- **Links animados**: pacotes trafegando nos dois sentidos em links ativos; link degradado em âmbar; link sem resposta em vermelho tracejado.
+- **Interação**: passar o mouse destaca o caminho do ativo até a internet; clique abre os detalhes; busca por nome ou IP.
+
+Com `topology_url` no `config.php`, a aba mostra, no lugar desse mapa, a topologia de outro painel dentro da moldura (`topologia-embed.html`), por exemplo o mapa do painel de Sistemas Internos. O painel de origem precisa estar acessível a partir do navegador de quem abre a página.
 
 O usuário de API só leitura precisa de leitura também nos **grupos de templates**, senão o papel dos ativos não é identificado.
 
 ### Definições das métricas
 
-- **MTTD**: início do problema → primeiro reconhecimento no Zabbix.
-- **MTTR**: início do problema → recuperação.
-- **TMA**: abertura → solução do chamado no GLPI.
-- **SLA de solução**: chamados solucionados dentro do prazo. Usa o SLA do próprio chamado; sem SLA, usa a meta por prioridade definida em `sla_hours` na configuração.
-- **Disponibilidade**: média do item `icmpping` (trends) no período.
+- **MTTD**: Zabbix, início do problema → primeiro reconhecimento; GLPI, abertura → primeiro atendimento.
+- **MTTR**: Zabbix, início do problema → recuperação; GLPI, abertura → solução.
+- **Atrasado**: chamado em aberto cujo prazo de solução (`time_to_resolve`, calculado pelo GLPI com calendário, pausas e SLA) já passou.
+- **Pendente**: chamado em aberto com status *Pendente*.
+
+## Configuração (`/etc/datacenter360/config.php`)
+
+Criado pelo `instalar.sh` na primeira instalação (fora da pasta web, `root:www-data` 640). Principais chaves:
+
+| Chave | Para quê |
+|---|---|
+| `zabbix_url`, `zabbix_token`, `zabbix_front` | API (JSON-RPC), token de usuário **só leitura** e endereço da interface web (para os links) |
+| `glpi_mode` | `db` (padrão: lê o banco do GLPI com um usuário só `SELECT`, plugin dentro do GLPI) ou `rest` (lê pela API REST do GLPI, para um GLPI em outro servidor); com `rest`, informe `glpi_rest` = `url`, `app_token` e `user_token` |
+| `glpi_front` | Endereço do GLPI, para os links dos chamados |
+| `glpi_entity_prefix` | Entidade raiz do painel (ex.: `Empresa > TI > NOC`): só chamados dela para baixo |
+| `severities` | Severidades mostradas, em números do Zabbix (padrão `[5, 4, 2]`: Desastre, Alta e Atenção) |
+| `client_root_markers` | Nomes de entidade cujo filho é o cliente (ex.: `CLIENTES` > Cliente A) |
+| `client_child_markers` | Nomes de entidade cujo pai é o cliente (ex.: Cliente A > `PARCEIROS`) |
+| `client_skip_levels`, `client_exclude` | Níveis ignorados ao achar o cliente e nomes que não contam como cliente |
+| `client_groups` | Opcional: grupo do Zabbix de cada cliente, quando o nome não bate (`'Cliente' => ['Grupo 1', ...]`) |
+| `office_groups`, `si_groups`, `si_server_prefix` | Grupos de hosts do escritório (links e APs FortiGate) e do departamento interno; prefixo do nome para juntar iDRAC, ESXi e host do mesmo servidor físico |
+| `topology_url` | Opcional: topologia de outro painel dentro da aba Topologia |
+| `cache_ttl`, `glpi_cache`, `glpi_max_tickets` | Cache das respostas (s), cache da lista de chamados (s) e limite de chamados lidos |
+
+Segurança: o `api.php` só aceita métodos de **leitura** do Zabbix (`*.get`, `sla.getsli`, `apiinfo.version`) e só faz `GET` na API do GLPI, mesmo que o token tenha mais permissões. Nenhuma credencial chega ao navegador.
+
+Para manter o cache aquecido (a primeira consulta de um período no Zabbix pode levar ~10 s): `DC360_AQUECER=1 bash instalar.sh .` agenda uma consulta por minuto.
 
 ## Arquitetura
 
 ```
-Navegador ──> /datacenter360/index.html + app.js (ECharts)
+Navegador ──> /datacenter360/index.html + app.js (HTML/CSS/JS puros)
                 │
                 └──> api.php (PHP, no servidor do GLPI)
                        ├── API do Zabbix  (token de usuário só leitura)
-                       └── MariaDB glpidb (usuário só com SELECT)
+                       └── GLPI: banco MariaDB (usuário só com SELECT) ou API REST (GET)
 ```
 
 - Nenhuma credencial chega ao navegador: o `api.php` faz todas as consultas.
 - As credenciais ficam em `/etc/datacenter360/config.php`, fora da pasta web, legível só por `root` e pelo Apache.
 - O acesso é restrito à rede local (`Require ip` no Apache).
-- Sem dependências externas em tempo de execução: ECharts, logotipos e fundo são servidos localmente.
+- Sem dependências externas em tempo de execução: nem CDN, nem bibliotecas; logotipos e fundo são servidos localmente.
 
 A correlação entre chamado e host usa o título gerado pela integração Zabbix → GLPI (`[Severidade] HOST: problema`), e o vínculo com o evento usa o link `eventid=` gravado no corpo do chamado.
 
@@ -61,8 +88,8 @@ A correlação entre chamado e host usa o título gerado pela integração Zabbi
 A pasta [`glpi-plugin/datacenter360`](glpi-plugin/datacenter360) é um plugin do GLPI 11/12 que coloca o painel no menu lateral, **acima de Ativos**:
 
 ```
-Dashboard
-   ├─ DataCenter 360      → painel
+NOC
+   ├─ NOC 360             → painel
    └─ Topologia da rede   → topologia
 Ativos
 ...
@@ -252,8 +279,7 @@ Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](gl
 
 - Zabbix 7.x com API habilitada.
 - GLPI 11 ou 12 com banco MariaDB/MySQL local.
-- PHP 8.3+ com `curl` e `mysqli`, servido pelo Apache.
-- No Zabbix, para os gauges e a saúde do GLPI: o host do GLPI com os templates *MySQL by Zabbix agent 2* e *GLPI by HTTP*.
+- PHP 8.1+ com `curl` e `mysqli`, servido pelo Apache (sem Composer nem outras dependências).
 
 ## Instalação
 
@@ -289,7 +315,9 @@ Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](gl
 | Arquivo | Função |
 |---|---|
 | `index.html`, `app.css`, `app.js` | Painel |
+| `aquecer.sh` | Opcional: aquece o cache a cada minuto (`DC360_AQUECER=1`) |
 | `topologia.html`, `topologia.css`, `topologia.js` | Topologia animada da rede |
+| `topologia-embed.html` | Moldura que mostra a topologia de outro painel (`topology_url`) |
 | `glpi-theme/datacenter360.scss` | Paleta do GLPI com as cores do painel |
 | `glpi-theme/apache-tema-editor.conf` | Apache: paleta sempre atualizada dentro do editor de texto |
 | `glpi-plugin/assinatura/` | Plugin do GLPI: assinatura digital no chamado via LibreSign |
@@ -313,7 +341,6 @@ Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](gl
 | `instalar.sh` | Instalação e atualização no servidor |
 | `bg-datacenter.svg` | Fundo do corredor de datacenter, gerado por `tools/gerar_fundo.py` |
 | `logo-zabbix.svg`, `logo-glpi.svg` | Logotipos dos sistemas integrados |
-| `echarts.min.js` | Apache ECharts 5.5.1 (gráficos e gauges) |
 
 ## Reembolso de despesas (plugin)
 
@@ -442,6 +469,5 @@ O código deste repositório (painel, plugins do GLPI, tema e scripts) é distri
 
 ## Créditos e licenças de terceiros
 
-- [Apache ECharts](https://echarts.apache.org/) 5.5.1, licença Apache 2.0, incluído sem alterações.
 - [Simple Icons](https://simpleicons.org) 16.34.0, licença CC0 1.0, para os logotipos da topologia.
 - Zabbix, GLPI e as demais marcas exibidas pertencem a seus respectivos titulares. Os logotipos aparecem apenas para identificar os sistemas monitorados.

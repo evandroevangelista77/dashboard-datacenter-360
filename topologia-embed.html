@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NOC 360° · Topologia</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2l12 7v14l-12 7-12-7V9z' fill='none' stroke='%2322d3ee' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%2322d3ee'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="topologia.css">
+</head>
+<body class="topo-page">
+<div class="grid-bg" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2l12 7v14l-12 7-12-7V9z"/><circle cx="16" cy="16" r="4"/></svg>
+    <div>
+      <h1>NOC <span>360°</span></h1>
+      <p>Topologia · Sistemas Internos</p>
+    </div>
+  </div>
+  <nav class="views" aria-label="Telas">
+    <a href="index.html">Painel</a>
+    <a href="topologia.html" class="on" aria-current="page">Topologia</a>
+  </nav>
+  <div class="topbar-right">
+    <div class="clock" id="clock">--:--:--</div>
+    <button type="button" class="icon" id="reload" title="Atualizar agora" aria-label="Atualizar agora">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>
+    </button>
+    <button type="button" class="icon" id="fullscreen" title="Tela cheia (modo TV)" aria-label="Tela cheia">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+    </button>
+  </div>
+  <div class="countdown" aria-hidden="true"><span id="countdown"></span></div>
+</header>
+
+<div class="ticker" id="ticker" aria-label="Problemas ativos em tempo real">
+  <span class="ticker-label"><span class="led ok"></span>AO VIVO</span>
+  <div class="ticker-track"><div class="ticker-move" id="tickerMove"></div></div>
+</div>
+
+<main class="topo-embed" id="stage">
+  <iframe id="topoF" title="Topologia dos ativos" allow="fullscreen" allowfullscreen></iframe>
+  <p class="topo-msg" id="topoMsg" hidden></p>
+</main>
+
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="ticker.js"></script>
+<script>
+(() => {
+  const f = document.getElementById('topoF'), msg = document.getElementById('topoMsg');
+  const clock = () => { document.getElementById('clock').textContent = new Date().toLocaleTimeString('pt-BR'); };
+  clock(); setInterval(clock, 1000);
+  const load = async () => {
+    try {
+      const r = await (await fetch('api.php?action=topo', { cache: 'no-store' })).json();
+      if (!r.url) throw new Error('A topologia de Sistemas Internos não está configurada (topology_url).');
+      f.src = r.url + (r.url.includes('?') ? '&' : '?') + 't=' + Date.now();
+    } catch (e) { f.hidden = true; msg.hidden = false; msg.textContent = e.message; }
+  };
+  document.getElementById('reload').addEventListener('click', () => { if (f.src) f.src = f.src; });
+  document.getElementById('fullscreen').addEventListener('click', () => {
+    document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {});
+  });
+  // "Fechar" do mapa de Sistemas Internos volta para o painel
+  addEventListener('message', (ev) => { if (ev.data === 'si:topo-close') location.href = 'index.html'; });
+  load();
+})();
+</script>
+</body>
+</html>

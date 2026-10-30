@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DataCenter 360</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2l12 7v14l-12 7-12-7V9z' fill='none' stroke='%2322d3ee' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%2322d3ee'/%3E%3C/svg%3E">
+<title>NOC 360°</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2l12 7v14l-12 7-12-7V9z' fill='none' stroke='%23087E83' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23087E83'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="app.css">
 <link rel="stylesheet" href="topologia.css">
 </head>
@@ -15,7 +15,7 @@
   <div class="brand">
     <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2l12 7v14l-12 7-12-7V9z"/><circle cx="16" cy="16" r="4"/></svg>
     <div>
-      <h1>DATACENTER <span>360</span></h1>
+      <h1>NOC <span>360°</span></h1>
       <p>Centro de Operações · monitoramento e atendimento</p>
     </div>
   </div>
@@ -25,6 +25,7 @@
     <a href="topologia.html">Topologia</a>
   </nav>
 
+  <div class="sourcewrap">
   <nav class="sources" aria-label="Sistemas integrados">
     <a class="source" id="srcZabbix" href="#" target="_blank" rel="noopener" title="Abrir o Zabbix">
       <img src="logo-zabbix.svg" alt="Zabbix" width="76" height="20">
@@ -36,6 +37,8 @@
       <span class="ver"><span class="led" data-led></span><span data-ver>—</span></span>
     </a>
   </nav>
+  <div class="updline" id="updLine" hidden></div>
+  </div>
 
   <div class="topbar-right">
     <div class="clock" id="clock">--:--:--</div>
@@ -67,8 +70,8 @@
   </div>
   <label>De <input type="date" id="from" required></label>
   <label>Até <input type="date" id="to" required></label>
-  <label>Host
-    <select id="host"><option value="">Todos os hosts</option></select>
+  <label>Cliente
+    <select id="client"><option value="">Todos os clientes</option></select>
   </label>
   <label class="grow">Chamado
     <input type="search" id="ticket" placeholder="nº do chamado ou texto do título">
@@ -83,50 +86,69 @@
 </div>
 
 <main class="dash" id="dash">
-  <section class="kpis" aria-label="Indicadores">
-    <button type="button" class="kpi" data-kpi="alerts" data-go="secActive" title="Eventos de problema abertos pelo Zabbix no período"><h3>Alertas</h3><b>—</b><small></small></button>
-    <button type="button" class="kpi" data-kpi="active" data-go="secActive" title="Problemas que continuam abertos agora"><h3>Problemas ativos</h3><b>—</b><small></small></button>
-    <button type="button" class="kpi" data-kpi="tickets" data-go="secTickets" title="Chamados abertos no GLPI no período"><h3>Chamados</h3><b>—</b><small></small></button>
-    <button type="button" class="kpi" data-kpi="hosts" data-go="secHosts" title="Hosts monitorados e disponibilidade média por ICMP"><h3>Hosts</h3><b>—</b><small></small></button>
-    <button type="button" class="kpi" data-kpi="sla" data-go="secTickets" title="Chamados solucionados dentro da meta (SLA do chamado ou meta por prioridade)"><h3>SLA de solução</h3><b>—</b><small></small></button>
-    <button type="button" class="kpi" data-kpi="tma" data-go="secTickets" title="Tempo médio de atendimento: abertura → solução no GLPI"><h3>TMA</h3><b>—</b><small></small></button>
-    <button type="button" class="kpi" data-kpi="mttd" data-go="secActive" title="Tempo médio para detectar: início do problema → 1º reconhecimento no Zabbix"><h3>MTTD</h3><b>—</b><small></small></button>
-    <button type="button" class="kpi" data-kpi="mttr" data-go="secActive" title="Tempo médio para reparar: início do problema → recuperação"><h3>MTTR</h3><b>—</b><small></small></button>
-  </section>
-
-  <section class="panel span-8 db-panel">
-    <header><h2>Banco de dados</h2><span class="hint" id="dbHost"></span></header>
-    <div class="gauges">
-      <div class="chart gauge" id="gEff"></div>
-      <div class="chart gauge" id="gUtil"></div>
-      <div class="chart gauge" id="gConn"></div>
-      <div class="chart gauge" id="gQps"></div>
+  <section class="kgroups" aria-label="Indicadores">
+    <div class="kgroup">
+      <header><h2>Alertas</h2><img src="logo-zabbix.svg" alt="Zabbix" height="14"><span class="hint">no período · Desastre, Alta e Atenção</span></header>
+      <div class="ktiles c4">
+        <button type="button" class="ktile" data-kpi="sev5" data-go="secActive" style="--c:var(--sev-5)" title="Alertas de severidade Desastre no período"><span class="top"><span class="l">Desastre</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.3 2h7.4L21 7.3v9.4L15.7 22H8.3L3 16.7V7.3z"/><path d="M12 8v5M12 16.5v.01"/></svg></span><b>—</b><small></small><em class="desc">Falha crítica: serviço parado ou perda total.</em></button>
+        <button type="button" class="ktile" data-kpi="sev4" data-go="secActive" style="--c:var(--sev-4)" title="Alertas de severidade Alta no período"><span class="top"><span class="l">Alta</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17v.01"/></svg></span><b>—</b><small></small><em class="desc">Problema grave com impacto no serviço.</em></button>
+        <button type="button" class="ktile" data-kpi="sev2" data-go="secActive" style="--c:var(--sev-2)" title="Alertas de severidade Atenção (Warning) no período"><span class="top"><span class="l">Atenção</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 7.5v5M12 16v.01"/></svg></span><b>—</b><small></small><em class="desc">Alerta preventivo, sem impacto imediato.</em></button>
+        <button type="button" class="ktile" data-kpi="unacked" data-go="secActive" style="--c:var(--accent)" title="Problemas ativos (Desastre, Alta e Atenção) que ninguém reconheceu no Zabbix"><span class="top"><span class="l">Sem ACK</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.6 14.5c.9-1.2 1.4-2.7 1.4-4.5a8 8 0 0 0-12-6.9M6.3 6.3A8 8 0 0 0 4 10c0 5-2 6.5-2 6.5h14M10 20a2 2 0 0 0 4 0M2 2l20 20"/></svg></span><b>—</b><small></small><em class="desc">Ativos que ninguém reconheceu no Zabbix.</em></button>
+      </div>
     </div>
-    <dl class="db-stats" id="dbStats"></dl>
-  </section>
-  <section class="panel span-4">
-    <header><h2>Saúde do GLPI</h2><span class="hint">status.php + login</span></header>
-    <ul class="health" id="health"></ul>
-    <header class="sub"><h2>SLAs de serviço (Zabbix)</h2></header>
-    <ul class="slas" id="slas"></ul>
+    <div class="kgroup">
+      <header><h2>Chamados</h2><img src="logo-glpi.svg" alt="GLPI" height="15"><span class="hint">entidade NOC para baixo</span></header>
+      <div class="ktiles c3">
+        <button type="button" class="ktile" data-kpi="tickets" data-go="secTickets" style="--c:var(--series-2)" title="Chamados abertos no período"><span class="top"><span class="l">No período</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/><path d="M14 6v12" stroke-dasharray="2 3"/></svg></span><b>—</b><small></small><em class="desc">Chamados abertos no período selecionado.</em></button>
+        <button type="button" class="ktile" data-kpi="pending" data-go="secTickets" style="--c:var(--warning)" title="Chamados em aberto com status Pendente"><span class="top"><span class="l">Pendentes</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M10 9v6M14 9v6"/></svg></span><b>—</b><small></small><em class="desc">Em aberto, aguardando retorno ou terceiros.</em></button>
+        <button type="button" class="ktile" data-kpi="overdue" data-go="secTickets" style="--c:var(--critical)" title="Chamados em aberto com o prazo de solução do GLPI vencido"><span class="top"><span class="l">Atrasados</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M5 3 2 6M22 6l-3-3"/></svg></span><b>—</b><small></small><em class="desc">Em aberto com o prazo de solução vencido.</em></button>
+      </div>
+    </div>
+    <div class="kgroup">
+      <header><h2>Tempo de resposta</h2><span class="hint">média no período</span></header>
+      <div class="ttime">
+        <span></span>
+        <span class="col"><img src="logo-zabbix.svg" alt="Zabbix" height="13"></span>
+        <span class="col"><img src="logo-glpi.svg" alt="GLPI" height="14"></span>
+        <span class="row-l" title="Tempo médio para detectar. Zabbix: início do problema até o 1º reconhecimento. GLPI: abertura do chamado até o 1º atendimento"><span class="rt"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l6-6"/></svg><b>MTTD</b></span><em>Tempo médio para detectar</em></span>
+        <button type="button" class="cell" data-kpi="mttd_zbx" data-go="secActive"><span class="ctop"><b>—</b><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 0 0 4 0"/></svg></span><small></small><em class="desc">Do início do problema ao 1º reconhecimento.</em></button>
+        <button type="button" class="cell" data-kpi="mttd_glpi" data-go="secTickets"><span class="ctop"><b>—</b><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span><small></small><em class="desc">Da abertura do chamado ao 1º atendimento.</em></button>
+        <span class="row-l" title="Tempo médio para reparar. Zabbix: início do problema até a recuperação. GLPI: abertura até a solução do chamado"><span class="rt"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L3 17.7 6.3 21l6.3-6.3a4 4 0 0 0 5.1-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg><b>MTTR</b></span><em>Tempo médio para reparar</em></span>
+        <button type="button" class="cell" data-kpi="mttr_zbx" data-go="secActive"><span class="ctop"><b>—</b><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg></span><small></small><em class="desc">Do início do problema até a recuperação.</em></button>
+        <button type="button" class="cell" data-kpi="mttr_glpi" data-go="secTickets"><span class="ctop"><b>—</b><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.5l3 3 5-6"/></svg></span><small></small><em class="desc">Da abertura do chamado até a solução.</em></button>
+      </div>
+    </div>
   </section>
 
-  <section class="panel span-12" id="secHosts">
-    <header><h2>Hosts</h2><span class="hint" id="hostsHint"></span></header>
-    <div class="hostgrid" id="hostGrid"></div>
+  <section class="panel span-12" id="secStAge">
+    <header><h2>Tempo em aberto</h2><img class="plogo" src="logo-glpi.svg" alt="GLPI" height="15"><span class="hint">chamados abertos agora, por faixa de idade e status · clique para ver</span></header>
+    <div class="lgd" id="lgStAge"></div><div class="agegrid" id="bdStAge"></div>
   </section>
 
-  <section class="panel span-4">
-    <header><h2>Hosts com mais alertas</h2><span class="hint">clique para filtrar</span></header>
-    <div class="chart" id="chTopHosts"></div>
+  <section class="panel span-7" id="secClientTk">
+    <header><h2>Chamados por cliente</h2><img class="plogo" src="logo-glpi.svg" alt="GLPI" height="15"><span class="hint">abertos no período · barra proporcional ao volume · clique no nome para filtrar, na cor para listar</span></header>
+    <div class="lgd" id="lgTkClient"></div><div class="board" id="bdTkClient"></div>
   </section>
-  <section class="panel span-4">
-    <header><h2>Chamados por categoria</h2><span class="hint">clique para filtrar</span></header>
-    <div class="chart" id="chCategory"></div>
+  <section class="panel span-5" id="secClientAl">
+    <header><h2>Alertas por cliente</h2><img class="plogo" src="logo-zabbix.svg" alt="Zabbix" height="14"><span class="hint">Desastre · Alta · Atenção · clique para filtrar</span></header>
+    <div class="lgd" id="lgAlClient"></div><div class="board" id="bdAlClient"></div>
   </section>
-  <section class="panel span-4">
-    <header><h2>Chamados por entidade</h2><span class="hint">clique para filtrar</span></header>
-    <div class="chart" id="chEntity"></div>
+
+  <section class="panel span-6" id="secStGroup">
+    <header><h2>Chamados por grupo</h2><img class="plogo" src="logo-glpi.svg" alt="GLPI" height="15"><span class="hint">período + abertos agora · clique na cor para listar</span></header>
+    <div class="lgd" id="lgStGroup"></div><div class="board" id="bdStGroup"></div>
+  </section>
+  <section class="panel span-6" id="secStTech">
+    <header><h2>Chamados por responsável</h2><img class="plogo" src="logo-glpi.svg" alt="GLPI" height="15"><span class="hint">período + abertos agora · clique na cor para listar</span></header>
+    <div class="lgd" id="lgStTech"></div><div class="board" id="bdStTech"></div>
+  </section>
+  <section class="panel span-6">
+    <header><h2>Hosts com mais alertas</h2><img class="plogo" src="logo-zabbix.svg" alt="Zabbix" height="14"><span class="hint">no período · clique para filtrar</span></header>
+    <div class="lgd" id="lgTopHosts"></div><div class="board" id="bdTopHosts"></div>
+  </section>
+  <section class="panel span-6">
+    <header><h2>Chamados por categoria</h2><img class="plogo" src="logo-glpi.svg" alt="GLPI" height="15"><span class="hint">abertos no período · clique na cor para listar</span></header>
+    <div class="lgd" id="lgCategory"></div><div class="board" id="bdCategory"></div>
   </section>
 
   <section class="panel span-12" id="detailPanel" hidden>
@@ -150,9 +172,8 @@
     <div class="chips" id="ticketChips" role="group" aria-label="Filtrar chamados"></div>
     <div class="table-wrap"><table id="tblTickets" data-sort="id" data-dir="desc">
       <thead><tr>
-        <th data-key="id" class="num">Nº</th><th data-key="name">Título</th><th data-key="status_id">Status</th>
-        <th data-key="priority_id">Prioridade</th><th data-key="category">Categoria</th>
-        <th data-key="resolve_seconds" class="num">Solução</th><th data-key="sla_ok">SLA</th>
+        <th data-key="id" class="num">Nº</th><th data-key="client">Cliente</th><th data-key="name">Título</th><th data-key="status_id">Status</th>
+        <th data-key="priority_id">Prioridade</th><th data-key="resolve_seconds" class="num">Solução</th><th data-key="sla_ok">SLA</th>
       </tr></thead>
       <tbody></tbody>
     </table></div>
@@ -161,12 +182,21 @@
 
 <footer class="foot">
   <span id="updated">—</span>
-  <span>MTTD = início do problema → 1º reconhecimento · MTTR = início → recuperação · TMA = abertura → solução · SLA = SLA do chamado ou meta por prioridade</span>
+  <span>Alertas: Desastre, Alta e Atenção · Chamados: entidade NOC para baixo · MTTD Zabbix = início → 1º reconhecimento, GLPI = abertura → 1º atendimento · MTTR Zabbix = início → recuperação, GLPI = abertura → solução · Atrasado = prazo de solução do GLPI vencido</span>
 </footer>
+
+<div class="scrim" id="scrim"></div>
+<aside class="pdrawer" id="drawer" aria-hidden="true" role="dialog" aria-labelledby="dT">
+  <div class="dh"><div class="dtt"><span class="dico" id="dIco"></span><h3 id="dT"></h3></div>
+    <button class="btn-x" id="dX" type="button" title="Fechar (Esc)" aria-label="Fechar">✕</button></div>
+  <div class="dsum" id="dSum" hidden></div>
+  <div class="dsub" id="dS"></div>
+  <div class="dtools" id="dTools"><input type="search" id="dQ" placeholder="Filtrar na lista…" aria-label="Filtrar na lista"></div>
+  <div class="dlist" id="dL"></div>
+</aside>
 
 <div class="toast" id="toast" role="status" hidden></div>
 
-<script src="echarts.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
