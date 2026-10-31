@@ -37,8 +37,10 @@
         try {
             ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
             if (ctx.state === 'suspended') ctx.resume();
+            const first = !unlocked;
             unlocked = true;
             flagEl && flagEl.classList.remove('noc360-flag-locked');
+            if (first) announce();
         } catch (e) { /* sem áudio */ }
     };
     ['pointerdown', 'keydown'].forEach((ev) => document.addEventListener(ev, unlock, {passive: true}));
@@ -117,6 +119,16 @@
         }, 5000);
     }
 
+    // ao ativar o som (primeiro clique da sessão do navegador) avisa o que será monitorado
+    const AVISO = 'Som ativado. O NOC 360 vai monitorar os alertas do Zabbix, os novos chamados e os SLAs.';
+    function announce(force = false) {
+        try {
+            if (!force && (sessionStorage.getItem('noc360.avisou') || isMuted() || isQuiet())) return;
+            sessionStorage.setItem('noc360.avisou', '1');
+        } catch (e) { /* sem sessionStorage: avisa uma vez por página */ }
+        setTimeout(() => say(AVISO), 150);
+    }
+
     // ---------------------------------------------------------------- silêncio (por navegador)
     const mutedUntil = () => (store.get() || {}).muted || 0;
     const isMuted = () => mutedUntil() > Date.now();
@@ -168,7 +180,7 @@
             store.set(s);
             refreshState();
         });
-        flagEl.querySelector('[data-voz]').addEventListener('click', (ev) => { ev.stopPropagation(); unlock(); play('sino'); setTimeout(() => say('Alertas por voz do NOC 360 ativados.'), 900); });
+        flagEl.querySelector('[data-voz]').addEventListener('click', (ev) => { ev.stopPropagation(); unlock(); play('sino'); setTimeout(() => announce(true), 900); });
     }
     function refreshState() {
         if (!flagEl) return;
