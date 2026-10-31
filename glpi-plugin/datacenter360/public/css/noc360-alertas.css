@@ -38,3 +38,19 @@
 .noc360-toast .noc360-txt small { text-transform: uppercase; letter-spacing: .04em; font-weight: 700; color: var(--c, #087E83); }
 .noc360-toast .btn-primary { align-self: flex-start; background: #087E83; border-color: #087E83; }
 .noc360-toast .btn-close { flex: none; }
+
+/* fora do GLPI (painel direto ou em quadro): sem Bootstrap/Tabler, o menu e as cores vêm daqui */
+.noc360-standalone .noc360-flag, .noc360-standalone .noc360-toasts { --tblr-bg-surface: #0d2347; --tblr-body-color: #eef4fc; --tblr-border-color: rgba(90, 135, 210, .35); --tblr-secondary-color: #9bb2d3; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.noc360-standalone .noc360-flag-menu { display: none; position: absolute; right: 0; top: calc(100% + 8px); z-index: 1100; background: #0d2347; color: #eef4fc; border: 1px solid rgba(90, 135, 210, .35); border-radius: 12px; box-shadow: 0 18px 44px rgba(0, 0, 0, .5); }
+.noc360-standalone .noc360-flag.show .noc360-flag-menu { display: block; }
+.noc360-standalone .noc360-flag-bar { position: relative; }
+.noc360-standalone .noc360-flag .nav-link { cursor: pointer; font-size: 18px; line-height: 1; }
+.noc360-standalone .noc360-flag-count { box-shadow: 0 0 0 2px #07142b; }
+.noc360-standalone .noc360-flag-item { color: #eef4fc; }
+.noc360-standalone .btn { font: 600 12px system-ui, sans-serif; padding: 5px 10px; border-radius: 8px; border: 1px solid rgba(90, 135, 210, .4); background: transparent; color: #eef4fc; text-decoration: none; cursor: pointer; display: inline-block; }
+.noc360-standalone .btn-primary { background: #087E83; border-color: #087E83; color: #fff; }
+.noc360-standalone .noc360-toast .btn-close { width: 22px; height: 22px; border: 0; background: transparent; color: inherit; font-size: 18px; cursor: pointer; }
+.noc360-standalone .noc360-toast .btn-close::before { content: "×"; }
+.noc360-standalone .mt-2 { margin-top: .5rem; }
+.noc360-emo { font-style: normal; line-height: 1; }
+.noc360-standalone .noc360-flag-left .noc360-flag-menu { right: auto; left: 0; }

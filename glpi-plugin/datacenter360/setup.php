@@ -9,7 +9,7 @@ use Glpi\Plugin\Hooks;
 use GlpiPlugin\Datacenter360\Menu;
 use GlpiPlugin\Datacenter360\ProfileTab;
 
-define('PLUGIN_DATACENTER360_VERSION', '1.3.0');
+define('PLUGIN_DATACENTER360_VERSION', '1.3.2');
 define('PLUGIN_DATACENTER360_MIN_GLPI', '11.0.0');
 define('PLUGIN_DATACENTER360_MAX_GLPI', '12.0.99');
 

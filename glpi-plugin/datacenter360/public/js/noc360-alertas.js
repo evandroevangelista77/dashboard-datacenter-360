@@ -15,6 +15,19 @@
         get() { try { return JSON.parse(localStorage.getItem(KEY)) || null; } catch (e) { return null; } },
         set(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) { /* sem armazenamento */ } },
     };
+    // fora do GLPI (painel aberto direto, ou dentro do quadro do plugin) não há fonte de ícones nem Bootstrap
+    const standalone = !window.CFG_GLPI;
+    if (standalone) document.documentElement.classList.add('noc360-standalone');
+    const EMO = {'ti-flame': '🔥', 'ti-alert-octagon': '⛔', 'ti-alert-triangle': '⚠️', 'ti-alert-circle': '❗', 'ti-info-circle': 'ℹ️', 'ti-help-circle': '❔', 'ti-circle-check': '✅',
+        'ti-ticket': '🎫', 'ti-hourglass-high': '⏳', 'ti-hourglass-empty': '⌛', 'ti-volume': '🔊', 'ti-volume-off': '🔇', 'ti-moon': '🌙', 'ti-speakerphone': '📣',
+        'ti-chart-donut-3': '📊', 'ti-mood-happy': '🙂', 'ti-radar-2': '📡'};
+    const fixIcons = (el) => {
+        if (!standalone || !el) return;
+        el.querySelectorAll('i.ti').forEach((i) => {
+            const n = [...i.classList].find((c) => c.startsWith('ti-') && c !== 'ti');
+            i.replaceWith(Object.assign(document.createElement('span'), {className: 'noc360-emo', textContent: EMO[n] || '•'}));
+        });
+    };
     let cfg = {poll: 20, volume: 0.8, rate: 1.05, popup_seconds: 20, popup_max: 5, mute_minutes: 60, quiet: null, sla_warn: 60};
     let timer = null, stopped = false, built = false, unseen = false;
 
@@ -98,9 +111,18 @@
                 <div class="noc360-flag-foot"><span><button type="button" class="btn btn-sm btn-ghost-secondary" data-mute></button><button type="button" class="btn btn-sm btn-ghost-secondary" data-voz title="Testar a voz"><i class="ti ti-speakerphone"></i></button></span>
                 <a class="btn btn-sm btn-primary" href="${esc(painelUrl)}"><i class="ti ti-chart-donut-3 me-1"></i>NOC 360</a></div>
             </div>`;
-        const header = document.querySelector('header .avisos-bell') || document.querySelector('header .user-menu') || document.querySelector('header .navbar-nav.order-md-last');
+        if (standalone) {
+            const bar = document.querySelector('.topbar-right');
+            if (bar) { flagEl.classList.add('noc360-flag-bar'); bar.insertBefore(flagEl, bar.querySelector('#reload')); }
+            else { flagEl.classList.add('noc360-flag-floating'); document.body.appendChild(flagEl); }
+            flagEl.querySelector('button.nav-link').classList.add('icon');
+            flagEl.querySelector('button.nav-link').addEventListener('click', (ev) => { ev.stopPropagation(); flagEl.classList.toggle('show'); flagEl.classList.toggle('noc360-flag-left', flagEl.getBoundingClientRect().right < 440); });
+            document.addEventListener('click', (ev) => { if (!flagEl.contains(ev.target)) flagEl.classList.remove('show'); });
+        }
+        const header = standalone ? null : document.querySelector('header .avisos-bell') || document.querySelector('header .user-menu') || document.querySelector('header .navbar-nav.order-md-last');
         if (header) header.parentNode.insertBefore(flagEl, header);
-        else { flagEl.classList.add('noc360-flag-floating'); document.body.appendChild(flagEl); }
+        else if (!flagEl.isConnected) { flagEl.classList.add('noc360-flag-floating'); document.body.appendChild(flagEl); }
+        fixIcons(flagEl);
         countEl = flagEl.querySelector('.noc360-flag-count');
         listEl = flagEl.querySelector('[data-list]');
         muteBtn = flagEl.querySelector('[data-mute]');
@@ -120,6 +142,7 @@
         const m = isMuted();
         stateEl.innerHTML = m ? `<i class="ti ti-volume-off me-1"></i>som e voz silenciados até ${new Date(mutedUntil()).toTimeString().slice(0, 5)}` : (isQuiet() ? '<i class="ti ti-moon me-1"></i>horário de silêncio' : '');
         muteBtn.innerHTML = m ? '<i class="ti ti-volume me-1"></i>Religar som e voz' : `<i class="ti ti-volume-off me-1"></i>Silenciar ${cfg.mute_minutes} min`;
+        fixIcons(stateEl); fixIcons(muteBtn);
     }
     function renderFlag(items) {
         buildFlag();
@@ -134,6 +157,7 @@
                 <span class="noc360-txt"><b>${esc(it.title)}</b><small>${esc(it.sub)}</small></span></a>`).join('')
             + (items.length > show.length ? `<div class="noc360-flag-empty">e mais ${items.length - show.length}…</div>` : '')
             : '<div class="noc360-flag-empty"><i class="ti ti-mood-happy me-1"></i>Nada pedindo atenção agora.</div>';
+        fixIcons(listEl);
         refreshState();
     }
 
@@ -155,6 +179,7 @@
             <button type="button" class="btn-close" aria-label="Fechar"></button>`;
         const close = () => { el.classList.add('out'); setTimeout(() => el.remove(), 250); };
         el.querySelector('.btn-close').addEventListener('click', close);
+        fixIcons(el);
         stack.appendChild(el);
         requestAnimationFrame(() => el.classList.add('in'));
         if (!a.sticky) setTimeout(close, cfg.popup_seconds * 1000);
