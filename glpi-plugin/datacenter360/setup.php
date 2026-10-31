@@ -9,7 +9,7 @@ use Glpi\Plugin\Hooks;
 use GlpiPlugin\Datacenter360\Menu;
 use GlpiPlugin\Datacenter360\ProfileTab;
 
-define('PLUGIN_DATACENTER360_VERSION', '1.2.0');
+define('PLUGIN_DATACENTER360_VERSION', '1.3.0');
 define('PLUGIN_DATACENTER360_MIN_GLPI', '11.0.0');
 define('PLUGIN_DATACENTER360_MAX_GLPI', '12.0.99');
 
@@ -36,7 +36,9 @@ function plugin_init_datacenter360(): void
     }
 
     // árvore da Oakmont em marca d'água azul em todas as telas
-    $PLUGIN_HOOKS[Hooks::ADD_CSS]['datacenter360'] = ['css/noc360-fundo.css'];
+    $PLUGIN_HOOKS[Hooks::ADD_CSS]['datacenter360'] = ['css/noc360-fundo.css', 'css/noc360-alertas.css'];
+    // sinalizador, som, voz e pop-up dos alertas (Zabbix, chamados novos, SLA) em todas as telas
+    $PLUGIN_HOOKS[Hooks::ADD_JAVASCRIPT]['datacenter360'] = ['js/noc360-alertas.js'];
 
     // Seção "Dashboard" no menu lateral; quem não tem o direito não vê os itens
     // (Menu::getMenuContent() devolve false).

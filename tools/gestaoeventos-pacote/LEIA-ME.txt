@@ -1,0 +1,68 @@
+PLUGIN GESTÃO DE EVENTOS PARA GLPI 11 E 12 · versão @VERSAO@
+==========================================================
+
+Leva cada evento (feira, congresso, evento de parceiro, iniciativa interna,
+participação e agenda comercial) do briefing ao encerramento, dentro do GLPI
+11 ou 12.0.x (seção "Gestão de Eventos" do menu lateral).
+
+- 8 etapas (briefing, avaliação, planejamento, compras, produção, prontidão,
+  execução e encerramento), cada uma com grupo responsável, SLO, alerta e o que
+  exige para concluir; devolução com motivo (retrabalho)
+- Aprovações por alçada (sequencial ou paralela), delegação, exceção de
+  antecedência (60 dias) e bloqueio de contratação sem aprovação
+- Abas: aprovações, planejamento (projeto GLPI, marcos, RACI, riscos),
+  checklists, marketing, compras, financeiro (Budget, EAC, Realizado),
+  viagens (simulador + cotação Uber opcional), logística, execução,
+  encerramento (Definition of Done), documentos e linha do tempo
+- Painel (mesmo layout do Ciclo Financeiro), relatórios com CSV e relatório
+  final do evento
+- Chamado por etapa e, com o plugin Avisos, sino, pop-up e Teams
+
+CONTEÚDO
+--------
+  gestaoeventos/  o plugin (a pasta precisa se chamar "gestaoeventos")
+  instalar.sh     instala ou atualiza tudo de uma vez
+  LEIA-ME.txt     este arquivo
+  LICENSE         GNU GPL versão 3
+
+INSTALAÇÃO AUTOMÁTICA (no servidor do GLPI)
+-------------------------------------------
+   unzip oak-gestaoeventos-completo-@VERSAO@.zip
+   cd oak-gestaoeventos-completo
+   sudo bash instalar.sh
+
+   GLPI em outro caminho ou com outro administrador:
+   sudo GLPI_DIR=/caminho/do/glpi GLPI_ADMIN=usuario bash instalar.sh
+
+INSTALAÇÃO MANUAL
+-----------------
+   sudo cp -r gestaoeventos /var/www/glpi/plugins/
+   sudo chown -R www-data:www-data /var/www/glpi/plugins/gestaoeventos
+   sudo -u www-data php /var/www/glpi/bin/console plugin:install --username=glpi gestaoeventos
+   sudo -u www-data php /var/www/glpi/bin/console plugin:activate gestaoeventos
+
+PRIMEIROS PASSOS
+----------------
+1) Crie os grupos das áreas (Marketing, Diretoria, PMO, Compras, Logística,
+   Financeiro) com as pessoas de cada uma.
+2) Gestão de Eventos > Etapas e SLOs: escolha o grupo de cada etapa e ajuste os
+   SLOs (os de fábrica são uma sugestão inicial).
+3) Gestão de Eventos > Alçadas e regras: grupo de cada alçada, antecedência,
+   tolerância, categorias financeiras e tarifas de viagem.
+4) Permissões: Administração > Perfis > (perfil) > aba "Gestão de Eventos"
+   (Ler, Criar, Atualizar, Aprovar e Financeiro).
+5) Gestão de Eventos > Eventos > "+" para abrir o primeiro briefing.
+
+COTAÇÃO UBER
+------------
+A API de preços da Uber exige aprovação formal da Uber. O adaptador vem
+DESLIGADO; só marque "autorização concedida" depois de a Uber liberar o acesso.
+
+ATENÇÃO
+-------
+Desinstalar o plugin apaga os eventos, etapas, aprovações, registros e
+viagens. Os chamados das etapas e os documentos continuam no GLPI.
+
+LICENÇA
+-------
+GNU General Public License, versão 3 ou posterior (GPLv3+), a mesma do GLPI.

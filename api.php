@@ -1047,6 +1047,69 @@ function ticketRow(array $t, int $now): array
         'open' => $st < 5, 'pending' => $st === 4, 'late' => $st < 5 && $ttr !== null && $ttr < $now];
 }
 
+/** Tipos de alerta do navegador: [rótulo, grupo, ícone, cor, canais padrão, som]. Sobrescreva em config.php → 'alertas' => ['tipos' => ['zbx_5' => ['channels' => ['popup', 'voice'], 'tone' => 'sirene']]]. */
+const ALERTAS_TIPOS = [
+    'zbx_5'        => ['Desastre', 'Zabbix', 'ti-flame', '#e45959', ['flag', 'sound', 'popup', 'voice', 'sticky'], 'sirene'],
+    'zbx_4'        => ['Alta', 'Zabbix', 'ti-alert-octagon', '#e97659', ['flag', 'sound', 'popup', 'voice', 'sticky'], 'duplo'],
+    'zbx_3'        => ['Média', 'Zabbix', 'ti-alert-triangle', '#ffa059', ['flag', 'sound', 'popup'], 'bip'],
+    'zbx_2'        => ['Atenção', 'Zabbix', 'ti-alert-circle', '#ffc859', ['flag', 'popup', 'voice'], 'suave'],
+    'zbx_1'        => ['Informação', 'Zabbix', 'ti-info-circle', '#7499ff', [], 'suave'],
+    'zbx_0'        => ['Não classificada', 'Zabbix', 'ti-help-circle', '#97aab3', [], 'suave'],
+    'zbx_ok'       => ['Problema resolvido', 'Zabbix', 'ti-circle-check', '#22c55e', ['popup', 'voice'], 'sino'],
+    'glpi_new'     => ['Chamado novo', 'GLPI', 'ti-ticket', '#3769B2', ['flag', 'sound', 'popup', 'voice'], 'sino'],
+    'glpi_sla1h'   => ['SLA vence em até 1 h', 'GLPI', 'ti-hourglass-high', '#f59e0b', ['flag', 'sound', 'popup', 'voice'], 'duplo'],
+    'glpi_slalate' => ['SLA vencido', 'GLPI', 'ti-hourglass-empty', '#ef4444', ['flag', 'sound', 'popup', 'voice', 'sticky'], 'sirene'],
+];
+
+/**
+ * Alertas para o navegador (js/noc360-alertas.js): problemas do Zabbix (ativos e resolvidos há pouco),
+ * chamados abertos da entidade NOC (novos e SLA) e as preferências de canais, som e voz.
+ * O que é "novo" quem decide é o navegador (cursor guardado nele), então esta ação não guarda estado.
+ */
+function alertas(): array
+{
+    global $cfg;
+    $a = $cfg['alertas'] ?? [];
+    $now = time();
+    $sev = sevList();
+    $zbx = fileCache('alertas:z:' . implode(',', $sev), 10, function () use ($sev) {
+        $w1 = zbxBatchStrict(['p' => ['problem.get', ['output' => ['eventid', 'r_eventid', 'r_clock', 'name', 'severity', 'clock', 'acknowledged'], 'severities' => $sev,
+            'recent' => true, 'sortfield' => ['eventid'], 'sortorder' => 'DESC', 'limit' => 400]]]);
+        $hosts = [];
+        if ($w1['p']) {
+            $w2 = zbxBatchStrict(['e' => ['event.get', ['output' => ['eventid'], 'eventids' => array_column($w1['p'], 'eventid'), 'selectHosts' => ['hostid', 'name']]]]);
+            foreach ($w2['e'] as $e) {
+                $hosts[$e['eventid']] = $e['hosts'][0] ?? null;
+            }
+        }
+        return array_map(fn($p) => ['eventid' => (int)$p['eventid'], 'r_eventid' => (int)$p['r_eventid'], 'r_clock' => (int)$p['r_clock'], 'name' => $p['name'],
+            'severity' => (int)$p['severity'], 'clock' => (int)$p['clock'], 'ack' => $p['acknowledged'] === '1',
+            'host' => $hosts[$p['eventid']]['name'] ?? '—', 'hostid' => $hosts[$p['eventid']]['hostid'] ?? null], $w1['p']);
+    });
+    $tk = fileCache('alertas:t', 20, fn() => glpiRemote() ? glpiTicketsRest(0, 0, true) : glpiTicketsDb(0, 0, true));
+    $tickets = [];
+    foreach ($tk as $t) {
+        $r = ticketRow($t, $now);
+        if (!$r['open']) {
+            continue;
+        }
+        $tickets[] = ['id' => $r['id'], 'name' => $r['name'], 'date' => $r['date'], 'client' => $r['client'], 'status' => $r['status'], 'status_id' => $r['status_id'],
+            'due' => $t['time_to_resolve'] ? strtotime($t['time_to_resolve']) : null, 'pending' => $r['pending']];
+    }
+    $tipos = [];
+    foreach (ALERTAS_TIPOS as $k => [$label, $group, $icon, $color, $canais, $tone]) {
+        $o = $a['tipos'][$k] ?? [];
+        $tipos[$k] = ['label' => $label, 'group' => $group, 'icon' => $icon, 'color' => $color, 'tone' => $o['tone'] ?? $tone, 'channels' => $o['channels'] ?? $canais];
+    }
+    return [
+        'ok' => true, 'now' => $now, 'problems' => $zbx, 'tickets' => $tickets, 'tipos' => $tipos,
+        'prefs' => ['poll' => max(10, (int)($a['poll'] ?? 20)), 'volume' => max(0, min(100, (int)($a['volume'] ?? 80))) / 100, 'rate' => (float)($a['voice_rate'] ?? 1.05),
+            'popup_seconds' => (int)($a['popup_seconds'] ?? 20), 'popup_max' => (int)($a['popup_max'] ?? 5), 'mute_minutes' => (int)($a['mute_minutes'] ?? 60),
+            'quiet' => $a['quiet'] ?? null, 'sla_warn' => (int)($a['sla_warn_minutes'] ?? 60)],
+        'links' => ['zabbix' => rtrim($cfg['zabbix_front'], '/'), 'glpi' => rtrim($cfg['glpi_front'], '/')],
+    ];
+}
+
 function data(): array
 {
     global $cfg;
@@ -1734,6 +1797,7 @@ try {
         'topo' => ['url' => $cfg['topology_url'] ?? null],
         'mapa' => mapa(),
         'hostficha' => hostFicha(),
+        'alertas' => alertas(),
         'hostlog' => hostLog(),
         'ticketlog' => ticketLog(),
         'topology' => topology(),

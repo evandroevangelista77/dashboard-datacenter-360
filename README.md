@@ -102,6 +102,34 @@ Ativos
 - Acesso controlado pelo direito **DataCenter 360**, em *Administração → Perfis → [perfil] → aba DataCenter 360*. Na instalação, a leitura é liberada para os perfis da interface padrão (técnicos e administradores); perfis self-service ficam sem acesso.
 - Sessões abertas antes da instalação passam a ver o menu sem precisar relogar.
 
+### Alertas por voz, som e pop-up (todas as telas do GLPI)
+
+O plugin acrescenta, no topo de qualquer tela do GLPI, o **sinalizador do NOC 360** (contador do que pede atenção agora, piscando quando chega algo) e avisa por **voz (pt-BR)**, **som** e **pop-up** no rodapé:
+
+| Tipo | Padrão |
+|---|---|
+| Zabbix Desastre · Alta | sinalizador, som, voz, pop-up, fica até fechar |
+| Zabbix Atenção | sinalizador, pop-up, voz |
+| Problema resolvido | pop-up e voz |
+| Chamado novo (entidade NOC) | sinalizador, som, pop-up e voz |
+| SLA vence em até 1 h | sinalizador, som, pop-up e voz |
+| SLA vencido | sinalizador, som, pop-up, voz, fica até fechar |
+
+O navegador só toca som e fala depois de um clique na página (regra dos navegadores): até lá o sino balança; o botão do alto-falante no menu do sinalizador testa a voz. "Silenciar N min" cala som e voz e mantém pop-up e sinalizador. O que já foi avisado fica guardado no próprio navegador, então nada repete ao trocar de página.
+
+Ajustes opcionais em `config.php`:
+
+```php
+'alertas' => [
+    'poll' => 20, 'volume' => 80, 'voice_rate' => 1.05, 'popup_seconds' => 20, 'popup_max' => 5, 'mute_minutes' => 60,
+    'sla_warn_minutes' => 60,                       // aviso de SLA antes de vencer
+    'quiet' => ['from' => '22:00', 'to' => '06:00'], // sem som e voz neste horário
+    'tipos' => ['zbx_3' => ['channels' => ['flag', 'popup', 'voice'], 'tone' => 'duplo']],
+],
+```
+
+Canais: `flag`, `sound`, `popup`, `voice`, `sticky`. Tipos: `zbx_5` (Desastre) … `zbx_0`, `zbx_ok`, `glpi_new`, `glpi_sla1h`, `glpi_slalate`. A ação `alertas` do `api.php` é só leitura.
+
 ### Instalação do plugin
 
 ```bash
