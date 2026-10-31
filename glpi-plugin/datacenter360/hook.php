@@ -10,7 +10,13 @@ function plugin_datacenter360_install(): bool
 {
     global $DB;
 
-    ProfileRight::addProfileRights([Menu::$rightname]);
+    // idempotente: só insere o direito nos perfis que ainda não o têm (atualização do plugin)
+    foreach ($DB->request(['SELECT' => ['id'], 'FROM' => Profile::getTable()]) as $row) {
+        $existe = countElementsInTable(ProfileRight::getTable(), ['profiles_id' => $row['id'], 'name' => Menu::$rightname]);
+        if (!$existe) {
+            $DB->insert(ProfileRight::getTable(), ['profiles_id' => $row['id'], 'name' => Menu::$rightname, 'rights' => 0]);
+        }
+    }
 
     foreach ($DB->request(['SELECT' => ['id'], 'FROM' => Profile::getTable(), 'WHERE' => ['interface' => 'central']]) as $row) {
         $DB->update(

@@ -9,7 +9,7 @@ use Glpi\Plugin\Hooks;
 use GlpiPlugin\Datacenter360\Menu;
 use GlpiPlugin\Datacenter360\ProfileTab;
 
-define('PLUGIN_DATACENTER360_VERSION', '1.1.0');
+define('PLUGIN_DATACENTER360_VERSION', '1.2.0');
 define('PLUGIN_DATACENTER360_MIN_GLPI', '11.0.0');
 define('PLUGIN_DATACENTER360_MAX_GLPI', '12.0.99');
 
@@ -34,6 +34,9 @@ function plugin_init_datacenter360(): void
     if (isset($_SESSION['glpiID']) && empty($_SESSION['glpipalette']) && !empty($CFG_GLPI['palette'])) {
         $_SESSION['glpipalette'] = $CFG_GLPI['palette'];
     }
+
+    // árvore da Oakmont em marca d'água azul em todas as telas
+    $PLUGIN_HOOKS[Hooks::ADD_CSS]['datacenter360'] = ['css/noc360-fundo.css'];
 
     // Seção "Dashboard" no menu lateral; quem não tem o direito não vê os itens
     // (Menu::getMenuContent() devolve false).

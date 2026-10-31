@@ -1,0 +1,18 @@
+/* NOC 360: árvore da Oakmont em marca d'água azul sobre todas as telas do GLPI (só visual, não recebe clique) */
+body::before, body::after { content: ""; position: fixed; pointer-events: none; z-index: 2147483000; }
+/* foto da árvore tingida de azul, bem suave */
+body::before {
+  inset: 0;
+  background: #3769B2 url("../img/arvore.jpg") center / cover no-repeat;
+  background-blend-mode: luminosity;
+  opacity: .07;
+}
+/* marca da Oakmont, no canto inferior direito */
+body::after {
+  right: 2.5vw; bottom: 3vh; width: min(34vw, 460px); aspect-ratio: 1.56;
+  background: #3769B2; opacity: .14;
+  -webkit-mask: url("../img/oakmont.png") center / contain no-repeat; mask: url("../img/oakmont.png") center / contain no-repeat;
+}
+[data-bs-theme="dark"] body::before { opacity: .10; }
+[data-bs-theme="dark"] body::after { background: #6f9be0; opacity: .16; }
+@media print { body::before, body::after { display: none; } }
