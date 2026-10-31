@@ -1,0 +1,37 @@
+NOC 360 PARA GLPI 11 E 12 · versão @VERSAO@
+===========================================
+
+Painel de sala de operações que cruza o Zabbix (alertas) e o GLPI (chamados
+da entidade NOC). 100% PHP, sem dependências além de curl e mysqli.
+
+- Por cliente: alertas Desastre/Alta/Atenção, sem ACK, chamados no período,
+  pendentes e atrasados; MTTD e MTTR do Zabbix e do GLPI
+- Gaveta lateral com a lista, atalhos para o alerta/chamado, histórico do
+  host e interações do chamado
+- Quadros por cliente, grupo, responsável, status e tempo em aberto, com
+  legendas que filtram
+- Topologia própria (mapa de rede com prévia ao passar o mouse e ficha do
+  ativo ao clicar) e faixa de alertas ao vivo
+- Plugin do GLPI: seção "NOC" no menu lateral com o item "NOC 360"
+
+CONTEÚDO
+--------
+  painel/         arquivos do painel + instalar.sh e aquecer.sh (cache)
+  datacenter360/  plugin do GLPI (menu NOC > NOC 360)
+  README.md       documentação completa e chaves do config.php
+  LICENSE         GNU GPL versão 3
+
+INSTALAÇÃO (no servidor do GLPI, como root)
+-------------------------------------------
+1. Painel (primeira vez exige um token Zabbix SOMENTE LEITURA):
+     cd painel && ZABBIX_TOKEN=... bash instalar.sh .
+   Ajuste /etc/datacenter360/config.php (URL do Zabbix, grupos, entidade).
+2. Plugin:
+     cp -r datacenter360 /var/www/glpi/plugins/
+     chown -R www-data:www-data /var/www/glpi/plugins/datacenter360
+     cd /var/www/glpi
+     sudo -u www-data php bin/console plugin:install --username=glpi datacenter360
+     sudo -u www-data php bin/console plugin:activate datacenter360
+3. Opcional, cache aquecido: DC360_AQUECER=1 bash instalar.sh .
+
+REQUISITOS: PHP 8.1+ com curl e mysqli, GLPI 11.0 ou 12.0, Zabbix 6+ (API).
