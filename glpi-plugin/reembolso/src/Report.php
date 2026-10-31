@@ -60,8 +60,9 @@ class Report
         $users = [];
         foreach ($DB->request([
             'SELECT'    => [
-                'd.id', 'd.date', 'd.description', 'd.origin', 'd.destination', 'd.round_trip', 'd.km_start', 'd.km_end', 'd.distance', 'd.km_rate', 'd.amount',
+                'd.id', 'd.date', 'd.time', 'd.is_night', 'd.description', 'd.origin', 'd.destination', 'd.round_trip', 'd.km_start', 'd.km_end', 'd.distance', 'd.km_rate', 'd.amount',
                 'r.id AS reembolso', 'r.name AS code', 'r.status', 'r.users_id', 'r.tickets_id', 'r.address', 'r.date_payment', 'r.payment_reference',
+                'r.date_begin', 'r.time_begin', 'r.date_end', 'r.time_end', 'r.minutes_business', 'r.minutes_outside', 'r.minutes_night',
                 't.name AS tipo', 't.is_mileage', 't.max_amount',
                 'c.name AS centro', 'c.code AS centro_code',
                 'l.completename AS location',

@@ -330,3 +330,19 @@
 .rb-ad-account .get, .rb-ad-balance.get { border-color: #3b82f6; background: color-mix(in srgb, #3b82f6 10%, transparent); }
 .rb-ad-account .zero, .rb-ad-balance.zero { border-color: #22c55e; background: color-mix(in srgb, #22c55e 10%, transparent); }
 @media (max-width: 575px) { .rb-ad-account { grid-template-columns: 1fr; } }
+
+/* dashboard: horas por técnico (comercial, fora do horário e o noturno sobreposto) */
+.rb-hbar-legend { display: flex; flex-wrap: wrap; gap: 1rem; font-size: .75rem; color: var(--rb-muted); margin-bottom: .6rem; }
+.rb-hbar-legend span::before { content: ''; display: inline-block; width: .7rem; height: .7rem; border-radius: 3px; margin-right: .35rem; vertical-align: -1px; }
+.rb-hbar-legend .biz::before { background: #0ea5e9; } .rb-hbar-legend .out::before { background: #f97316; } .rb-hbar-legend .night::before { background: #8b5cf6; }
+.rb-hbars { display: flex; flex-direction: column; gap: .55rem; }
+.rb-hbar { display: grid; grid-template-columns: minmax(120px, 210px) 1fr auto; gap: .75rem; align-items: center; }
+.rb-hbar-name { font-weight: 600; line-height: 1.15; }
+.rb-hbar-name small { display: block; font-weight: 400; color: var(--rb-muted); font-size: .72rem; }
+.rb-hbar-track { position: relative; height: 18px; border-radius: 6px; background: var(--rb-surface-2); display: flex; overflow: hidden; }
+.rb-hbar-track i { display: block; height: 100%; }
+.rb-hbar-track i.biz { background: #0ea5e9; } .rb-hbar-track i.out { background: #f97316; opacity: .85; }
+.rb-hbar-track b.night { position: absolute; top: 4px; bottom: 4px; background: #8b5cf6; border-radius: 3px; box-shadow: 0 0 0 1px rgba(255,255,255,.6); }
+.rb-hbar-val { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; text-align: right; min-width: 90px; }
+.rb-hbar-val .night { display: block; color: #8b5cf6; font-size: .75rem; }
+@media (max-width: 575px) { .rb-hbar { grid-template-columns: 1fr auto; } .rb-hbar-track { grid-column: 1 / -1; } }

@@ -56,7 +56,7 @@ class Menu
     public const SUBTITLES = [
         'reembolso' => 'Solicitações de reembolso de despesas dos técnicos em atendimentos externos. Crie a solicitação e lance as despesas com horário e comprovante: no fim do período, tudo vira um lote para o técnico conferir e assinar.',
         'lote'      => 'Cada lote junta os reembolsos de um técnico no período (diário, semanal, quinzenal ou mensal) num PDF: o técnico confere e assina, depois aprovam o gestor da área, o gestor do centro de custo e o OTC, e o financeiro paga com o comprovante.',
-        'dashboard' => 'Quanto foi gasto, com o quê e por quem: indicadores e gráficos por período, técnico, centro de custo, tipo de despesa e situação, com exportação para Excel (XLSX).',
+        'dashboard' => 'Quanto foi gasto, com o quê e por quem: indicadores e gráficos por período, técnico, centro de custo, tipo de despesa e situação, horas comerciais, fora do horário e de adicional noturno, adiantamentos e exportação para Excel (XLSX).',
         'documentos' => 'Todos os comprovantes das solicitações de reembolso (notas, cupons, recibos e fotos), por solicitação, por categoria ou por tipo de arquivo. PDF e imagens abrem aqui mesmo.',
         'config'    => 'Regras gerais do reembolso: valor por KM, rota, comprovante, faixa do adicional noturno, periodicidade dos lotes por técnico e os grupos do OTC e do financeiro. Tipos de despesa e centros de custo (com o gestor) ficam nas listas próprias.',
         'form_new'  => 'Informe o técnico, o centro de custo, o chamado e o local do atendimento e lance as despesas com o horário. No fim do período, a solicitação entra no lote do técnico.',

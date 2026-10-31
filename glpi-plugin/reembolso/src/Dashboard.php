@@ -125,8 +125,12 @@ class Dashboard extends CommonGLPI
         echo $card('rb-c-centro', '<i class="ti ti-building-bank me-2"></i>Por centro de custo', 'clique na barra para ver as despesas');
         echo "</div>";
         echo "<div class='row g-3 mb-3'><div class='col-12'>" . self::pipeline($f) . "</div></div>";
+        $ads = self::advances($f);
+        echo self::hoursCard($rows);
+        echo self::advanceCard($ads);
+        echo "<div class='row g-3 mb-3'><div class='col-12'>" . self::advancePipeline($ads) . "</div></div>";
         echo "<script type='application/json' id='rb-dash'>" . json_encode($charts, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) . "</script>";
-        echo self::drawers($rows);
+        echo self::drawers($rows) . self::extraDrawers($rows, $ads);
         echo Html::script(Menu::url('/js/drawer.js'), ['version' => Menu::fileVersion('js/drawer.js')], false);
         echo Html::script(Menu::url('/js/oakbars.js'), ['version' => Menu::fileVersion('js/oakbars.js')], false);
         echo Html::script(Menu::url('/js/dashboard.js'), ['version' => Menu::fileVersion('js/dashboard.js')], false);
@@ -283,6 +287,192 @@ class Dashboard extends CommonGLPI
             $html .= "<template id='dr-$key' data-title='" . $e($title) . "' data-icon='$icon' data-color='$color'>$body</template>";
         }
         return $html;
+    }
+
+    // ------------------------------------------------------------------ horas e adicional noturno
+
+    /** Atendimentos (solicitações) das despesas do filtro, sem os recusados, com as horas. */
+    private static function attendances(array $rows): array
+    {
+        $out = [];
+        foreach ($rows as $r) {
+            if ($r['status'] === Reembolso::REFUSED) {
+                continue;
+            }
+            $id = (int) $r['reembolso'];
+            $out[$id] ??= ['id' => $id, 'tecnico' => $r['tecnico'], 'tickets_id' => (int) $r['tickets_id'], 'when' => Pdf::when($r),
+                'biz' => (int) $r['minutes_business'], 'out' => (int) $r['minutes_outside'], 'night' => (int) $r['minutes_night'],
+                'has' => (bool) ($r['time_begin'] && $r['time_end']), 'nexp' => 0, 'nval' => 0.0];
+            if ((int) $r['is_night']) {
+                $out[$id]['nexp']++;
+                $out[$id]['nval'] += $r['amount'];
+            }
+        }
+        return $out;
+    }
+
+    /** Cartão "Horas dos atendimentos e adicional noturno": totais e uma barra empilhada por técnico. */
+    private static function hoursCard(array $rows): string
+    {
+        $e = fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);
+        $att = self::attendances($rows);
+        $sum = fn ($k) => array_sum(array_column($att, $k));
+        $c = Money::config();
+        $tec = [];
+        foreach ($att as $a) {
+            $t = &$tec[$a['tecnico']];
+            $t['biz'] = ($t['biz'] ?? 0) + $a['biz'];
+            $t['out'] = ($t['out'] ?? 0) + $a['out'];
+            $t['night'] = ($t['night'] ?? 0) + $a['night'];
+            $t['nexp'] = ($t['nexp'] ?? 0) + $a['nexp'];
+            $t['nval'] = ($t['nval'] ?? 0) + $a['nval'];
+            $t['n'] = ($t['n'] ?? 0) + 1;
+            unset($t);
+        }
+        uasort($tec, fn ($a, $b) => ($b['night'] <=> $a['night']) ?: (($b['out'] + $b['biz']) <=> ($a['out'] + $a['biz'])));
+        $max = max(1, ...array_values(array_map(fn ($t) => $t['biz'] + $t['out'], $tec)) ?: [1]);
+        $kpi = fn ($label, $value, $sub, $color, $drawer = '') => "<div class='col-6 col-xl-3'><div class='rb-kpi" . ($drawer ? " oak-kpi-click' role='button' tabindex='0' data-drawer='$drawer'" : "'") . " style='--c:$color'><div class='rb-kpi-label'>$label</div><div class='rb-kpi-value'>$value</div><div class='rb-kpi-sub'>$sub</div></div></div>";
+        $noTime = count(array_filter($att, fn ($a) => !$a['has']));
+        $h = "<div class='card mb-3'><div class='card-header'><h3 class='card-title'><i class='ti ti-moon-stars me-2'></i>Horas dos atendimentos e adicional noturno</h3>"
+            . "<div class='card-actions small text-secondary'>comercial: seg. a sex. " . $e($c['business_start'] . '–' . $c['business_end']) . ' · noturno: ' . $e($c['night_start'] . '–' . $c['night_end']) . "</div></div><div class='card-body'>"
+            . "<div class='row g-2 mb-3'>"
+            . $kpi('Horas comerciais', Money::minutes($sum('biz')), count($att) . ' atendimento(s)', '#0ea5e9')
+            . $kpi('Fora do horário comercial', Money::minutes($sum('out')), 'inclui fins de semana', '#f97316')
+            . $kpi('Horas de adicional noturno', Money::minutes($sum('night')), count(array_filter($att, fn ($a) => $a['night'] > 0)) . ' atendimento(s) com noturno', '#8b5cf6', 'rb-noturno')
+            . $kpi('Despesas noturnas', $sum('nexp') . ' · ' . Money::format($sum('nval')), 'lançadas no horário noturno', '#6d28d9', 'rb-noturno')
+            . '</div>';
+        if (!$tec) {
+            return $h . "<div class='text-secondary'>Nenhum atendimento no período.</div></div></div>";
+        }
+        $h .= "<div class='rb-hbar-legend'><span class='biz'>Comercial</span><span class='out'>Fora do horário</span><span class='night'>Adicional noturno (dentro das horas fora do horário)</span></div><div class='rb-hbars'>";
+        foreach ($tec as $name => $t) {
+            $w = fn ($m) => round(100 * $m / $max, 2);
+            $h .= "<div class='rb-hbar'><div class='rb-hbar-name'>" . $e($name) . "<small>" . $t['n'] . ' atendimento(s)' . ($t['nexp'] ? ' · ' . $t['nexp'] . ' despesa(s) noturna(s)' : '') . "</small></div>"
+                . "<div class='rb-hbar-track'><i class='biz' style='width:" . $w($t['biz']) . "%'></i><i class='out' style='width:" . $w($t['out']) . "%'></i>"
+                . ($t['night'] ? "<b class='night' style='left:" . $w($t['biz']) . "%;width:" . $w($t['night']) . "%'></b>" : '') . "</div>"
+                . "<div class='rb-hbar-val'>" . Money::minutes($t['biz'] + $t['out']) . ($t['night'] ? "<span class='night'><i class='ti ti-moon-stars'></i> " . Money::minutes($t['night']) . '</span>' : '') . '</div></div>';
+        }
+        return $h . '</div>' . ($noTime ? "<div class='small text-secondary mt-2'>$noTime atendimento(s) sem horário de início e fim ficam fora das horas.</div>" : '') . '</div></div>';
+    }
+
+    // ------------------------------------------------------------------ adiantamentos
+
+    /** Adiantamentos do filtro (período pelo início do atendimento; em aberto aparecem sempre). */
+    private static function advances(array $f): array
+    {
+        global $DB;
+        $t = Adiantamento::getTable();
+        $where = ['is_deleted' => 0, ['NOT' => ['status' => Adiantamento::CANCELED]], ['OR' => [
+            ['AND' => [['date_begin' => ['>=', $f['from']]], ['date_begin' => ['<=', $f['to']]]]],
+            ['status' => [Adiantamento::DRAFT, Adiantamento::SIGN, Adiantamento::MANAGER, Adiantamento::CENTER, Adiantamento::OTC, Adiantamento::FINANCE, Adiantamento::RETURNED, Adiantamento::PAID, Adiantamento::ACCOUNT]],
+        ]]] + (new \DbUtils())->getEntitiesRestrictCriteria($t, '', '', true);
+        if (!$f['readall']) {
+            $me = (int) \Session::getLoginUserID();
+            $where[] = ['OR' => ['users_id' => $me, 'users_id_recipient' => $me]];
+        } elseif ($f['users']) {
+            $where['users_id'] = $f['users'];
+        }
+        if ($f['centro']) {
+            $where['plugin_reembolso_centrocustos_id'] = $f['centro'];
+        }
+        $out = [];
+        foreach ($DB->request(['FROM' => $t, 'WHERE' => $where, 'ORDER' => 'id']) as $r) {
+            $a = new Adiantamento();
+            $a->getFromDB((int) $r['id']);
+            $out[] = $a;
+        }
+        return $out;
+    }
+
+    private static function advanceCard(array $ads): string
+    {
+        $by = fn (array $st) => array_filter($ads, fn ($a) => in_array((int) $a->fields['status'], $st, true));
+        $total = fn (array $list, string $k = 'total') => array_sum(array_map(fn ($a) => (float) $a->fields[$k], $list));
+        $approving = $by([Adiantamento::SIGN, Adiantamento::MANAGER, Adiantamento::CENTER, Adiantamento::OTC, Adiantamento::FINANCE, Adiantamento::RETURNED]);
+        $paid = $by([Adiantamento::PAID, Adiantamento::ACCOUNT, Adiantamento::CLOSED]);
+        $open = $by([Adiantamento::PAID]);
+        $late = array_filter($open, fn ($a) => $a->isLate());
+        $accounted = $by([Adiantamento::ACCOUNT, Adiantamento::CLOSED]);
+        $give = array_sum(array_map(fn ($a) => max(0, (float) $a->fields['balance']), $accounted));
+        $get = array_sum(array_map(fn ($a) => max(0, -(float) $a->fields['balance']), $accounted));
+        $use = $total($accounted) > 0 ? round(100 * $total($accounted, 'spent_total') / $total($accounted)) : 0;
+        $kpi = fn ($label, $value, $sub, $color) => "<div class='col-6 col-md-4 col-xl'><div class='rb-kpi oak-kpi-click' role='button' tabindex='0' data-drawer='rb-ad' style='--c:$color'><div class='rb-kpi-label'>$label</div><div class='rb-kpi-value'>$value</div><div class='rb-kpi-sub'>$sub</div></div></div>";
+        return "<div class='card mb-3'><div class='card-header'><h3 class='card-title'><i class='ti ti-cash-banknote me-2'></i>Adiantamentos</h3>"
+            . "<div class='card-actions'><a class='btn btn-sm btn-outline-primary' href='" . htmlspecialchars(Adiantamento::getSearchURL(), ENT_QUOTES) . "'>Ver todos</a></div></div><div class='card-body'><div class='row g-2'>"
+            . $kpi('Em aprovação', Money::format($total($approving)), count($approving) . ' pedido(s) na esteira', '#f59e0b')
+            . $kpi('Adiantado (pago)', Money::format($total($paid)), count($paid) . ' adiantamento(s)', '#14b8a6')
+            . $kpi('Prestação de contas pendente', count($open) . ' · ' . Money::format($total($open)), $late ? "<span class='text-danger fw-bold'>" . count($late) . ' atrasada(s)</span>' : 'nenhuma atrasada', $late ? '#ef4444' : '#6366f1')
+            . $kpi('Uso do adiantado', $accounted ? $use . '%' : '—', $accounted ? Money::format($total($accounted, 'spent_total')) . ' gastos de ' . Money::format($total($accounted)) : 'sem prestação de contas', '#0ea5e9')
+            . $kpi('Saldo a acertar', Money::format($give) . ' / ' . Money::format($get), 'técnicos devolvem / empresa complementa', '#94a3b8')
+            . '</div></div></div>';
+    }
+
+    /** "Onde os adiantamentos estão agora": pedidos em aberto pela etapa, com os dias parados. */
+    private static function advancePipeline(array $ads): string
+    {
+        $groups = [
+            'Rascunho' => [[Adiantamento::DRAFT, Adiantamento::RETURNED], 'Técnico', 3],
+            'Assinatura do técnico' => [[Adiantamento::SIGN], 'Técnico', 2],
+            'Gestores' => [[Adiantamento::MANAGER, Adiantamento::CENTER], 'Gestor da área / centro', 2],
+            'OTC' => [[Adiantamento::OTC], 'OTC', 2],
+            'A pagar' => [[Adiantamento::FINANCE], 'Financeiro', 2],
+            'Prestação de contas' => [[Adiantamento::PAID], 'Técnico', 0],
+            'Conferência' => [[Adiantamento::ACCOUNT], 'Financeiro', 3],
+        ];
+        $steps = [];
+        foreach ($groups as $name => [$st, $area, $limit]) {
+            $items = [];
+            foreach ($ads as $a) {
+                $f = $a->fields;
+                if (!in_array((int) $f['status'], $st, true)) {
+                    continue;
+                }
+                $isAccount = (int) $f['status'] === Adiantamento::PAID;
+                $since = $isAccount ? ($f['date_end'] ?: $f['date_mod']) : $f['date_mod'];
+                $items[] = ['code' => Adiantamento::code($a->getID()), 'name' => getUserName((int) $f['users_id']) . ' · ' . Money::format((float) $f['total']),
+                    'sub' => ((int) $f['status'] === Adiantamento::RETURNED ? 'devolvido · ' : '') . ($isAccount ? 'prestar contas até ' . date('d/m/Y', strtotime($a->deadline())) : 'atendimento ' . strip_tags(Pdf::when($f))),
+                    'url' => Adiantamento::getFormURLWithID($a->getID()), 'days' => max(0, (time() - strtotime((string) $since)) / 86400),
+                    'limit' => $isAccount ? Money::config()['advance_account_days'] : $limit, 'bad' => $isAccount ? $a->isLate() : null];
+            }
+            $steps[] = ['name' => $name, 'area' => $area, 'items' => array_map(fn ($i) => array_filter($i, fn ($v) => $v !== null), $items)];
+        }
+        return Esteira::card(['title' => 'Onde os adiantamentos estão agora', 'icon' => 'ti-cash-banknote', 'steps' => $steps, 'ends' => ['Pedido', 'Aprovação', 'Prestação de contas'],
+            'empty' => 'Nenhum adiantamento em aberto.']);
+    }
+
+    /** Painéis laterais do adicional noturno e dos adiantamentos. */
+    private static function extraDrawers(array $rows, array $ads): string
+    {
+        $e = fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);
+        $item = fn ($cls, $row, $sub) => "<div class='oak-dr-item $cls'><div class='oak-dr-row'>$row</div>" . ($sub !== '' ? "<div class='oak-dr-sub'>$sub</div>" : '') . '</div>';
+        $empty = fn ($t) => "<div class='oak-dr-empty'>$t</div>";
+
+        // adicional noturno: atendimentos com horas noturnas e as despesas lançadas no horário
+        $att = array_filter(self::attendances($rows), fn ($a) => $a['night'] > 0 || $a['nexp'] > 0);
+        usort($att, fn ($a, $b) => $b['night'] <=> $a['night']);
+        $h = "<p class='oak-dr-lead'>Atendimentos com horas na faixa noturna e despesas lançadas nesse horário (destacadas no lote e no PDF).</p><div class='oak-dr-list'>";
+        foreach ($att as $a) {
+            $h .= $item('', "<a href='" . $e(Reembolso::getFormURLWithID($a['id'])) . "'><b>" . Reembolso::code($a['id']) . "</b></a><span class='oak-dr-name'>" . $e($a['tecnico']) . "</span><span class='oak-dr-val'>" . Money::minutes($a['night']) . '</span>',
+                ($a['tickets_id'] ? 'chamado nº ' . $a['tickets_id'] . ' · ' : '') . $e(strip_tags($a['when'])) . ($a['nexp'] ? ' · ' . $a['nexp'] . ' despesa(s) noturna(s), ' . Money::format($a['nval']) : ''));
+        }
+        $html = "<template id='dr-rb-noturno' data-title='Adicional noturno' data-icon='ti-moon-stars' data-color='#8b5cf6'>" . ($att ? $h . '</div>' : $empty('Nenhum atendimento com adicional noturno no período.')) . '</template>';
+
+        // adiantamentos por etapa
+        $h = "<p class='oak-dr-lead'>Adiantamentos do período e os que estão em aberto, pela etapa.</p><div class='oak-dr-list'>";
+        usort($ads, fn ($a, $b) => (int) $a->fields['status'] <=> (int) $b->fields['status']);
+        foreach ($ads as $a) {
+            $f = $a->fields;
+            [$label, $color] = Adiantamento::STATUSES[(int) $f['status']];
+            $sub = $e($label) . ((int) $f['tickets_id'] ? ' · chamado nº ' . (int) $f['tickets_id'] : '');
+            if (in_array((int) $f['status'], [Adiantamento::ACCOUNT, Adiantamento::CLOSED], true)) {
+                $sub .= ' · gasto ' . Money::format((float) $f['spent_total']) . ' · ' . $e(Adiantamento::balanceLabel((float) $f['balance']));
+            } elseif ((int) $f['status'] === Adiantamento::PAID) {
+                $sub .= ' · prestar contas até ' . date('d/m/Y', strtotime($a->deadline()));
+            }
+            $h .= "<div class='oak-dr-item " . ($a->isLate() ? 'bad' : '') . "' style='--oc:$color'><div class='oak-dr-row'><a href='" . $e(Adiantamento::getFormURLWithID($a->getID())) . "'><b>" . Adiantamento::code($a->getID()) . "</b></a>"
+                . "<span class='oak-dr-name'>" . $e(getUserName((int) $f['users_id'])) . "</span><span class='oak-dr-val'>" . Money::format((float) $f['total']) . "</span></div><div class='oak-dr-sub'>$sub</div></div>";
+        }
+        return $html . "<template id='dr-rb-ad' data-title='Adiantamentos' data-icon='ti-cash-banknote' data-color='#14b8a6'>" . ($ads ? $h . '</div>' : $empty('Nenhum adiantamento no período.')) . '</template>';
     }
 
     /** Prazo de referência de cada etapa, em dias: para enviar, para aprovar e para pagar. */

@@ -36,7 +36,7 @@
   function mapIcon(kind, c) {
     const rack = (y, h) => `<rect x="4" y="${y}" width="48" height="${h}" rx="4" fill="url(#mpMetal)" stroke="#5aa3a6" stroke-width=".8"/><rect x="4" y="${y}" width="48" height="2.2" rx="1" fill="#fff" opacity=".12"/>`;
     const led = (x, y, col = '#5fe3b8') => `<circle cx="${x}" cy="${y}" r="1.5" fill="${col}"/>`;
-    const ports = (x, y, n) => Array.from({ length: n }, (_, i) => `<rect x="${x + i * 4.4}" y="${y}" width="3.4" height="3" rx=".5" fill="#04282b" stroke="#6fb3b6" stroke-width=".4"/>`).join('');
+    const ports = (x, y, n) => Array.from({ length: n }, (_, i) => `<rect x="${x + i * 4.4}" y="${y}" width="3.4" height="3" rx=".5" fill="#07142b" stroke="#6fb3b6" stroke-width=".4"/>`).join('');
     const K = {
       fw: rack(10, 24) + Array.from({ length: 3 }, (_, r) => Array.from({ length: 4 }, (_, i) => `<rect x="${8 + i * 7 + (r % 2) * 3.5}" y="${14 + r * 5.6}" width="6" height="4.4" rx=".6" fill="#c0563f" opacity="${.55 + r * .12}"/>`).join('')).join('')
         + `<path d="M42 12l8 3v6c0 5-3.4 8-8 10-4.6-2-8-5-8-10v-6z" fill="${c}" stroke="#fff" stroke-width=".8"/><path d="M38.5 20.5l2.6 2.6 4.6-5" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`,
@@ -50,7 +50,7 @@
       cloud: `<path d="M14 36h28a9 9 0 0 0 1-18 12 12 0 0 0-23-3 9 9 0 0 0-6 21z" fill="url(#mpGlobe)" stroke="${c}" stroke-width="1.4"/>`,
       sensor: `<rect x="23" y="4" width="10" height="26" rx="5" fill="url(#mpMetal)" stroke="#6fb3b6"/><circle cx="28" cy="33" r="7" fill="#e2675a"/><rect x="26.4" y="12" width="3.2" height="20" rx="1.6" fill="#e2675a"/>` + [10, 15, 20].map((y) => `<path d="M35 ${y}h5" stroke="#6fb3b6"/>`).join(''),
       printer: `<rect x="16" y="4" width="24" height="12" rx="1" fill="#e6f1f2"/><rect x="6" y="14" width="44" height="18" rx="4" fill="url(#mpMetal)" stroke="#6fb3b6"/><rect x="16" y="28" width="24" height="12" rx="1" fill="#e6f1f2"/><rect x="40" y="18" width="7" height="3" rx="1" fill="${c}"/>`,
-      dvr: `<path d="M6 14h30l9 6v4l-9 6H6z" fill="url(#mpMetal)" stroke="#6fb3b6"/><circle cx="38" cy="22" r="5" fill="#04282b" stroke="${c}" stroke-width="2"/><rect x="16" y="30" width="4" height="7" fill="#5aa3a6"/><rect x="10" y="36" width="16" height="3" rx="1" fill="#5aa3a6"/>`,
+      dvr: `<path d="M6 14h30l9 6v4l-9 6H6z" fill="url(#mpMetal)" stroke="#6fb3b6"/><circle cx="38" cy="22" r="5" fill="#07142b" stroke="${c}" stroke-width="2"/><rect x="16" y="30" width="4" height="7" fill="#5aa3a6"/><rect x="10" y="36" width="16" height="3" rx="1" fill="#5aa3a6"/>`,
     };
     return `<svg viewBox="0 0 56 44" class="mp-ic" aria-hidden="true">${K[kind] || K.server}</svg>`;
   }
