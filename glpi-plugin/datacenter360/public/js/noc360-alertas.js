@@ -68,21 +68,20 @@
     }
 
     // ---------------------------------------------------------------- voz
-    // Mesma voz dos Sistemas Internos 360: a melhor voz pt-BR que o navegador tiver (masculina e natural primeiro),
-    // tom grave, frases separadas e siglas pronunciadas por extenso. Funciona em Chrome, Edge, Safari e Firefox.
-    const VOZ_M = /antonio|donato|fabio|julio|daniel|felipe|ricardo|eddy|reed|rocko|grandpa/i;
-    const VOZ_F = /francisca|thalita|luciana|fernanda|maria|flo\b|grandma|sandy|shelley|google/i;
+    // Voz o mais humana que o navegador tiver em pt-BR, frases separadas e siglas pronunciadas por extenso. Funciona em Chrome, Edge, Safari e Firefox.
+    // voz humana: neural/natural primeiro (Edge: Francisca, Antonio), depois as de alta qualidade (Google, Luciana, Joana),
+    // e por último as de brinquedo do macOS (Reed, Eddy, Flo...) e as "compact", que soam robóticas
     const vozNota = (v) => {
         const n = v.name;
         let sc = /^pt[-_]BR/i.test(v.lang) ? 20 : 0;
-        if (/natural|neural/i.test(n)) sc += 80;
-        if (/premium/i.test(n)) sc += 70;
-        if (/enhanced|aprimorad/i.test(n)) sc += 60;
-        if (/google/i.test(n)) sc += 45;
+        if (/natural|neural/i.test(n)) sc += 120;
+        if (/premium/i.test(n)) sc += 90;
+        if (/enhanced|aprimorad/i.test(n)) sc += 80;
         if (/online/i.test(n)) sc += 30;
-        if (/compact|eloquence|espeak|^(eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley)\b/i.test(n)) sc -= 40;
-        if (VOZ_M.test(n)) sc += 60; else if (VOZ_F.test(n)) sc -= 30;
-        return sc + (/^reed/i.test(n) ? 6 : /^eddy/i.test(n) ? 4 : 0);
+        if (/google/i.test(n)) sc += 70;
+        if (/francisca|antonio|thalita|luciana|joana|fernanda|felipe|daniel/i.test(n)) sc += 40;
+        if (/compact|eloquence|espeak|^(eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley|bad news|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|zarvox)\b/i.test(n)) sc -= 100;
+        return sc;
     };
     // as vozes carregam depois da página (Chrome, Safari): escolhe de novo a cada fala
     const vozNavegador = () => {
@@ -99,14 +98,14 @@
     let keepAlive = null;
     function say(text) {
         if (!window.speechSynthesis || !text) return;
-        const v = vozNavegador(), nat = v && vozNota(v) >= 120;
+        const v = vozNavegador();
         const frases = (vozTexto(text).match(/[^.!?]+[.!?]*/g) || []).map((f) => f.trim()).filter(Boolean);
         frases.forEach((f) => {
             const u = new SpeechSynthesisUtterance(f);
             u.lang = v ? v.lang : 'pt-BR';
             if (v) u.voice = v;
-            u.rate = (nat ? 0.95 : 0.9) * (cfg.rate / 1.05);
-            u.pitch = 0.82;
+            u.rate = Math.max(0.8, Math.min(1.2, cfg.rate * 0.95));
+            u.pitch = 1;
             u.volume = Math.max(0.1, cfg.volume);
             speechSynthesis.speak(u);
         });
