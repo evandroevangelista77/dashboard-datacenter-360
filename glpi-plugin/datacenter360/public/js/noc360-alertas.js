@@ -68,20 +68,54 @@
     }
 
     // ---------------------------------------------------------------- voz
-    let voice = null;
-    const pickVoice = () => {
-        const all = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
-        voice = all.find((v) => /^pt[-_]BR/i.test(v.lang)) || all.find((v) => /^pt/i.test(v.lang)) || null;
+    // Mesma voz dos Sistemas Internos 360: a melhor voz pt-BR que o navegador tiver (masculina e natural primeiro),
+    // tom grave, frases separadas e siglas pronunciadas por extenso. Funciona em Chrome, Edge, Safari e Firefox.
+    const VOZ_M = /antonio|donato|fabio|julio|daniel|felipe|ricardo|eddy|reed|rocko|grandpa/i;
+    const VOZ_F = /francisca|thalita|luciana|fernanda|maria|flo\b|grandma|sandy|shelley|google/i;
+    const vozNota = (v) => {
+        const n = v.name;
+        let sc = /^pt[-_]BR/i.test(v.lang) ? 20 : 0;
+        if (/natural|neural/i.test(n)) sc += 80;
+        if (/premium/i.test(n)) sc += 70;
+        if (/enhanced|aprimorad/i.test(n)) sc += 60;
+        if (/google/i.test(n)) sc += 45;
+        if (/online/i.test(n)) sc += 30;
+        if (/compact|eloquence|espeak|^(eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley)\b/i.test(n)) sc -= 40;
+        if (VOZ_M.test(n)) sc += 60; else if (VOZ_F.test(n)) sc -= 30;
+        return sc + (/^reed/i.test(n) ? 6 : /^eddy/i.test(n) ? 4 : 0);
     };
-    if (window.speechSynthesis) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+    // as vozes carregam depois da página (Chrome, Safari): escolhe de novo a cada fala
+    const vozNavegador = () => {
+        const all = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
+        return all.filter((v) => /^pt[-_]BR/i.test(v.lang) || /^pt$/i.test(v.lang)).sort((a, b) => vozNota(b) - vozNota(a))[0] || null;
+    };
+    if (window.speechSynthesis) { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); }
+    const vozTexto = (t) => String(t)
+        .replace(/\*\*/g, '').replace(/#(\d{3,9})\b/g, 'evento $1')
+        .replace(/\bSLA\b/g, 'ésse éle á').replace(/\bSLO\b/g, 'ésse éle ó').replace(/\bMTTR\b/g, 'tempo médio de recuperação').replace(/\bICMP\b/g, 'í cê ême pê')
+        .replace(/(\d+(?:,\d+)?)\s?h\b/g, '$1 horas').replace(/(\d+)\s?d\b/g, '$1 dias').replace(/(\d+)\s?min\b/g, '$1 minutos').replace(/(\d+(?:,\d+)?)\s?ms\b/g, '$1 milissegundos')
+        .replace(/\s\|\s/g, ', ').replace(/\s?>=\s?/g, ' maior ou igual a ').replace(/\s?<=\s?/g, ' menor ou igual a ').replace(/\s?>\s?/g, ' maior que ').replace(/\s?<\s?/g, ' menor que ')
+        .replace(/\s+/g, ' ').trim();
+    let keepAlive = null;
     function say(text) {
         if (!window.speechSynthesis || !text) return;
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'pt-BR';
-        if (voice) u.voice = voice;
-        u.rate = cfg.rate;
-        u.volume = Math.max(0.1, cfg.volume);
-        speechSynthesis.speak(u);
+        const v = vozNavegador(), nat = v && vozNota(v) >= 120;
+        const frases = (vozTexto(text).match(/[^.!?]+[.!?]*/g) || []).map((f) => f.trim()).filter(Boolean);
+        frases.forEach((f) => {
+            const u = new SpeechSynthesisUtterance(f);
+            u.lang = v ? v.lang : 'pt-BR';
+            if (v) u.voice = v;
+            u.rate = (nat ? 0.95 : 0.9) * (cfg.rate / 1.05);
+            u.pitch = 0.82;
+            u.volume = Math.max(0.1, cfg.volume);
+            speechSynthesis.speak(u);
+        });
+        // Chrome para de falar sozinho em falas longas: um resume periódico mantém a fila andando
+        clearInterval(keepAlive);
+        keepAlive = setInterval(() => {
+            if (!speechSynthesis.speaking && !speechSynthesis.pending) { clearInterval(keepAlive); return; }
+            if (speechSynthesis.paused) speechSynthesis.resume();
+        }, 5000);
     }
 
     // ---------------------------------------------------------------- silêncio (por navegador)
@@ -216,7 +250,7 @@
             if (!t) return;
             const resolved = p.r_eventid > 0;
             if (!resolved && t.channels.includes('flag')) flag.push({title: p.name, sub: `${p.host} · há ${dur(now - p.clock)}${p.ack ? ' · reconhecido' : ''}`, color: t.color, sev: p.severity, url: pUrl(p), icon: t.icon});
-            if (!first && !resolved && p.eventid > next.ev) items.push(mk(key, `${t.label} · ${p.host}`, p.name, pUrl(p), `Alerta ${t.label}. ${p.host}. ${p.name}.`));
+            if (!first && !resolved && p.eventid > next.ev) items.push(mk(key, `${t.label} · ${p.host}`, p.name, pUrl(p), `Novo alerta no Zabbix. Severidade ${t.label}. Host ${p.host}. Alerta: ${p.name}.`));
             if (!first && resolved && p.r_eventid > next.rec && T.zbx_ok) items.push(mk('zbx_ok', `Resolvido · ${p.host}`, `${p.name} (durou ${dur(p.r_clock - p.clock)})`, pUrl(p), `Problema resolvido em ${p.host}. ${p.name}.`));
         });
         const maxEv = d.problems.reduce((m, p) => Math.max(m, p.eventid), next.ev);
