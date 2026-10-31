@@ -142,7 +142,7 @@
     }
 
     // ---------------------------------------------------------------- sinalizador
-    let flagEl, countEl, listEl, muteBtn, stateEl, painelUrl = `${root}/plugins/datacenter360/front/painel.php`;
+    let flagEl, countEl, listEl, muteBtn, stateEl;
     function buildFlag() {
         if (built) return;
         built = true;
@@ -153,8 +153,7 @@
             <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow noc360-flag-menu">
                 <div class="noc360-flag-head"><b><i class="ti ti-radar-2 me-1"></i>NOC 360 · alertas</b><span class="noc360-flag-state" data-state></span></div>
                 <div class="noc360-flag-list" data-list><div class="noc360-flag-empty">Carregando…</div></div>
-                <div class="noc360-flag-foot"><span><button type="button" class="btn btn-sm btn-ghost-secondary" data-mute></button><button type="button" class="btn btn-sm btn-ghost-secondary" data-voz title="Testar a voz"><i class="ti ti-speakerphone"></i></button></span>
-                <a class="btn btn-sm btn-primary" href="${esc(painelUrl)}"><i class="ti ti-chart-donut-3 me-1"></i>NOC 360</a></div>
+                <div class="noc360-flag-foot"><span><button type="button" class="btn btn-sm btn-ghost-secondary" data-mute></button><button type="button" class="btn btn-sm btn-ghost-secondary" data-voz title="Testar a voz"><i class="ti ti-speakerphone"></i></button></span></div>
             </div>`;
         if (standalone) {
             const bar = document.querySelector('.topbar-right');
