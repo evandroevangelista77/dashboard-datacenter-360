@@ -443,6 +443,7 @@
       const j = await getJson(q);
       data = j;
       render(j);
+      loadHoras();
       $('#updated').textContent = `Atualizado às ${new Date(j.generated_at * 1000).toLocaleTimeString('pt-BR')}`;
     } catch (err) {
       $$('.source [data-led]').forEach((l) => (l.className = 'led err'));
@@ -668,6 +669,48 @@
     const s = parseInt($('#refresh').value, 10);
     $('#countdown').style.width = nextAt && s ? `${100 - Math.max(0, (nextAt - Date.now()) / (s * 10))}%` : '0';
   }, 250);
+
+
+  /* ---------------- horas lançadas no TrackingTime (rodapé) */
+  const HRC = ['#5598e7', '#22d3ee', '#34d399', '#fab219', '#ec835a', '#c084fc', '#f472b6', '#a3e635'];
+  const hm = (s) => { s = Math.round(s / 60); const h = Math.floor(s / 60), m = s % 60; return h || m ? `${h}h${String(m).padStart(2, '0')}` : '0h'; };
+  const initials = (n) => String(n).split(/\s+/).filter(Boolean).filter((w, i, a) => i === 0 || i === a.length - 1).map((w) => w[0]).join('').toUpperCase();
+  const DOW = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  let hrAll = false;
+  async function loadHoras() {
+    const box = $('#secHoras'); if (!box) return;
+    try {
+      const j = await getJson(`action=horas&from=${state.from}&to=${state.to}`);
+      if (!j.configured) { box.hidden = true; return; }
+      renderHoras(j);
+    } catch (err) {
+      box.hidden = false; $('#hrHint').textContent = `não foi possível ler o TrackingTime: ${err.message}`;
+    }
+  }
+  function renderHoras(j) {
+    $('#secHoras').hidden = false;
+    const col = (i) => HRC[i % HRC.length], idx = Object.fromEntries(j.people.map((p, i) => [p.id, i]));
+    const br = (d) => d.split('-').reverse().slice(0, 2).join('/');
+    $('#hrHint').textContent = `analistas do NOC · ${br(j.from)} a ${br(j.to)} · total ${hm(j.total)}`;
+    $('#hrPeople').innerHTML = j.people.map((p, i) => `<div class="hr-p" style="--c:${col(i)}"><span class="hr-av">${esc(initials(p.name))}</span>
+      <div><span class="nm">${esc(p.name)}</span><b>${hm(p.total)}</b><small>${p.days} ${p.days === 1 ? 'dia lançado' : 'dias lançados'}${p.days ? ` · média ${hm(p.total / p.days)}/dia` : ''}</small></div></div>`).join('');
+    const sum = j.people.map(() => 0);
+    const rows = j.days.map((d) => {
+      j.people.forEach((p, i) => { sum[i] += d.by[p.id] || 0; });
+      return `<tr class="${d.dow === 0 || d.dow === 6 ? 'we' : ''}"><td>${DOW[d.dow]} ${br(d.day)}</td>${j.people.map((p) => { const v = d.by[p.id] || 0;
+        return `<td class="${v ? '' : 'z'}" ${v ? `style="background:rgba(8,126,131,${Math.min(0.42, v / 28800 * 0.42).toFixed(2)})"` : ''} title="${esc(p.name)} · ${(v / 3600).toFixed(2).replace('.', ',')} h">${v ? hm(v) : '—'}</td>`; }).join('')}<td class="tot ${d.total ? '' : 'z'}">${d.total ? hm(d.total) : '—'}</td></tr>`;
+    }).reverse().join('');
+    $('#hrDays').innerHTML = `<table class="hr-t"><thead><tr><th>Dia</th>${j.people.map((p, i) => `<th style="--c:${col(i)}" title="${esc(p.name)}"><i></i>${esc(p.name.split(' ')[0])}</th>`).join('')}<th class="tot">Total</th></tr></thead>
+      <tbody>${rows}</tbody><tfoot><tr><td>Total</td>${sum.map((v) => `<td>${hm(v)}</td>`).join('')}<td class="tot">${hm(j.total)}</td></tr></tfoot></table>`;
+    $('#hrLegend').innerHTML = j.people.map((p, i) => `<span class="hr-lg"><i style="background:${col(i)}"></i>${esc(p.name.split(' ')[0])} <b>${hm(p.total)}</b></span>`).join('');
+    const max = Math.max(1, ...j.cc.map((c) => c.total)), list = hrAll ? j.cc : j.cc.slice(0, 12);
+    $('#hrCC').innerHTML = list.length ? list.map((c, n) => `<div class="hr-row" title="${esc(c.name)}${c.customer ? ' · ' + esc(c.customer) : ''}">
+      <span class="rk">${String(n + 1).padStart(2, '0')}</span><span class="nm">${esc(c.name)}${c.customer ? `<small>${esc(c.customer)}</small>` : ''}</span>
+      <div class="bt"><div class="bw" style="width:${Math.max(4, c.total / max * 100)}%">${j.people.filter((p) => c.by[p.id]).map((p) => `<i style="flex:${c.by[p.id]};--c:${col(idx[p.id])}" title="${esc(p.name)}: ${hm(c.by[p.id])}"></i>`).join('')}</div></div>
+      <b class="tot">${hm(c.total)}</b></div>`).join('') + (j.cc.length > 12 ? `<button type="button" class="ghost small hr-more" id="hrMore">${hrAll ? 'mostrar só os 12 maiores' : `ver todos (${j.cc.length})`}</button>` : '')
+      : '<div class="bd-empty">Sem horas lançadas no período</div>';
+    const more = $('#hrMore'); if (more) more.onclick = () => { hrAll = !hrAll; renderHoras(j); };
+  }
 
   /* ---------------- início */
   try { const r = localStorage.getItem('dc360.refresh'); if (r !== null) $('#refresh').value = r; } catch { /* sem storage */ }

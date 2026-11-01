@@ -950,6 +950,98 @@ function glpiTickets(int $from, int $till, bool $open): array
         fn() => glpiRemote() ? glpiTicketsRest($from, $till, $open) : glpiTicketsDb($from, $till, $open));
 }
 
+/**
+ * Horas lançadas no TrackingTime pelos analistas do NOC, por dia e por centro de custo (projeto).
+ * Configuração em config.php:
+ *   'trackingtime' => ['account_id' => 123, 'user' => 'email', 'password' => '...',   // acesso só para leitura
+ *                      'users' => [id => 'Nome', ...]]                                 // analistas mostrados
+ * Sem a chave 'trackingtime' o painel de horas não aparece. Só faz GET; nada é lançado no TrackingTime.
+ * 'fixture' => '/caminho/eventos.json' lê eventos de um arquivo (teste sem acesso à API).
+ */
+function ttEventos(array $t, int $uid, string $from, string $to): array
+{
+    if (!empty($t['fixture'])) {
+        $all = json_decode((string)file_get_contents($t['fixture']), true) ?: [];
+        return array_values(array_filter($all, fn($e) => (int)($e['uid'] ?? $e['user_id'] ?? 0) === $uid));
+    }
+    $out = [];
+    $size = 500;
+    for ($page = 0; $page < 20; $page++) {
+        $url = 'https://app.trackingtime.co/api/v4/' . rawurlencode((string)$t['account_id']) . '/events?' . http_build_query([
+            'filter' => 'USER', 'id' => $uid, 'from' => $from, 'to' => $to, 'page' => $page, 'page_size' => $size]);
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 25, CURLOPT_HTTPAUTH => CURLAUTH_BASIC,
+            CURLOPT_USERPWD => $t['user'] . ':' . $t['password'], CURLOPT_HTTPHEADER => ['Accept: application/json']]);
+        $raw = curl_exec($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        curl_close($ch);
+        if ($raw === false || $code >= 400) {
+            throw new RuntimeException("TrackingTime respondeu HTTP $code");
+        }
+        $j = json_decode((string)$raw, true);
+        $rows = is_array($j) && isset($j['data']) ? $j['data'] : (is_array($j) ? $j : []);
+        $out = array_merge($out, $rows);
+        if (count($rows) < $size) {
+            break;
+        }
+    }
+    return $out;
+}
+
+function horas(): array
+{
+    global $cfg;
+    $t = $cfg['trackingtime'] ?? null;
+    $users = is_array($t) ? ($t['users'] ?? []) : [];
+    if (!$users || !(!empty($t['fixture']) || (!empty($t['account_id']) && !empty($t['user']) && !empty($t['password'])))) {
+        return ['configured' => false];
+    }
+    $from = (string)($_GET['from'] ?? date('Y-m-d', strtotime('-6 days')));
+    $to = (string)($_GET['to'] ?? date('Y-m-d'));
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $from) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $to) || $from > $to) {
+        fail(400, 'Período inválido');
+    }
+    if (strtotime($to) - strtotime($from) > 92 * 86400) {
+        $from = date('Y-m-d', strtotime($to) - 92 * 86400);
+    }
+    return fileCache("horas:$from:$to", (int)($t['cache'] ?? 300), function () use ($t, $users, $from, $to) {
+        $days = [];
+        for ($d = strtotime($from); $d <= strtotime($to); $d += 86400) {
+            $days[date('Y-m-d', $d)] = ['day' => date('Y-m-d', $d), 'dow' => (int)date('w', $d), 'by' => [], 'total' => 0];
+        }
+        $people = [];
+        $cc = [];
+        foreach ($users as $uid => $name) {
+            $uid = (int)$uid;
+            $people[$uid] = ['id' => $uid, 'name' => $name, 'total' => 0, 'days' => 0];
+            foreach (ttEventos($t, $uid, $from, $to) as $e) {
+                $start = (string)($e['s'] ?? $e['start'] ?? '');
+                $sec = (int)($e['d'] ?? $e['duration'] ?? 0);
+                $day = substr($start, 0, 10);
+                if ($sec <= 0 || !isset($days[$day])) {
+                    continue;
+                }
+                $proj = trim((string)($e['p'] ?? $e['project_name'] ?? '')) ?: 'Sem projeto';
+                $cust = trim((string)($e['c'] ?? $e['customer_name'] ?? ''));
+                $days[$day]['by'][$uid] = ($days[$day]['by'][$uid] ?? 0) + $sec;
+                $days[$day]['total'] += $sec;
+                $people[$uid]['total'] += $sec;
+                $cc[$proj] ??= ['name' => $proj, 'customer' => $cust, 'total' => 0, 'by' => []];
+                $cc[$proj]['total'] += $sec;
+                $cc[$proj]['by'][$uid] = ($cc[$proj]['by'][$uid] ?? 0) + $sec;
+            }
+        }
+        foreach ($days as $d) {
+            foreach ($d['by'] as $uid => $sec) {
+                $people[$uid]['days']++;
+            }
+        }
+        usort($cc, fn($a, $b) => $b['total'] <=> $a['total']);
+        return ['configured' => true, 'from' => $from, 'to' => $to, 'people' => array_values($people), 'days' => array_values($days), 'cc' => $cc,
+            'total' => array_sum(array_column($people, 'total')), 'generated' => time()];
+    });
+}
+
 /** Texto do chamado (só para o detalhe de um chamado). */
 function glpiTicketContent(int $id): string
 {
@@ -1798,6 +1890,7 @@ try {
         'mapa' => mapa(),
         'hostficha' => hostFicha(),
         'alertas' => alertas(),
+        'horas' => horas(),
         'hostlog' => hostLog(),
         'ticketlog' => ticketLog(),
         'topology' => topology(),

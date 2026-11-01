@@ -130,6 +130,22 @@ Ajustes opcionais em `config.php`:
 
 Canais: `flag`, `sound`, `popup`, `voice`, `sticky`. Tipos: `zbx_5` (Desastre) … `zbx_0`, `zbx_ok`, `glpi_new`, `glpi_sla1h`, `glpi_slalate`. A ação `alertas` do `api.php` é só leitura.
 
+### Horas lançadas no TrackingTime (rodapé do painel)
+
+No rodapé do painel aparece o quadro **Horas lançadas**, com os analistas do NOC escolhidos: o total de horas de cada um no período, uma tabela **por dia** (horas de cada analista e total do dia) e o ranking **por centro de custo** (o projeto do TrackingTime, com o cliente), com a barra dividida por analista. Segue o período do filtro (De/Até). Sem a chave `trackingtime` no `config.php` o quadro não aparece.
+
+```php
+'trackingtime' => [
+    'account_id' => 123456,                       // conta (workspace) do TrackingTime
+    'user'       => 'email@empresa.com.br',       // usuário que enxerga as horas dos analistas (administrador ou gerente)
+    'password'   => '...',                        // senha (ou token) desse usuário; fica fora da pasta web
+    'users'      => [111111 => 'Nome do analista', 222222 => 'Outro analista'],   // id do usuário no TrackingTime => nome mostrado
+    'cache'      => 300,                          // segundos entre consultas ao TrackingTime (padrão 5 min)
+],
+```
+
+A ação `horas` do `api.php` só faz leituras (`GET /events`) e soma a duração de cada lançamento no **dia em que começou**. Para testar sem acesso à API, `'fixture' => '/caminho/eventos.json'` lê os lançamentos de um arquivo.
+
 ### Instalação do plugin
 
 ```bash
