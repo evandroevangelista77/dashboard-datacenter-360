@@ -1,0 +1,72 @@
+PLUGIN CSAT / E-NPS PARA GLPI 11 E 12 · versão @VERSAO@
+======================================================
+
+Pesquisa de satisfação (CSAT) e de clima da equipe (e-NPS) dentro do GLPI.
+
+CSAT: envia uma pesquisa por e-mail quando um chamado é fechado (ou resolvido),
+um projeto é finalizado ou um evento ou ciclo é concluído.
+- Perguntas editáveis: estrelas (1 a 5), recomendação (0 a 10, gera o NPS),
+  sim ou não e comentário livre; obrigatória, ativa e ordem.
+- Filtros de envio por entidade, categoria do chamado e tipo de solução.
+- E-mail com assunto e texto editáveis, no próprio plugin.
+- Painel CSAT: total de respostas e % de positivas, neutras, negativas e sem
+  resposta, nota média, NPS, variação contra o período anterior, evolução por mês,
+  origem, categoria e entidade, comentários. Cada cartão e barra abre as pesquisas.
+
+E-NPS: campanhas enviadas aos usuários dos grupos escolhidos.
+- Resposta anônima (sem ligação entre a nota e quem respondeu); grupos com menos
+  de 5 respostas não aparecem no painel.
+- Painel e-NPS: eNPS, promotores, neutros e detratores, participação, distribuição
+  das notas, evolução por campanha, eNPS por grupo e comentários anônimos.
+
+Relatório executivo mensal em PDF, com sumário de uma página (situação geral,
+conclusões, pontos de atenção, destaques e recomendações), indicadores, evolução,
+análise por segmento, voz do cliente, e-NPS e metodologia.
+
+CONTEÚDO
+--------
+  satisfacao/   o plugin (a pasta precisa se chamar "satisfacao")
+  instalar.sh   instala ou atualiza tudo de uma vez
+  LEIA-ME.txt   este arquivo
+  LICENSE       GNU GPL versão 3
+
+REQUISITOS
+----------
+- GLPI 11 ou 12.0.x (Linux). Nada além do que o GLPI já exige (o PDF usa o TCPDF
+  que vem com o GLPI).
+- E-mail: notificações do GLPI ligadas e SMTP configurado.
+- Opcionais: plugins Ciclo Financeiro e Gestão de Eventos, que também disparam a pesquisa.
+
+INSTALAÇÃO AUTOMÁTICA (no servidor do GLPI)
+-------------------------------------------
+   unzip oak-satisfacao-completo-@VERSAO@.zip
+   cd oak-satisfacao-completo
+   sudo bash instalar.sh
+
+   GLPI em outro caminho ou com outro administrador:
+   sudo GLPI_DIR=/caminho/do/glpi GLPI_ADMIN=usuario bash instalar.sh
+
+Para atualizar, rode o mesmo script com o pacote novo (o banco é migrado e os dados são mantidos).
+
+INSTALAÇÃO MANUAL
+-----------------
+   sudo cp -r satisfacao /var/www/glpi/plugins/
+   sudo chown -R www-data:www-data /var/www/glpi/plugins/satisfacao
+   sudo -u www-data php /var/www/glpi/bin/console plugin:install --username=glpi satisfacao
+   sudo -u www-data php /var/www/glpi/bin/console plugin:activate satisfacao
+
+   (ou pela interface: Configurar > Plugins > CSAT / e-NPS > Instalar e Ativar)
+
+PRIMEIROS PASSOS
+----------------
+1) Menu lateral → CSAT / e-NPS. Quem já estava logado: sair e entrar de novo.
+2) Configuração: escolha o que dispara a pesquisa, os filtros e o texto do e-mail.
+3) Confirme que o evento "Pesquisa de satisfação" está ativo em Configurar > Notificações.
+4) e-NPS: Campanhas e-NPS → nova campanha → escolha os grupos → Enviar.
+
+LIMITAÇÃO CONHECIDA
+-------------------
+A página de resposta roda dentro do GLPI: quem responde precisa abrir o link com
+acesso ao GLPI (usuário ou acesso público configurado).
+
+Uso e permissões: satisfacao/README.md

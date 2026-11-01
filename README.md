@@ -383,11 +383,13 @@ Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](gl
 | `glpi-plugin/avisos/` | Plugin do GLPI: central de avisos (sino, pop-up e Teams) do RH, PMO e Reembolso |
 | `glpi-plugin/ciclo/` | Plugin do GLPI: Ciclo Financeiro, da venda fechada ao recebimento, com fases, SLOs, chamados por fase, Gantt e painel |
 | `glpi-plugin/rh/` | Plugin do GLPI: RH com recrutamento e seleção (vagas com aprovação, banco de currículo, funil Kanban), admissão, férias e dashboard |
+| `glpi-plugin/satisfacao/` | Plugin do GLPI: CSAT e e-NPS (pesquisa de satisfação e de clima), painéis e relatório executivo mensal em PDF |
 | `tools/empacotar-pmo.sh`, `tools/pmo-pacote/` | Geração do pacote de release do PMO (instalador e LEIA-ME) |
 | `tools/empacotar-reembolso.sh`, `tools/reembolso-pacote/` | Geração do pacote de release do Reembolso (instalador e LEIA-ME) |
 | `tools/empacotar-rh.sh`, `tools/rh-pacote/` | Geração do pacote de release do RH (instalador e LEIA-ME) |
 | `tools/empacotar-avisos.sh`, `tools/avisos-pacote/` | Geração do pacote de release do Avisos (instalador e LEIA-ME) |
 | `tools/empacotar-ciclo.sh`, `tools/ciclo-pacote/` | Geração do pacote de release do Ciclo Financeiro (instalador e LEIA-ME) |
+| `tools/empacotar-satisfacao.sh`, `tools/satisfacao-pacote/` | Geração do pacote de release do CSAT / e-NPS (instalador e LEIA-ME) |
 | `glpi-projetos/criar_campos.py` | Campos extras do cadastro de Projeto (plugin Fields) |
 | `glpi-plugin/datacenter360/` | Plugin do GLPI: seção Dashboard no menu lateral |
 | `logos.js` | Logotipos dos ativos (Simple Icons), gerado por `tools/gerar_logos.sh` |
@@ -504,6 +506,26 @@ sudo bash instalar.sh
 ```
 
 Depois, em **Sistemas Internos → Configurações**, informe a API e o token da conta de serviço do Zabbix e o servidor do SI 360. Detalhes: [`glpi-plugin/sistemasinternos/README.md`](glpi-plugin/sistemasinternos/README.md).
+
+## CSAT / e-NPS: pesquisa de satisfação e de clima (plugin)
+
+[`glpi-plugin/satisfacao`](glpi-plugin/satisfacao) acrescenta ao GLPI 11 e 12 duas pesquisas num só plugin, na seção **CSAT / e-NPS** do menu lateral:
+
+- **CSAT**: uma pesquisa por e-mail quando um **chamado** é fechado (ou resolvido), um **projeto** é finalizado ou um **evento** ou **ciclo** é concluído. As perguntas são editáveis (estrelas, recomendação de 0 a 10, sim ou não e comentário), com filtros de envio por **entidade, categoria e tipo de solução** e o texto do e-mail editável no plugin.
+- **e-NPS**: campanhas de clima enviadas aos usuários dos grupos escolhidos. A resposta é **anônima** e grupos com menos de 5 respostas não aparecem no painel.
+- **Painéis** com total de respostas e % de positivas, neutras, negativas e sem resposta, nota média, NPS, variação contra o período anterior, evolução, origem, categoria e entidade; cada cartão e barra abre as pesquisas num painel lateral.
+- **Relatório executivo mensal em PDF**: sumário de uma página (situação geral, conclusões, pontos de atenção, destaques e recomendações), indicadores, evolução, segmentos, voz do cliente, e-NPS e metodologia.
+
+### Instalação
+
+Baixe `oak-satisfacao-completo-<versão>.zip` em [Releases](https://github.com/evandroevangelista77/dashboard-datacenter-360/releases) e, no servidor do GLPI:
+
+```bash
+unzip oak-satisfacao-completo-1.1.0.zip && cd oak-satisfacao-completo
+sudo bash instalar.sh
+```
+
+O e-mail só sai com as notificações do GLPI ligadas e o SMTP configurado. A página de resposta roda dentro do GLPI (quem responde precisa de acesso ao GLPI). Uso e permissões: [`glpi-plugin/satisfacao/README.md`](glpi-plugin/satisfacao/README.md). O pacote da release é gerado por `tools/empacotar-satisfacao.sh` e publicado pelo fluxo [`release-satisfacao.yml`](.github/workflows/release-satisfacao.yml) (tag `satisfacao-v<versão>`).
 
 ## Publicar uma release (sem depender de nenhum computador)
 

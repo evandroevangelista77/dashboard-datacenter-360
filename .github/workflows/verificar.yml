@@ -20,7 +20,7 @@ jobs:
       - name: JavaScript (sintaxe)
         run: |
           fail=0
-          while IFS= read -r f; do node --check "$f" || { echo "ERRO em $f"; fail=1; }; done < <(git ls-files 'app.js' 'mapa.js' 'ticker.js' 'topologia.js' 'logos.js' 'glpi-plugin/datacenter360/public/js/*.js' 'glpi-plugin/sistemasinternos/public/js/*.js' 'glpi-plugin/avisos/public/js/*.js')
+          while IFS= read -r f; do node --check "$f" || { echo "ERRO em $f"; fail=1; }; done < <(git ls-files 'app.js' 'mapa.js' 'ticker.js' 'topologia.js' 'logos.js' 'glpi-plugin/datacenter360/public/js/*.js' 'glpi-plugin/sistemasinternos/public/js/*.js' 'glpi-plugin/avisos/public/js/*.js' 'glpi-plugin/satisfacao/public/js/*.js')
           exit $fail
       - name: Scripts de shell (sintaxe)
         run: |

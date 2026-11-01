@@ -1,0 +1,27 @@
+name: Publicar release do CSAT / e-NPS
+# Para publicar: crie e envie uma tag com a versão do plugin (ex.: satisfacao-v1.1.0). O pacote é montado e a release é criada
+# aqui no GitHub, sem depender de nenhum computador pessoal (nem do `gh` instalado nele).
+on:
+  push:
+    tags: ['satisfacao-v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: A tag precisa bater com a versão do plugin
+        run: |
+          V=$(grep -oE "PLUGIN_SATISFACAO_VERSION', '[^']+" glpi-plugin/satisfacao/setup.php | cut -d"'" -f3)
+          if [ "satisfacao-v$V" != "$GITHUB_REF_NAME" ]; then echo "A tag $GITHUB_REF_NAME não bate com a versão $V do setup.php"; exit 1; fi
+          echo "VERSAO=$V" >> "$GITHUB_ENV"
+      - name: Montar o pacote
+        run: bash tools/empacotar-satisfacao.sh .
+      - name: Criar a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "oak-satisfacao-completo-$VERSAO.zip" \
+            --title "CSAT / e-NPS para GLPI 11 e 12 · $VERSAO" --latest=false \
+            --notes "Pesquisa de satisfação (CSAT) e de clima da equipe (e-NPS) para o GLPI, versão $VERSAO: perguntas editáveis, envio automático ao fechar chamado, projeto, evento ou ciclo, campanhas de e-NPS anônimas, painéis e relatório executivo mensal em PDF. 100% PHP e JavaScript, sem dependências; GLPI 11 e 12. Instalação no LEIA-ME.txt do pacote."
