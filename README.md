@@ -344,7 +344,8 @@ Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](gl
 2. **No servidor do GLPI**, copie os arquivos e rode o instalador como root:
 
    ```bash
-   sudo ZABBIX_TOKEN='<token do usuário só leitura>' bash instalar.sh /caminho/dos/arquivos
+   sudo ZABBIX_URL='https://zabbix.suaempresa.com.br/zabbix' GLPI_URL='https://glpi.suaempresa.com.br' \
+     ZABBIX_TOKEN='<token do usuário só leitura>' bash instalar.sh /caminho/dos/arquivos
    ```
 
    Na primeira execução ele:
@@ -382,7 +383,6 @@ Uso, permissões, cálculos e problemas comuns: [`glpi-plugin/pmo/README.md`](gl
 | `glpi-plugin/avisos/` | Plugin do GLPI: central de avisos (sino, pop-up e Teams) do RH, PMO e Reembolso |
 | `glpi-plugin/ciclo/` | Plugin do GLPI: Ciclo Financeiro, da venda fechada ao recebimento, com fases, SLOs, chamados por fase, Gantt e painel |
 | `glpi-plugin/rh/` | Plugin do GLPI: RH com recrutamento e seleção (vagas com aprovação, banco de currículo, funil Kanban), admissão, férias e dashboard |
-| `tools/vigia-glpi.sh`, `tools/com.evandro.vigia-glpi.plist` | Vigia que religa a rede da VM do GLPI no VirtualBox (macOS) |
 | `tools/empacotar-pmo.sh`, `tools/pmo-pacote/` | Geração do pacote de release do PMO (instalador e LEIA-ME) |
 | `tools/empacotar-reembolso.sh`, `tools/reembolso-pacote/` | Geração do pacote de release do Reembolso (instalador e LEIA-ME) |
 | `tools/empacotar-rh.sh`, `tools/rh-pacote/` | Geração do pacote de release do RH (instalador e LEIA-ME) |
@@ -505,17 +505,15 @@ sudo bash instalar.sh
 
 Depois, em **Sistemas Internos → Configurações**, informe a API e o token da conta de serviço do Zabbix e o servidor do SI 360. Detalhes: [`glpi-plugin/sistemasinternos/README.md`](glpi-plugin/sistemasinternos/README.md).
 
-## Vigia da VM do GLPI (VirtualBox no macOS)
+## Publicar uma release (sem depender de nenhum computador)
 
-[`tools/vigia-glpi.sh`](tools/vigia-glpi.sh) é para um laboratório em que o GLPI roda numa VM do VirtualBox no Mac, em ponte com o Wi-Fi. Sem o driver de kernel do VirtualBox (modo *driverless*), essa ponte às vezes para de entregar pacotes à VM, que continua ligada mas some da rede. A cada 20 s o vigia testa o GLPI; se cair (com o Mac e o roteador respondendo), desliga e religa o cabo virtual da VM (`VBoxManage controlvm … setlinkstate1`), o que costuma trazer a rede de volta em segundos. Se isso falhar 3 vezes seguidas, desliga a VM pelo ACPI e liga de novo em segundo plano, junto com as outras VMs da mesma ponte que estiverem ligadas (`VIGIA_JUNTO`, padrão `Zabbix 7.4`), no máximo uma vez a cada 30 min e até 3 vezes seguidas sem a rede voltar. Tudo fica registrado em `~/Library/Logs/vigia-glpi.log`.
+O pacote é montado e publicado pelo próprio GitHub ([`.github/workflows/release-noc360.yml`](.github/workflows/release-noc360.yml)). Para lançar a versão que está em `glpi-plugin/datacenter360/setup.php` (por exemplo, 1.4.2), basta criar a tag e enviá-la, de qualquer máquina ou pela página de releases do GitHub:
 
 ```bash
-install -m 755 tools/vigia-glpi.sh ~/.local/bin/vigia-glpi.sh
-sed "s#SEU_USUARIO#$USER#g" tools/com.evandro.vigia-glpi.plist > ~/Library/LaunchAgents/com.evandro.vigia-glpi.plist
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.evandro.vigia-glpi.plist
+git tag noc360-v1.4.2 && git push origin noc360-v1.4.2
 ```
 
-Nome da VM, IP e gateway vêm das variáveis `VIGIA_VM`, `VIGIA_IP` e `VIGIA_GATEWAY` (os padrões são os do laboratório). A solução definitiva é liberar o driver do VirtualBox em *Ajustes do Sistema → Privacidade e Segurança* ou ligar o Mac por cabo.
+A tag precisa ser igual a `noc360-v` + a versão do `setup.php`; senão a publicação para com um aviso. A cada envio para a `main`, o fluxo [`verificar.yml`](.github/workflows/verificar.yml) confere a sintaxe de todo o PHP, JavaScript e shell.
 
 ## Licença
 

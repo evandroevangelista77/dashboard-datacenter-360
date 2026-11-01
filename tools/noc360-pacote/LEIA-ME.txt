@@ -26,8 +26,9 @@ CONTEÚDO
 INSTALAÇÃO (no servidor do GLPI, como root)
 -------------------------------------------
 1. Painel (primeira vez exige um token Zabbix SOMENTE LEITURA):
-     cd painel && ZABBIX_TOKEN=... bash instalar.sh .
-   Ajuste /etc/datacenter360/config.php (URL do Zabbix, grupos, entidade).
+     cd painel && ZABBIX_URL=https://zabbix.suaempresa.com.br/zabbix GLPI_URL=https://glpi.suaempresa.com.br ZABBIX_TOKEN=... bash instalar.sh .
+   Redes que podem abrir o painel (padrão: redes privadas): DC360_ALLOW="10.1.0.0/16 127.0.0.1 ::1".
+   Ajuste /etc/datacenter360/config.php (grupos, entidade, TrackingTime).
 2. Plugin:
      cp -r datacenter360 /var/www/glpi/plugins/
      chown -R www-data:www-data /var/www/glpi/plugins/datacenter360

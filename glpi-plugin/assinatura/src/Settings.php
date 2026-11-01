@@ -69,7 +69,7 @@ class Settings extends CommonGLPI
               <form method="post" action="$action" class="card-body">
                 <div class="mb-3">
                   <label class="form-label">URL do Nextcloud</label>
-                  <input class="form-control" name="nextcloud_url" value="$url" placeholder="http://192.168.15.45:8080" required>
+                  <input class="form-control" name="nextcloud_url" value="$url" placeholder="https://nextcloud.suaempresa.com.br" required>
                   <div class="form-hint">Endereço base do Nextcloud onde o LibreSign está instalado.</div>
                 </div>
                 <div class="row">

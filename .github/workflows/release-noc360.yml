@@ -1,0 +1,27 @@
+name: Publicar release do NOC 360
+# Para publicar: crie e envie uma tag com a versão do plugin (ex.: noc360-v1.4.2). O pacote é montado e a release é criada
+# aqui no GitHub, sem depender de nenhum computador pessoal (nem do `gh` instalado nele).
+on:
+  push:
+    tags: ['noc360-v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: A tag precisa bater com a versão do plugin
+        run: |
+          V=$(grep -oE "PLUGIN_DATACENTER360_VERSION', '[^']+" glpi-plugin/datacenter360/setup.php | cut -d"'" -f3)
+          if [ "noc360-v$V" != "$GITHUB_REF_NAME" ]; then echo "A tag $GITHUB_REF_NAME não bate com a versão $V do setup.php"; exit 1; fi
+          echo "VERSAO=$V" >> "$GITHUB_ENV"
+      - name: Montar o pacote
+        run: bash tools/empacotar-noc360.sh .
+      - name: Criar a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "oak-noc360-completo-$VERSAO.zip" \
+            --title "NOC 360 para GLPI 11 e 12 · $VERSAO" --latest=false \
+            --notes "Pacote completo do NOC 360 (painel + plugin do GLPI) versão $VERSAO. 100% PHP e JavaScript, sem dependências; GLPI 11 e 12. Instalação no LEIA-ME.txt do pacote."

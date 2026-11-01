@@ -12,12 +12,15 @@ CONF=$CONF_DIR/config.php
 mkdir -p "$WEB" "$CONF_DIR"
 
 if [ ! -f "$CONF" ]; then
-    : "${ZABBIX_TOKEN:?defina ZABBIX_TOKEN na primeira instalação}"
+    : "${ZABBIX_TOKEN:?defina ZABBIX_TOKEN (token somente leitura do Zabbix) na primeira instalação}"
+    : "${ZABBIX_URL:?defina ZABBIX_URL (ex.: https://zabbix.suaempresa.com.br/zabbix) na primeira instalação}"
+    : "${GLPI_URL:?defina GLPI_URL (ex.: https://glpi.suaempresa.com.br) na primeira instalação}"
+    GLPI_DB=${GLPI_DB:-glpidb}
     DB_PASS=$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-28)
     mariadb <<SQL
 CREATE USER IF NOT EXISTS 'dc360_ro'@'localhost' IDENTIFIED BY '$DB_PASS';
 ALTER USER 'dc360_ro'@'localhost' IDENTIFIED BY '$DB_PASS';
-GRANT SELECT ON glpidb.* TO 'dc360_ro'@'localhost';
+GRANT SELECT ON \`$GLPI_DB\`.* TO 'dc360_ro'@'localhost';
 FLUSH PRIVILEGES;
 SQL
     cat > "$CONF" <<PHP
@@ -25,11 +28,11 @@ SQL
 // DataCenter 360 — credenciais somente leitura (fora da pasta web)
 return [
     'timezone'     => 'America/Sao_Paulo',
-    'zabbix_url'   => 'http://192.168.15.77/zabbix/api_jsonrpc.php',
+    'zabbix_url'   => '${ZABBIX_URL%/}/api_jsonrpc.php',
     'zabbix_token' => '$ZABBIX_TOKEN', // usuário dc360-api (só leitura)
-    'zabbix_front' => 'http://192.168.15.77/zabbix',
-    'glpi_front'   => 'http://192.168.15.45',
-    'db' => ['host' => 'localhost', 'name' => 'glpidb', 'user' => 'dc360_ro', 'pass' => '$DB_PASS'],
+    'zabbix_front' => '${ZABBIX_URL%/}',
+    'glpi_front'   => '${GLPI_URL%/}',
+    'db' => ['host' => 'localhost', 'name' => '$GLPI_DB', 'user' => 'dc360_ro', 'pass' => '$DB_PASS'],
     // host técnico do Zabbix cujas métricas de banco alimentam os gauges
     'db_metrics_host' => 'glpi',
     // meta de solução (horas) por prioridade GLPI, usada quando o chamado não tem SLA
@@ -52,15 +55,17 @@ for f in index.html topologia.html topologia-classica.html topologia-embed.html;
 done
 a2enmod -q headers >/dev/null 2>&1 || true
 
-cat > /etc/apache2/conf-available/datacenter360.conf <<'APACHE'
+# redes que podem abrir o painel (padrão: redes privadas); troque com DC360_ALLOW="10.1.0.0/16 127.0.0.1 ::1"
+ALLOW=${DC360_ALLOW:-10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 127.0.0.1 ::1}
+cat > /etc/apache2/conf-available/datacenter360.conf <<APACHE
 # NOC 360 — dashboard Zabbix x GLPI (somente rede local)
 Alias /datacenter360 /var/www/datacenter360
 <Directory /var/www/datacenter360>
     Options -Indexes
     DirectoryIndex index.html
-    Require ip 192.168.15.0/24 127.0.0.1 ::1
+    Require ip $ALLOW
     # a tela e seus scripts mudam com frequência: o navegador confere a versão a cada abertura
-    <FilesMatch "\.(html|js|css)$">
+    <FilesMatch "\\.(html|js|css)\$">
         Header set Cache-Control "no-cache"
     </FilesMatch>
 </Directory>

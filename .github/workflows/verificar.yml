@@ -1,0 +1,29 @@
+name: Verificar
+# Confere a sintaxe de todo o PHP, do JavaScript e dos scripts a cada envio. Roda nos servidores do GitHub (Linux): não depende de nenhum computador pessoal.
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      - name: PHP (todos os arquivos)
+        run: |
+          fail=0
+          while IFS= read -r f; do php -l "$f" >/dev/null || { echo "ERRO em $f"; fail=1; }; done < <(git ls-files '*.php')
+          exit $fail
+      - name: JavaScript (sintaxe)
+        run: |
+          fail=0
+          while IFS= read -r f; do node --check "$f" || { echo "ERRO em $f"; fail=1; }; done < <(git ls-files 'app.js' 'mapa.js' 'ticker.js' 'topologia.js' 'logos.js' 'glpi-plugin/datacenter360/public/js/*.js' 'glpi-plugin/sistemasinternos/public/js/*.js' 'glpi-plugin/avisos/public/js/*.js')
+          exit $fail
+      - name: Scripts de shell (sintaxe)
+        run: |
+          fail=0
+          while IFS= read -r f; do bash -n "$f" || { echo "ERRO em $f"; fail=1; }; done < <(git ls-files '*.sh')
+          exit $fail
