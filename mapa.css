@@ -92,3 +92,13 @@ a.mp-li:hover { border-color: #35c2c8; text-decoration: none; } .mp-li .sv { fle
 .mp-bt { font: 600 12.5px var(--font); padding: 6px 12px; border-radius: 8px; border: 1px solid var(--grid); background: var(--surface-2); color: var(--text); cursor: pointer; }
 .mp-bt:hover { border-color: #35c2c8; }
 .mp-drill { margin-top: 10px; max-height: 280px; overflow: auto; }
+/* ficha do ativo mais legível (tela grande / TV): letras maiores e janela mais larga */
+.mp-box { width: min(1280px, 95vw) !important; }
+.mp-ct { font-size: 15.5px; }
+.mp-ct .sm { font-size: 14.5px; }
+.mp-ct .mp-tb { font-size: 14.5px; } .mp-ct .mp-tb td:first-child { font-size: 13.5px; }
+.mp-ct .mp-card h6 { font-size: 12.5px; }
+.mp-ct .mp-li { font-size: 14px; } .mp-ct .mp-li .wh { font-size: 13px; }
+.mp-ct .big { font-size: 40px; }
+.mp-ct .mp-kv b { font-size: 21px; }
+.mp-ct .mp-tg { font-size: 12.5px; }
