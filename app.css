@@ -560,8 +560,9 @@ body.loading .kgroups, body.loading .panel { opacity: .6; transition: opacity .2
 /* horas lançadas no TrackingTime (rodapé do painel) */
 .tt-tag { font: 700 10.5px var(--font); letter-spacing: .08em; text-transform: uppercase; padding: 2px 9px; border-radius: 99px; background: #22d3ee22; color: #7be6f6; border: 1px solid #22d3ee55; }
 .hr-people { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: 6px 0 16px; }
-.hr-p { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 11px; border: 1px solid var(--grid); border-left: 3px solid var(--c); background: rgba(7, 20, 43, .5); }
-.hr-av { width: 38px; height: 38px; flex: none; border-radius: 50%; display: grid; place-items: center; font: 700 13px var(--font); color: #fff; background: var(--c); }
+.hr-p { position: relative; color: inherit; text-decoration: none; cursor: pointer; transition: border-color .15s, background .15s, box-shadow .15s; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 11px; border: 1px solid var(--grid); border-left: 3px solid var(--c); background: rgba(7, 20, 43, .5); }
+.hr-av { position: relative; width: 38px; height: 38px; flex: none; border-radius: 50%; display: grid; place-items: center; font: 700 13px var(--font); color: #fff; background: var(--c); overflow: hidden; }
+.hr-av img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 .hr-p b { display: block; font-size: 21px; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .hr-p .nm { font-weight: 600; font-size: 13px; color: var(--text); }
 .hr-p small { color: var(--muted); font-size: 11.5px; }
@@ -594,3 +595,6 @@ table.hr-t { width: 100%; border-collapse: collapse; font-size: 12.5px; font-var
 .hr-lg { display: inline-flex; align-items: center; gap: 6px; margin: 0 14px 8px 0; font-size: 12px; color: var(--text-2); }
 .hr-lg i { width: 9px; height: 9px; border-radius: 3px; }
 .hr-lg b { color: var(--text); font-variant-numeric: tabular-nums; }
+.hr-p:hover { border-color: var(--ring-strong); border-left-color: var(--c); background: rgba(8, 126, 131, .28); box-shadow: 0 6px 20px rgba(8, 126, 131, .25); text-decoration: none; }
+.hr-go { position: absolute; top: 8px; right: 11px; font-style: normal; font-size: 14px; color: var(--muted); }
+.hr-p:hover .hr-go { color: var(--text); }

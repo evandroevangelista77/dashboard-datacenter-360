@@ -988,6 +988,35 @@ function ttEventos(array $t, int $uid, string $from, string $to): array
     return $out;
 }
 
+/** Foto do perfil de cada usuário no TrackingTime (id => url); falha em silêncio, o painel cai nas iniciais. */
+function ttAvatares(array $t): array
+{
+    try {
+        if (!empty($t['fixture_users'])) {
+            return json_decode((string)file_get_contents($t['fixture_users']), true) ?: [];
+        }
+        if (!empty($t['fixture'])) {
+            return [];
+        }
+        $ch = curl_init('https://app.trackingtime.co/api/v4/' . rawurlencode((string)$t['account_id']) . '/users?' . http_build_query(['filter' => 'ALL', 'page_size' => 200]));
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20, CURLOPT_HTTPAUTH => CURLAUTH_BASIC,
+            CURLOPT_USERPWD => $t['user'] . ':' . $t['password'], CURLOPT_HTTPHEADER => ['Accept: application/json']]);
+        $raw = curl_exec($ch);
+        curl_close($ch);
+        $j = json_decode((string)$raw, true);
+        $rows = is_array($j) && isset($j['data']) ? $j['data'] : (is_array($j) ? $j : []);
+        $out = [];
+        foreach ($rows as $u) {
+            if (isset($u['id'], $u['avatar_url'])) {
+                $out[(int)$u['id']] = $u['avatar_url'];
+            }
+        }
+        return $out;
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
 function horas(): array
 {
     global $cfg;
@@ -1004,19 +1033,21 @@ function horas(): array
     if (strtotime($to) - strtotime($from) > 92 * 86400) {
         $from = date('Y-m-d', strtotime($to) - 92 * 86400);
     }
-    return fileCache("horas:$from:$to", (int)($t['cache'] ?? 300), function () use ($t, $users, $from, $to) {
+    return fileCache("horas:v2:$from:$to", (int)($t['cache'] ?? 300), function () use ($t, $users, $from, $to) {
         $days = [];
         for ($d = strtotime($from); $d <= strtotime($to); $d += 86400) {
             $days[date('Y-m-d', $d)] = ['day' => date('Y-m-d', $d), 'dow' => (int)date('w', $d), 'by' => [], 'total' => 0];
         }
         $people = [];
         $cc = [];
+        $fotos = ttAvatares($t);
         foreach ($users as $uid => $name) {
             $uid = (int)$uid;
-            $people[$uid] = ['id' => $uid, 'name' => $name, 'total' => 0, 'days' => 0];
+            $people[$uid] = ['id' => $uid, 'name' => $name, 'total' => 0, 'days' => 0, 'avatar' => $fotos[$uid] ?? null];
             foreach (ttEventos($t, $uid, $from, $to) as $e) {
                 $start = (string)($e['s'] ?? $e['start'] ?? '');
                 $sec = (int)($e['d'] ?? $e['duration'] ?? 0);
+                $people[$uid]['avatar'] ??= ($e['uau'] ?? $e['user_avatar_url'] ?? null);
                 $day = substr($start, 0, 10);
                 if ($sec <= 0 || !isset($days[$day])) {
                     continue;
@@ -1037,7 +1068,7 @@ function horas(): array
             }
         }
         usort($cc, fn($a, $b) => $b['total'] <=> $a['total']);
-        return ['configured' => true, 'from' => $from, 'to' => $to, 'people' => array_values($people), 'days' => array_values($days), 'cc' => $cc,
+        return ['configured' => true, 'url' => rtrim((string)($t['url'] ?? 'https://pro.trackingtime.co'), '/'), 'from' => $from, 'to' => $to, 'people' => array_values($people), 'days' => array_values($days), 'cc' => $cc,
             'total' => array_sum(array_column($people, 'total')), 'generated' => time()];
     });
 }

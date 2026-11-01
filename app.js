@@ -692,8 +692,12 @@
     const col = (i) => HRC[i % HRC.length], idx = Object.fromEntries(j.people.map((p, i) => [p.id, i]));
     const br = (d) => d.split('-').reverse().slice(0, 2).join('/');
     $('#hrHint').textContent = `analistas do NOC · ${br(j.from)} a ${br(j.to)} · total ${hm(j.total)}`;
-    $('#hrPeople').innerHTML = j.people.map((p, i) => `<div class="hr-p" style="--c:${col(i)}"><span class="hr-av">${esc(initials(p.name))}</span>
-      <div><span class="nm">${esc(p.name)}</span><b>${hm(p.total)}</b><small>${p.days} ${p.days === 1 ? 'dia lançado' : 'dias lançados'}${p.days ? ` · média ${hm(p.total / p.days)}/dia` : ''}</small></div></div>`).join('');
+    // clicar no cartão abre o relatório do analista no TrackingTime, já no período do painel
+    const ttLink = (p) => `${(j.url || "https://pro.trackingtime.co")}/#/user-report/${p.id}/${JSON.stringify({ start_date: j.from, end_date: j.to })}`;
+    $('#hrPeople').innerHTML = j.people.map((p, i) => `<a class="hr-p" style="--c:${col(i)}" href="${esc(ttLink(p))}" target="_blank" rel="noopener" title="Abrir o relatório de ${esc(p.name)} no TrackingTime (${br(j.from)} a ${br(j.to)})">
+      <span class="hr-av">${esc(initials(p.name))}${p.avatar ? `<img src="${esc(p.avatar)}" alt="" referrerpolicy="no-referrer">` : ''}</span>
+      <div><span class="nm">${esc(p.name)}</span><b>${hm(p.total)}</b><small>${p.days} ${p.days === 1 ? 'dia lançado' : 'dias lançados'}${p.days ? ` · média ${hm(p.total / p.days)}/dia` : ''}</small></div><i class="hr-go" aria-hidden="true">↗</i></a>`).join('');
+    $$('#hrPeople .hr-av img').forEach((im) => im.addEventListener('error', () => im.remove())); // sem foto: ficam as iniciais
     const sum = j.people.map(() => 0);
     const rows = j.days.map((d) => {
       j.people.forEach((p, i) => { sum[i] += d.by[p.id] || 0; });

@@ -144,6 +144,8 @@ No rodapé do painel aparece o quadro **Horas lançadas**, com os analistas do N
 ],
 ```
 
+Clicar no cartão de um analista abre o relatório dele no TrackingTime (`'url'` opcional, padrão `https://pro.trackingtime.co`), já no período do painel. O círculo do cartão usa a foto do perfil do TrackingTime (iniciais quando não há foto).
+
 A ação `horas` do `api.php` só faz leituras (`GET /events`) e soma a duração de cada lançamento no **dia em que começou**. Para testar sem acesso à API, `'fixture' => '/caminho/eventos.json'` lê os lançamentos de um arquivo.
 
 ### Instalação do plugin
