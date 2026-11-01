@@ -102,9 +102,9 @@ Ativos
 - Acesso controlado pelo direito **DataCenter 360**, em *Administração → Perfis → [perfil] → aba DataCenter 360*. Na instalação, a leitura é liberada para os perfis da interface padrão (técnicos e administradores); perfis self-service ficam sem acesso.
 - Sessões abertas antes da instalação passam a ver o menu sem precisar relogar.
 
-### Alertas por voz, som e pop-up (todas as telas do GLPI)
+### Alertas por voz, som e pop-up (só no painel NOC 360)
 
-O plugin acrescenta, no topo de qualquer tela do GLPI, o **sinalizador do NOC 360** (contador do que pede atenção agora, piscando quando chega algo) e avisa por **voz (pt-BR)**, **som** e **pop-up** no rodapé:
+Cada plugin notifica **só na sua própria área**: os alertas do NOC 360 aparecem apenas dentro do painel e da topologia do NOC 360 e não vazam para outras telas do GLPI nem para outros plugins (Sistemas Internos, Reembolso, PMO, RH e Ciclo têm os seus). O painel mostra o **sinalizador do NOC 360** (ao lado do botão de atualizar) (contador do que pede atenção agora, piscando quando chega algo) e avisa por **voz (pt-BR)**, **som** e **pop-up** no rodapé:
 
 | Tipo | Padrão |
 |---|---|
@@ -469,7 +469,7 @@ Use com RH 1.0.4+, PMO 1.2.0+ e Reembolso 1.1.0+. Configuração do Teams e deta
 
 - **Visão 360** e **Topologia**: o mesmo dashboard do SI 360 (mapa, access points do Wi-Fi, vulnerabilidades, resumo operacional, voz e book), servido pelo GLPI com o login e os direitos do GLPI; cor do departamento (#3769B2, com a árvore e a marca-d'água) ou a original.
 - **Hosts do Zabbix**: incluir, editar, ativar/desativar e excluir hosts pelo GLPI, só nos grupos liberados para o perfil, por uma conta de serviço da API do Zabbix, com **auditoria** (antes e depois).
-- **Alertas** em todas as telas: sinalizador no topo, som, voz e pop-up no rodapé, configuráveis por tipo (severidades do Zabbix, chamado novo, SLA vencendo e vencido, host alterado).
+- **Alertas** só nas telas do plugin (cada plugin notifica na sua área): sinalizador no topo, som, voz e pop-up no rodapé, configuráveis por tipo (severidades do Zabbix, chamado novo, SLA vencendo e vencido, host alterado).
 - **Configurações** em abas: conexão com o Zabbix (com teste), departamento, cadastro de hosts, alertas e notificações.
 
 ### Instalação

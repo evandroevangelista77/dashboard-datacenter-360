@@ -1,5 +1,5 @@
 /**
- * Sistemas Internos 360 — alertas em todas as telas do GLPI:
+ * Sistemas Internos 360 — alertas só nas telas deste plugin (cada plugin notifica na sua própria área):
  * sinalizador no topo (contador do que pede atenção agora, piscando quando chega algo),
  * som (gerado no navegador), voz (pt-BR) e pop-up no rodapé da página.
  * Cada tipo de alerta liga ou desliga cada canal em Sistemas Internos → Configurações → Alertas.
@@ -9,6 +9,7 @@
     const root = (window.CFG_GLPI && CFG_GLPI.root_doc) || '';
     const api = `${root}/plugins/sistemasinternos/front/ajax.php`;
     const onPluginPage = location.pathname.includes('/plugins/sistemasinternos/');
+    if (!onPluginPage) return; // fora das telas do plugin: sem sinalizador, som, voz nem pop-up
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
     const csrf = () => (document.querySelector('meta[property="glpi:csrf_token"]') || {}).content || '';
     let cfg = {poll: 30, popup: {seconds: 20, max: 5, position: 'right'}, volume: 0.7, rate: 1.05, quiet: false, muted: false, muteMinutes: 60};
@@ -159,7 +160,6 @@
             const d = await r.json();
             if (!d.ok) { if (d.disabled) stopped = true; return; }
             Object.assign(cfg, {poll: d.poll, popup: d.popup, volume: d.volume, rate: d.rate, quiet: d.quiet, muted: d.muted, muteMinutes: d.muteMinutes});
-            if (!d.everywhere && !onPluginPage) { stopped = true; return; }
             renderFlag(d);
             if (unseen) flagEl.classList.add('si360-flag-pulse');
             (d.items || []).forEach((a, i) => setTimeout(() => show(a), i * 1600));

@@ -36,7 +36,6 @@ class Settings extends CommonGLPI
         'popup_seconds'   => '20',
         'popup_max'       => '5',
         'popup_position'  => 'right',
-        'everywhere'      => '1',
         'quiet_start'     => '',
         'quiet_end'       => '',
         'voice_rate'      => '1.05',

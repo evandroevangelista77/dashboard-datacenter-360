@@ -43,7 +43,6 @@ if (isset($_POST['save'])) {
         'popup_seconds'  => (string) max(5, min(300, (int) ($_POST['popup_seconds'] ?? 20))),
         'popup_max'      => (string) max(1, min(10, (int) ($_POST['popup_max'] ?? 5))),
         'popup_position' => ($_POST['popup_position'] ?? '') === 'left' ? 'left' : 'right',
-        'everywhere'     => empty($_POST['everywhere']) ? '0' : '1',
         'quiet_start'    => $hhmm($_POST['quiet_start'] ?? ''),
         'quiet_end'      => $hhmm($_POST['quiet_end'] ?? ''),
         'voice_rate'     => (string) max(0.6, min(1.6, (float) str_replace(',', '.', (string) ($_POST['voice_rate'] ?? '1.05')))),
@@ -209,7 +208,6 @@ echo "<div class='si360-tab' id='si-tab-notificacoes'" . ($tab === 'notificacoes
     . "<div class='col-md-4'><label class='form-label'>Silêncio (sem som e voz)</label><div class='d-flex gap-2 align-items-center'><input type='time' class='form-control' name='quiet_start' value='" . $e($c['quiet_start']) . "'><span class='text-secondary'>às</span><input type='time' class='form-control' name='quiet_end' value='" . $e($c['quiet_end']) . "'></div>"
     . "<div class='form-hint'>Ex.: 22:00 às 06:00. O pop-up e o sinalizador continuam.</div></div>"
     . "<div class='col-md-4'><label class='form-label'>Botão \"Silenciar\" do sinalizador</label><div class='input-group'><input type='number' min='5' max='1440' class='form-control' name='mute_minutes' value='" . (int) $c['mute_minutes'] . "'><span class='input-group-text'>minutos</span></div></div>"
-    . "<div class='col-md-4 d-flex align-items-end'><label class='form-check form-switch mb-2'><input class='form-check-input' type='checkbox' name='everywhere' value='1'" . $check($c['everywhere'] !== '0') . "><span class='form-check-label'>Alertar em todas as telas do GLPI</span></label></div>"
     . "<div class='col-12'><div class='si360-howto'><b><i class='ti ti-users me-1'></i>Quem recebe</b><div class='mt-1'>Todos os perfis com o direito <i>Painel 360 e alertas</i> (Administração → Perfis → aba Sistemas Internos 360). "
     . "Cada pessoa só recebe o que é novo desde a última consulta do navegador dela e pode silenciar som e voz pelo sinalizador. "
     . "Navegadores só tocam som depois do primeiro clique na página: até lá, o sinalizador pisca.</div></div></div>"

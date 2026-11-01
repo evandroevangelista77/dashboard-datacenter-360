@@ -105,15 +105,21 @@ class Aviso extends CommonDBTM
 
     // ------------------------------------------------------------------ leitura (sino, pop-up e página)
 
-    public static function unreadCount(int $uid): int
+    /** Plugin (origem) em que o usuário está; vazio = todos. Cada plugin só enxerga os próprios avisos. */
+    private static function scope(?string $source): array
     {
-        return countElementsInTable(self::getTable(), ['users_id' => $uid, 'is_read' => 0]);
+        return $source !== null && $source !== '' && isset(Canal::SOURCES[$source]) ? ['source' => $source] : [];
     }
 
-    public static function latest(int $uid, int $limit = 8, bool $unreadOnly = false): array
+    public static function unreadCount(int $uid, ?string $source = null): int
+    {
+        return countElementsInTable(self::getTable(), ['users_id' => $uid, 'is_read' => 0] + self::scope($source));
+    }
+
+    public static function latest(int $uid, int $limit = 8, bool $unreadOnly = false, ?string $source = null): array
     {
         global $DB;
-        $where = ['users_id' => $uid];
+        $where = ['users_id' => $uid] + self::scope($source);
         if ($unreadOnly) {
             $where['is_read'] = 0;
         }
@@ -123,11 +129,11 @@ class Aviso extends CommonDBTM
     }
 
     /** Avisos novos que ainda não viraram pop-up; já ficam marcados como mostrados. */
-    public static function takeNew(int $uid): array
+    public static function takeNew(int $uid, ?string $source = null): array
     {
         global $DB;
         $rows = iterator_to_array($DB->request([
-            'FROM' => self::getTable(), 'WHERE' => ['users_id' => $uid, 'is_shown' => 0, 'is_read' => 0], 'ORDER' => 'id ASC', 'LIMIT' => 5,
+            'FROM' => self::getTable(), 'WHERE' => ['users_id' => $uid, 'is_shown' => 0, 'is_read' => 0] + self::scope($source), 'ORDER' => 'id ASC', 'LIMIT' => 5,
         ]), false);
         if ($rows) {
             $DB->update(self::getTable(), ['is_shown' => 1], ['users_id' => $uid, 'id' => array_column($rows, 'id')]);
@@ -135,10 +141,10 @@ class Aviso extends CommonDBTM
         return array_map([self::class, 'toJson'], $rows);
     }
 
-    public static function markRead(int $uid, ?int $id = null): void
+    public static function markRead(int $uid, ?int $id = null, ?string $source = null): void
     {
         global $DB;
-        $where = ['users_id' => $uid, 'is_read' => 0];
+        $where = ['users_id' => $uid, 'is_read' => 0] + self::scope($source);
         if ($id !== null) {
             $where['id'] = $id;
         }

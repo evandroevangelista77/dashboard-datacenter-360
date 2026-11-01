@@ -1,24 +1,30 @@
 /**
- * Avisos — sino no topo da tela (não lidos e os últimos avisos) e pop-up dos
- * avisos novos. Procura avisos novos a cada N segundos e quando a aba volta a ficar visível.
+ * Avisos — sino no topo da tela (não lidos e os últimos avisos) e pop-up dos avisos novos.
+ * Cada plugin notifica só na sua área: dentro de /plugins/reembolso/ o sino mostra apenas os avisos do
+ * Reembolso, em /plugins/pmo/ apenas os do PMO, e assim por diante; fora dessas áreas não há sino nem pop-up.
+ * Procura avisos novos a cada N segundos e quando a aba volta a ficar visível.
  */
 (() => {
     if (window.__avisos || !document.body || document.querySelector('.page-anonymous, form#login_form, .login-page')) return;
-    window.__avisos = true;
     const root = (window.CFG_GLPI && CFG_GLPI.root_doc) || '';
+    const area = location.pathname.match(/\/plugins\/(rh|pmo|reembolso|ciclo)\//);
+    if (!area) return; // fora da área de um plugin de avisos: nada de sino nem pop-up
+    window.__avisos = true;
+    const source = area[1];
+    const NOMES = {rh: 'RH', pmo: 'PMO', reembolso: 'Reembolso', ciclo: 'Ciclo Financeiro'};
     const api = `${root}/plugins/avisos/front/ajax.php`;
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
-    let poll = 60, timer = null, page = `${root}/plugins/avisos/front/avisos.php`, stopped = false;
+    let poll = 60, timer = null, page = `${root}/plugins/avisos/front/avisos.php?source=${source}`, stopped = false;
 
     // ---------------------------------------------------------------- sino
     const bell = document.createElement('div');
     bell.className = 'nav-item dropdown avisos-bell';
-    bell.innerHTML = `<button type="button" class="nav-link px-2 border-0 bg-transparent" data-bs-toggle="dropdown" aria-label="Avisos" title="Avisos">
+    bell.innerHTML = `<button type="button" class="nav-link px-2 border-0 bg-transparent" data-bs-toggle="dropdown" aria-label="Avisos do ${NOMES[source]}" title="Avisos · ${NOMES[source]}">
             <i class="ti ti-bell fs-2"></i><span class="avisos-count" hidden></span></button>
         <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow avisos-menu">
-            <div class="avisos-menu-head"><b>Avisos</b><button type="button" class="btn btn-sm btn-ghost-secondary ms-auto" data-read-all hidden><i class="ti ti-checks me-1"></i>Marcar todos como lidos</button></div>
+            <div class="avisos-menu-head"><b>Avisos · ${NOMES[source]}</b><button type="button" class="btn btn-sm btn-ghost-secondary ms-auto" data-read-all hidden><i class="ti ti-checks me-1"></i>Marcar todos como lidos</button></div>
             <div class="avisos-list" data-list><div class="avisos-empty">Carregando…</div></div>
-            <a class="avisos-menu-foot" data-page href="${esc(page)}">Ver todos os avisos</a>
+            <a class="avisos-menu-foot" data-page href="${esc(page)}">Ver todos os avisos do ${NOMES[source]}</a>
         </div>`;
     const header = document.querySelector('header .user-menu') || document.querySelector('header .navbar-nav.order-md-last');
     if (header) {
@@ -70,7 +76,7 @@
     async function load() {
         if (stopped) return;
         try {
-            const r = await fetch(`${api}?action=poll`, {headers: {Accept: 'application/json'}, credentials: 'same-origin'});
+            const r = await fetch(`${api}?action=poll&source=${source}`, {headers: {Accept: 'application/json'}, credentials: 'same-origin'});
             if (r.status === 401 || r.status === 403 || r.redirected) { stopped = true; return; }
             const d = await r.json();
             if (!d.ok) return;
@@ -85,7 +91,7 @@
         const r = await fetch(api, {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json', Accept: 'application/json'}, body: JSON.stringify(body)});
         return r.json();
     }
-    readAll.addEventListener('click', async (ev) => { ev.stopPropagation(); await post({action: 'read_all'}); load(); });
+    readAll.addEventListener('click', async (ev) => { ev.stopPropagation(); await post({action: 'read_all', source}); load(); });
     document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
     load();
 })();

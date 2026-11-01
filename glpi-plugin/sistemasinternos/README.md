@@ -1,6 +1,6 @@
 # Sistemas Internos 360 para GLPI 12
 
-O painel do departamento de Sistemas Internos dentro do GLPI: o que o Zabbix monitora nos grupos do departamento, os chamados da entidade no GLPI, o cadastro dos hosts do Zabbix e os alertas em todas as telas. Cor do departamento **#3769B2** (Sistemas da Informação), com a árvore ao fundo e a marca-d'água.
+O painel do departamento de Sistemas Internos dentro do GLPI: o que o Zabbix monitora nos grupos do departamento, os chamados da entidade no GLPI, o cadastro dos hosts do Zabbix e os alertas, só nas telas do próprio plugin. Cor do departamento **#3769B2** (Sistemas da Informação), com a árvore ao fundo e a marca-d'água.
 
 ## O que tem
 
@@ -12,7 +12,7 @@ O painel do departamento de Sistemas Internos dentro do GLPI: o que o Zabbix mon
 | **Incluir e editar** | Nome técnico e visível, descrição, grupos (só os do perfil), interface principal (agente, SNMP v1/v2c/v3, IPMI, JMX; IP ou DNS; porta), proxy, templates (lista aprovada na configuração), tags, macros de texto e vínculo com um computador do GLPI (tag `glpi_computer`). Na edição, grupos e templates que o perfil não alcança são **mantidos**, e macros secretas ou de cofre não são tocadas. |
 | **Desativar e excluir** | Desativar para a coleta sem perder o histórico. Excluir pede para digitar o nome técnico. Os dois exigem que **todos** os grupos do host sejam do perfil, para não afetar outros departamentos. |
 | **Auditoria** | Quem, quando, de qual IP, o quê, o antes e o depois, inclusive as tentativas recusadas pelo Zabbix. |
-| **Alertas** | Sinalizador no topo de todas as telas (contador do que pede atenção agora, piscando quando chega algo novo), **som** (5 sons gerados no navegador), **voz** em português e **pop-up no rodapé**. Cada tipo liga ou desliga cada canal: severidades do Zabbix, problema resolvido, chamado novo na entidade, SLA vence em até 1 h, SLA vencido e host alterado por outra pessoa. |
+| **Alertas** | Sinalizador no topo das telas do plugin, sem aparecer em outros plugins (contador do que pede atenção agora, piscando quando chega algo novo), **som** (5 sons gerados no navegador), **voz** em português e **pop-up no rodapé**. Cada tipo liga ou desliga cada canal: severidades do Zabbix, problema resolvido, chamado novo na entidade, SLA vence em até 1 h, SLA vencido e host alterado por outra pessoa. |
 | **Configurações** | Abas *Conexão com o Zabbix* (com teste), *Departamento*, *Cadastro de hosts*, *Alertas* (matriz com botão Testar) e *Notificações* (intervalo, duração e posição do pop-up, volume, velocidade da voz, horário de silêncio, tempo do "Silenciar"). |
 
 ## Acesso
@@ -63,6 +63,7 @@ Tabelas `glpi_plugin_sistemasinternos_profilegroups`, `_logs` (auditoria) e `_se
 ## Versões
 
 - **1.2.4**: a lista do clique nos gráficos abre numa gaveta pela direita, na altura toda da tela.
+- **1.3.0**: os alertas (sinalizador, som, voz e pop-up) passam a aparecer só nas telas do Sistemas Internos 360, sem vazar para outras telas do GLPI nem para outros plugins; a opção "Alertar em todas as telas" foi removida.
 - **1.2.3**: no Resumo rápido, clicar numa fatia, barra ou ponto dos gráficos abre a lista dos alertas (com o link de cada alerta no Zabbix), dos hosts ou dos chamados do dia, com filtros de busca (host, problema, chamado), período, severidade, reconhecimento, estado e aberto/solucionado. O link da tabela de problemas abre o próprio alerta.
 - **1.2.2**: cartões, tabelas e formulários das telas do plugin em azul escuro (tom do #3769B2) com texto claro, legíveis sobre o fundo; gráficos com letras claras.
 - **1.2.1**: o menu *Topologia* volta a abrir o mapa direto.

@@ -138,7 +138,6 @@ class Alerts
             'muted'    => $muted,
             'mutedUntil' => $muted ? date('H:i', strtotime((string) $state['muted_until'])) : '',
             'muteMinutes' => Settings::int('mute_minutes', 5, 1440),
-            'everywhere' => Settings::get('everywhere') !== '0',
             'flag'     => ['count' => count($flag), 'color' => $flag[0]['color'] ?? '', 'items' => array_slice($flag, 0, 12)],
             'items'    => array_slice($items, 0, 20),
             'painel'   => Menu::url('/front/painel.php'),

@@ -4,7 +4,7 @@ Central de avisos dos plugins **RH**, **PMO**, **Reembolso** e **Ciclo Financeir
 
 | Onde | Como |
 |---|---|
-| **Sino** no topo da tela | Número de avisos não lidos e os últimos 8; clique abre o item e marca como lido. "Marcar todos como lidos" e "Ver todos os avisos". |
+| **Sino** no topo da tela | Só dentro da área do próprio plugin (Reembolso, PMO, RH ou Ciclo): cada plugin vê apenas os seus avisos, e fora dessas áreas não há sino. Mostra o número de não lidos e os últimos 8; clique abre o item e marca como lido. "Marcar todos como lidos" marca só os daquele plugin; "Ver todos os avisos" abre a lista filtrada por ele. |
 | **Pop-up** | Aviso novo aparece no canto da tela em até 1 minuto (configurável). Informações e sucessos somem sozinhos em 15 s; pendências e alertas (aprovar, atraso, risco) ficam até fechar. |
 | **Microsoft Teams** | Cartão no canal do plugin, com título, detalhes, quem precisa agir e o botão **Abrir no GLPI**. |
 
@@ -61,3 +61,8 @@ Tabelas `glpi_plugin_avisos_avisos`, `_canals` e `_filas`. Avisos lidos são apa
 ## Licença
 
 GPLv3+, a mesma do GLPI.
+
+
+## Histórico
+
+- **1.2.0**: o sino e o pop-up passam a ser separados por plugin: dentro de `/plugins/reembolso/` só aparecem avisos do Reembolso, em `/plugins/pmo/` só os do PMO, e assim por diante; fora dessas áreas não há sino nem pop-up. A API do sino (`ajax.php?action=poll&source=...`) exige o plugin e só devolve os avisos dele.

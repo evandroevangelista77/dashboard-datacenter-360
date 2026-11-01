@@ -12,7 +12,7 @@ da entidade NOC). 100% PHP, sem dependências além de curl e mysqli.
   legendas que filtram
 - Topologia própria (mapa de rede com prévia ao passar o mouse e ficha do
   ativo ao clicar) e faixa de alertas ao vivo
-- Alertas por voz, som e pop-up em todas as telas do GLPI (Zabbix, chamados
+- Alertas por voz, som e pop-up só dentro do painel NOC 360 (Zabbix, chamados
   novos e SLA), no mesmo esquema do plugin Sistemas Internos 360
 - Plugin do GLPI: seção "NOC" no menu lateral com o item "NOC 360"
 

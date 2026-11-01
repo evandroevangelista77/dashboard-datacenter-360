@@ -1,11 +1,13 @@
 /**
- * NOC 360 — alertas em todas as telas do GLPI, no mesmo esquema dos Sistemas Internos:
+ * NOC 360 — alertas só dentro do painel NOC 360 (cada plugin notifica na sua própria área), no esquema dos Sistemas Internos:
  * sinalizador no topo (contador do que pede atenção agora), som, VOZ (pt-BR) e pop-up no rodapé,
  * para alertas do Zabbix (Desastre, Alta, Atenção, resolvido), chamados novos e SLA (vencendo e vencido).
  * Os canais de cada tipo ficam em /etc/datacenter360/config.php → 'alertas'. O que já foi avisado é
  * guardado no navegador (localStorage), então nada dispara em dobro nem ao trocar de página.
  */
 (() => {
+    // só dentro do painel NOC 360 (e da topologia); nunca nas telas do GLPI nem de outros plugins
+    if (window.CFG_GLPI) return;
     if (window.NOC360 || !document.body || document.querySelector('.page-anonymous, form#login_form, .login-page')) return;
     const root = (window.CFG_GLPI && CFG_GLPI.root_doc) || '';
     const api = `${root}/datacenter360/api.php?action=alertas`;
