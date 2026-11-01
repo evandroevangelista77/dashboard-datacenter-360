@@ -598,3 +598,10 @@ table.hr-t { width: 100%; border-collapse: collapse; font-size: 12.5px; font-var
 .hr-p:hover { border-color: var(--ring-strong); border-left-color: var(--c); background: rgba(8, 126, 131, .28); box-shadow: 0 6px 20px rgba(8, 126, 131, .25); text-decoration: none; }
 .hr-go { position: absolute; top: 8px; right: 11px; font-style: normal; font-size: 14px; color: var(--muted); }
 .hr-p:hover .hr-go { color: var(--text); }
+.hr-resp { margin-top: 18px; }
+.hr-r td small { display: block; color: var(--muted); font-size: 10.5px; }
+.hr-r th.grp { text-align: center; }
+.hr-r th.grp img { vertical-align: middle; }
+.hr-r td:nth-child(4), .hr-r th:nth-child(4), .hr-r td:nth-child(5), .hr-r th:nth-child(5) { }
+.hr-r td:nth-child(5) { border-left: 2px solid var(--grid); }
+.hr-note { margin: 8px 2px 0; font-size: 12px; line-height: 1.5; }

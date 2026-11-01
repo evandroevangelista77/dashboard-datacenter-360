@@ -683,9 +683,25 @@
       const j = await getJson(`action=horas&from=${state.from}&to=${state.to}`);
       if (!j.configured) { box.hidden = true; return; }
       renderHoras(j);
+      getJson(`action=analistas&from=${state.from}&to=${state.to}`).then(renderResp).catch(() => { $('#hrRespBox').hidden = true; });
     } catch (err) {
       box.hidden = false; $('#hrHint').textContent = `não foi possível ler o TrackingTime: ${err.message}`;
     }
+  }
+  /** MTTD e MTTR de cada analista (ligados pelo nome ao Zabbix e ao GLPI). */
+  function renderResp(r) {
+    const box = $('#hrRespBox'); if (!r.configured) { box.hidden = true; return; }
+    box.hidden = false;
+    const cell = (v, n, nm) => v == null ? '<td class="z" title="sem amostra no período">—</td>' : `<td title="${nf.format(n)} ${nm}">${dur(v)}<small>${nf.format(n)}</small></td>`;
+    const rows = r.people.map((p) => `<tr><td><b>${esc(p.name)}</b></td>
+      <td class="${p.zbx.n ? '' : 'z'}">${p.zbx.n ? nf.format(p.zbx.n) : '—'}</td>${cell(p.zbx.mttd, p.zbx.nd, 'alertas reconhecidos primeiro por ele')}${cell(p.zbx.mttr, p.zbx.nr, 'alertas reconhecidos por ele e já recuperados')}
+      <td class="${p.glpi.n ? '' : 'z'}">${p.glpi.n ? nf.format(p.glpi.n) : '—'}</td>${cell(p.glpi.mttd, p.glpi.nd, 'chamados com 1º atendimento')}${cell(p.glpi.mttr, p.glpi.nr, 'chamados solucionados')}</tr>`).join('');
+    const semGlpi = r.people.every((p) => !p.glpi.n);
+    $('#hrResp').innerHTML = `<div class="hr-days"><table class="hr-t hr-r"><thead>
+      <tr><th rowspan="2">Analista</th><th colspan="3" class="grp"><img src="logo-zabbix.svg" alt="Zabbix" height="12"></th><th colspan="3" class="grp"><img src="logo-glpi.svg" alt="GLPI" height="13"></th></tr>
+      <tr><th>Alertas ACK</th><th>MTTD</th><th>MTTR</th><th>Chamados</th><th>MTTD</th><th>MTTR</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="hint hr-note">Zabbix: MTTD = início do alerta até o 1º reconhecimento feito por ele; MTTR = início até a recuperação, nos alertas que ele reconheceu. GLPI: chamados atribuídos a ele (MTTD = abertura até o 1º atendimento; MTTR = abertura até a solução). O número pequeno é a quantidade de amostras.
+      ${semGlpi ? `<br><b>Nenhum analista aparece como técnico atribuído nos chamados do período.</b>${(r.outros_glpi || []).length ? ` Técnicos encontrados: ${esc(r.outros_glpi.join(', '))}.` : ''}` : ''}</p>`;
   }
   function renderHoras(j) {
     $('#secHoras').hidden = false;

@@ -1073,6 +1073,108 @@ function horas(): array
     });
 }
 
+/** Palavras do nome sem acento, em minúsculas e sem partículas (de, da, dos...). */
+function nomeTokens(string $n): array
+{
+    $n = strtr(mb_strtolower($n), ['á' => 'a', 'à' => 'a', 'â' => 'a', 'ã' => 'a', 'ä' => 'a', 'é' => 'e', 'è' => 'e', 'ê' => 'e', 'í' => 'i', 'ì' => 'i', 'ó' => 'o', 'ò' => 'o',
+        'ô' => 'o', 'õ' => 'o', 'ú' => 'u', 'ù' => 'u', 'ç' => 'c']);
+    $t = preg_split('/[^a-z]+/', $n, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    return array_values(array_diff($t, ['de', 'da', 'do', 'das', 'dos', 'e', 'tecnico', 'ext']));
+}
+
+/** Mesma pessoa? Todas as palavras do nome menor (mínimo 2) estão no maior (nome completo ou login nome.sobrenome). */
+function mesmaPessoa(string $a, string $b): bool
+{
+    $x = nomeTokens($a);
+    $y = nomeTokens($b);
+    [$menor, $maior] = count($x) <= count($y) ? [$x, $y] : [$y, $x];
+    return count($menor) >= 2 && !array_diff($menor, $maior);
+}
+
+/**
+ * MTTD e MTTR de cada analista do NOC (mesmos analistas do quadro de horas), ligados pelo nome:
+ * Zabbix = alertas do período cujo 1º reconhecimento foi dele (MTTD) e que ele reconheceu (MTTR até a recuperação);
+ * GLPI = chamados do período atribuídos a ele (MTTD até o 1º atendimento, MTTR até a solução).
+ */
+function analistas(): array
+{
+    global $cfg;
+    $t = $cfg['trackingtime'] ?? null;
+    $users = is_array($t) ? ($t['users'] ?? []) : [];
+    if (!$users) {
+        return ['configured' => false];
+    }
+    $from = (string)($_GET['from'] ?? date('Y-m-d', strtotime('-6 days')));
+    $to = (string)($_GET['to'] ?? date('Y-m-d'));
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $from) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $to) || $from > $to) {
+        fail(400, 'Período inválido');
+    }
+    $now = time();
+    $raw = zabbixRaw(strtotime($from . ' 00:00:00'), min($now, strtotime($to . ' 23:59:59')));
+    $tickets = array_map(fn($x) => ticketRow($x, $now), glpiTickets(strtotime($from . ' 00:00:00'), strtotime($to . ' 23:59:59'), false));
+    $avg = fn(array $v) => $v ? (int)round(array_sum($v) / count($v)) : null;
+    $out = [];
+    $usedTech = $usedAck = [];
+    foreach ($users as $uid => $name) {
+        $dz = $rz = $dg = $rg = [];
+        $nz = 0;
+        foreach ($raw['events'] as $e) {
+            $first = $e['ackfirst'] ?? null;
+            $mine = false;
+            foreach ($e['ackers'] ?? [] as $a) {
+                [$n, $u] = array_pad(explode('|', $a, 2), 2, '');
+                if (mesmaPessoa($name, $n) || mesmaPessoa($name, $u)) {
+                    $mine = true;
+                    $usedAck[$n ?: $u] = true;
+                }
+            }
+            if ($mine) {
+                $nz++;
+                if ($e['repair'] !== null) {
+                    $rz[] = $e['repair'];
+                }
+            }
+            if ($first && $e['detect'] !== null && (mesmaPessoa($name, $first[0]) || mesmaPessoa($name, $first[1]))) {
+                $dz[] = $e['detect'];
+            }
+        }
+        $ng = 0;
+        foreach ($tickets as $tk) {
+            $mine = false;
+            foreach (explode(',', (string)$tk['tech']) as $tn) {
+                if (mesmaPessoa($name, trim($tn))) {
+                    $mine = true;
+                    $usedTech[trim($tn)] = true;
+                }
+            }
+            if (!$mine) {
+                continue;
+            }
+            $ng++;
+            if ($tk['take_seconds'] > 0) {
+                $dg[] = $tk['take_seconds'];
+            }
+            if ($tk['solvedate'] && $tk['resolve_seconds'] !== null) {
+                $rg[] = $tk['resolve_seconds'];
+            }
+        }
+        $out[] = ['id' => (int)$uid, 'name' => $name, 'zbx' => ['n' => $nz, 'mttd' => $avg($dz), 'nd' => count($dz), 'mttr' => $avg($rz), 'nr' => count($rz)],
+            'glpi' => ['n' => $ng, 'mttd' => $avg($dg), 'nd' => count($dg), 'mttr' => $avg($rg), 'nr' => count($rg)]];
+    }
+    // quem aparece no GLPI/Zabbix e não casou com nenhum analista (para ajustar nomes, se preciso)
+    $techs = [];
+    foreach ($tickets as $tk) {
+        foreach (explode(',', (string)$tk['tech']) as $tn) {
+            $tn = trim($tn);
+            if ($tn !== '' && $tn !== 'Sem responsável' && !isset($usedTech[$tn])) {
+                $techs[$tn] = ($techs[$tn] ?? 0) + 1;
+            }
+        }
+    }
+    arsort($techs);
+    return ['configured' => true, 'from' => $from, 'to' => $to, 'people' => $out, 'outros_glpi' => array_slice(array_keys($techs), 0, 12), 'generated' => time()];
+}
+
 /** Texto do chamado (só para o detalhe de um chamado). */
 function glpiTicketContent(int $id): string
 {
@@ -1087,7 +1189,7 @@ function glpiTicketContent(int $id): string
 function zabbixRaw(int $from, int $till): array
 {
     global $cfg;
-    return fileCache("zraw:$from:$till", (int)($cfg['cache_ttl'] ?? 20), function () use ($from, $till) {
+    return fileCache("zraw:v2:$from:$till", (int)($cfg['cache_ttl'] ?? 20), function () use ($from, $till) {
         $sev = sevList();
         $w1 = zbxBatchStrict([
             'hosts' => ['host.get', ['output' => ['hostid', 'host', 'name', 'active_available'], 'filter' => ['status' => 0],
@@ -1095,7 +1197,7 @@ function zabbixRaw(int $from, int $till): array
             'problems' => ['problem.get', ['output' => ['eventid', 'objectid', 'name', 'severity', 'clock', 'acknowledged'], 'severities' => $sev,
                 'sortfield' => ['eventid'], 'sortorder' => 'DESC']],
             'events' => ['event.get', ['output' => ['eventid', 'clock', 'severity', 'name', 'r_eventid', 'acknowledged'], 'source' => 0, 'object' => 0, 'value' => 1,
-                'severities' => $sev, 'time_from' => $from, 'time_till' => $till, 'selectHosts' => ['hostid', 'name'], 'selectAcknowledges' => ['clock', 'action'],
+                'severities' => $sev, 'time_from' => $from, 'time_till' => $till, 'selectHosts' => ['hostid', 'name'], 'selectAcknowledges' => ['clock', 'action', 'username', 'name', 'surname'],
                 'sortfield' => ['clock'], 'sortorder' => 'ASC', 'limit' => 20000]],
             'icmp' => ['item.get', ['output' => ['itemid', 'hostid'], 'filter' => ['key_' => 'icmpping'], 'monitored' => true]],
         ]);
@@ -1133,8 +1235,12 @@ function zabbixRaw(int $from, int $till): array
         $events = [];
         foreach ($w1['events'] as $e) {
             $acks = array_filter($e['acknowledges'] ?? [], fn($a) => ((int)$a['action'] & 2) === 2);
+            $who = fn($a) => trim(trim(($a['name'] ?? '') . ' ' . ($a['surname'] ?? '')) ?: (string)($a['username'] ?? ''));
+            usort($acks, fn($a, $b) => (int)$a['clock'] <=> (int)$b['clock']);
             $events[] = ['clock' => (int)$e['clock'], 'severity' => (int)$e['severity'], 'hostid' => $e['hosts'][0]['hostid'] ?? null, 'host' => $e['hosts'][0]['name'] ?? '—',
-                'acknowledged' => $e['acknowledged'] === '1', 'detect' => $acks ? min(array_map(fn($a) => (int)$a['clock'], $acks)) - (int)$e['clock'] : null,
+                'acknowledged' => $e['acknowledged'] === '1', 'detect' => $acks ? (int)$acks[0]['clock'] - (int)$e['clock'] : null,
+                'ackfirst' => $acks ? [$who($acks[0]), (string)($acks[0]['username'] ?? '')] : null,
+                'ackers' => array_values(array_unique(array_map(fn($a) => $who($a) . '|' . ($a['username'] ?? ''), $acks))),
                 'repair' => isset($recClock[$e['r_eventid']]) ? $recClock[$e['r_eventid']] - (int)$e['clock'] : null];
         }
         $byItem = array_column($w1['icmp'], 'hostid', 'itemid');
@@ -1922,6 +2028,7 @@ try {
         'hostficha' => hostFicha(),
         'alertas' => alertas(),
         'horas' => horas(),
+        'analistas' => analistas(),
         'hostlog' => hostLog(),
         'ticketlog' => ticketLog(),
         'topology' => topology(),
