@@ -102,3 +102,6 @@ a.mp-li:hover { border-color: #35c2c8; text-decoration: none; } .mp-li .sv { fle
 .mp-ct .big { font-size: 40px; }
 .mp-ct .mp-kv b { font-size: 21px; }
 .mp-ct .mp-tg { font-size: 12.5px; }
+
+.mp-card details > summary { cursor: pointer; color: var(--accent-text); margin: 4px 0; } .mp-card details[open] > summary { margin-bottom: 6px; }
+.mp-kv small { font-weight: 400; color: var(--muted); font-size: 11px; }

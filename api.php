@@ -483,8 +483,7 @@ function hostFicha(): array
         'info' => ['item.get', ['output' => ['name', 'key_', 'lastvalue', 'units', 'lastclock'], 'hostids' => [$hid], 'monitored' => true, 'searchByAny' => true, 'limit' => 40,
             'search' => ['key_' => ['system.uptime', 'system.sw.os', 'system.hostname', 'agent.version', 'system.cpu.num', 'vm.memory.size[total]', 'sysUpTime', 'sysName', 'sysDescr',
                 'sysLocation', 'sysContact', 'system.hw.serialnumber', 'system.hw.model', 'system.descr', 'system.location', 'system.contact']]]],
-        'items' => ['item.get', ['output' => ['itemid', 'key_', 'lastvalue', 'lastclock', 'units'], 'hostids' => [$hid], 'monitored' => true,
-            'filter' => ['key_' => ['icmpping', 'icmppingsec', 'icmppingloss', 'system.cpu.util', 'vm.memory.util', 'vm.memory.utilization', 'system.uptime']]]],
+        'items' => ['item.get', ['output' => ['itemid', 'name', 'key_', 'lastvalue', 'lastclock', 'units', 'value_type'], 'hostids' => [$hid], 'monitored' => true, 'limit' => 600, 'sortfield' => 'name']],
         'active' => ['problem.get', ['output' => ['eventid', 'name', 'severity', 'clock', 'acknowledged'], 'hostids' => [$hid], 'severities' => [2, 3, 4, 5], 'sortfield' => ['eventid'], 'sortorder' => 'DESC']],
         'events' => ['event.get', ['output' => ['eventid', 'objectid', 'clock', 'severity', 'name', 'r_eventid', 'acknowledged'], 'hostids' => [$hid], 'source' => 0, 'object' => 0, 'value' => 1,
             'severities' => [2, 3, 4, 5], 'time_from' => $now - 30 * 86400, 'sortfield' => ['clock'], 'sortorder' => 'DESC', 'limit' => 300]],
@@ -492,7 +491,39 @@ function hostFicha(): array
     $h = $w['host'][0] ?? fail(404, 'Host não encontrado');
     $it = [];
     foreach ($w['items'] as $i) {
-        $it[$i['key_']] = $i;
+        $it[$i['key_']] ??= $i;
+    }
+    // primeiro item cujo código começa com o prefixo (ex.: vmware.hv.uptime[...])
+    $first = function (string ...$prefixes) use ($w) {
+        foreach ($prefixes as $p) {
+            foreach ($w['items'] as $i) {
+                if (str_starts_with($i['key_'], $p) && ($i['lastvalue'] ?? '') !== '' && is_numeric($i['lastvalue'])) {
+                    return (float)$i['lastvalue'];
+                }
+            }
+        }
+        return null;
+    };
+    // datastores do VMware: tamanho, % livre e latências
+    $ds = [];
+    foreach ($w['items'] as $i) {
+        if (preg_match('/^vmware\.(?:hv\.)?datastore\.(size|read|write)\[[^,]*,(.+?)(?:,(pfree|latency))?\]$/', $i['key_'], $m) && is_numeric($i['lastvalue'] ?? null)) {
+            $d = &$ds[$m[2]];
+            $d['name'] = $m[2];
+            if ($m[1] === 'size') {
+                $d[($m[3] ?? '') === 'pfree' ? 'pfree' : 'total'] = (float)$i['lastvalue'];
+            } else {
+                $d[$m[1]] = (float)$i['lastvalue'];
+            }
+            unset($d);
+        }
+    }
+    $todos = [];
+    foreach ($w['items'] as $i) {
+        if (($i['lastvalue'] ?? '') === '' || strlen((string)$i['lastvalue']) > 400) {
+            continue;
+        }
+        $todos[] = ['name' => $i['name'], 'value' => $i['lastvalue'], 'units' => $i['units'] ?? '', 'clock' => (int)($i['lastclock'] ?? 0), 'key' => $i['key_']];
     }
     $rec = [];
     $rids = array_values(array_filter(array_column($w['events'], 'r_eventid'), fn($i) => $i !== '0'));
@@ -510,12 +541,32 @@ function hostFicha(): array
         }
         $avail = $n ? round(100 * $s / $n, 3) : null;
     }
+    $availEst = false;
+    $comp = [];
+    $sibIds = array_slice(array_values(array_filter(array_map(fn($x) => preg_replace('/\D/', '', $x), explode(',', (string)($_GET['siblings'] ?? ''))))), 0, 6);
+    if ($sibIds) {
+        $hs = zbx('host.get', ['hostids' => $sibIds, 'output' => ['hostid', 'name']]);
+        $its = zbx('item.get', ['hostids' => $sibIds, 'output' => ['hostid', 'name', 'key_', 'lastvalue', 'lastclock', 'units'], 'monitored' => true, 'limit' => 900, 'sortfield' => 'name']);
+        foreach ($hs as $x) {
+            $list = [];
+            foreach ($its as $i) {
+                if ($i['hostid'] === $x['hostid'] && ($i['lastvalue'] ?? '') !== '' && strlen((string)$i['lastvalue']) <= 300) {
+                    $list[] = ['name' => $i['name'], 'value' => $i['lastvalue'], 'units' => $i['units'] ?? '', 'clock' => (int)($i['lastclock'] ?? 0)];
+                }
+            }
+            $comp[] = ['hostid' => $x['hostid'], 'name' => $x['name'], 'items' => array_slice($list, 0, 120)];
+        }
+    }
     $front = rtrim($cfg['zabbix_front'], '/');
     $ev = array_map(fn($e) => ['clock' => (int)$e['clock'], 'severity' => (int)$e['severity'], 'name' => $e['name'], 'end' => $rec[$e['r_eventid']] ?? null,
         'acknowledged' => $e['acknowledged'] === '1', 'url' => $front . '/tr_events.php?triggerid=' . $e['objectid'] . '&eventid=' . $e['eventid']], $w['events']);
     $big = array_values(array_filter($ev, fn($e) => $e['severity'] >= 4));
     $closed = array_values(array_filter($big, fn($e) => $e['end']));
     $down = array_sum(array_map(fn($e) => $e['end'] - $e['clock'], $closed));
+    if ($avail === null) {  // sem ICMP (ex.: ESXi, BMC): estima pelas quedas Alta e Desastre dos 30 dias
+        $avail = round(max(0, 100 - 100 * $down / (30 * 86400)), 3);
+        $availEst = true;
+    }
     $num = fn($k) => isset($it[$k]) && is_numeric($it[$k]['lastvalue']) ? (float)$it[$k]['lastvalue'] : null;
     $ip = '';
     foreach ($h['interfaces'] as $if) {
@@ -560,9 +611,9 @@ function hostFicha(): array
         'outages' => array_map(fn($e) => ['clock' => $e['clock'], 'end' => $e['end'], 'name' => $e['name'], 'severity' => $e['severity'], 'url' => $e['url']], array_slice($big, 0, 40)),
         'groups' => array_column($h['hostgroups'], 'name'), 'templates' => array_column($h['parentTemplates'], 'name'),
         'inventory' => (object)$inv,
-        'availability' => $avail, 'drops' => count($big), 'downtime' => $down, 'mttr' => $closed ? (int)round($down / count($closed)) : null,
-        'cpu' => $num('system.cpu.util'), 'memory' => $num('vm.memory.util') ?? $num('vm.memory.utilization'),
-        'latency_ms' => $num('icmppingsec') !== null ? round($num('icmppingsec') * 1000, 2) : null, 'loss' => $num('icmppingloss'), 'uptime' => $num('system.uptime'),
+        'availability' => $avail, 'availability_est' => $availEst, 'componentes' => $comp, 'datastores' => array_values($ds), 'items' => array_slice($todos, 0, 150), 'drops' => count($big), 'downtime' => $down, 'mttr' => $closed ? (int)round($down / count($closed)) : null,
+        'cpu' => $num('system.cpu.util') ?? $first('vmware.hv.cpu.usage.perf', 'system.cpu.load'), 'memory' => $num('vm.memory.util') ?? $num('vm.memory.utilization') ?? ($first('vmware.hv.hw.memory') ? 100 * $first('vmware.hv.memory.used') / $first('vmware.hv.hw.memory') : null),
+        'latency_ms' => $num('icmppingsec') !== null ? round($num('icmppingsec') * 1000, 2) : null, 'loss' => $num('icmppingloss'), 'uptime' => $num('system.uptime') ?? $first('vmware.hv.uptime', 'system.net.uptime') ?? (($first('sysUpTime', 'hrSystemUptime')) !== null ? $first('sysUpTime', 'hrSystemUptime') / 100 : null),
         'active' => array_map(fn($p) => ['name' => $p['name'], 'severity' => (int)$p['severity'], 'clock' => (int)$p['clock'], 'acknowledged' => $p['acknowledged'] === '1'], $w['active']),
         'history' => array_slice(array_values(array_filter($ev, fn($e) => $e['clock'] >= $now - 7 * 86400)), 0, 40),
         'front' => $front . '/zabbix.php?action=problem.view&hostids%5B%5D=' . $hid . '&filter_set=1', 'front_latest' => $front . '/zabbix.php?action=latest.view&hostids%5B%5D=' . $hid . '&filter_set=1', 'days' => 30];
