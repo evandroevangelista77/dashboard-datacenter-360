@@ -94,6 +94,7 @@
   function setKpi(name, value, sub, fmt, tone = '') {
     const el = $(`[data-kpi="${name}"]`), b = el.querySelector('b');
     el.dataset.tone = tone;
+    b.dataset.len = String(typeof value === 'number' && fmt ? fmt(value) : value).length; // o tamanho da fonte acompanha a quantidade de dígitos
     if (typeof value === 'number' && fmt) countTo(b, value, fmt);
     else { b.textContent = value; b.dataset.v = 0; }
     el.querySelector('small').innerHTML = sub;

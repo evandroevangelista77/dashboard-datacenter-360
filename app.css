@@ -347,7 +347,7 @@ a.ticker-item:hover { text-decoration: none; }
   padding: 14px 16px 13px; min-height: 112px; border-radius: 9px; border: 1px solid var(--grid); border-top: 3px solid var(--c, var(--ring-strong)); background: rgba(7, 20, 43, 0.5);
 }
 .ktile .l { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-.ktile b { display: block; font-size: 34px; line-height: 1; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; color: var(--text); }
+.ktile b { display: block; font-size: clamp(38px, 3.4vw, 58px); line-height: 1; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; color: var(--text); }
 .ktile small { font-size: 12px; line-height: 1.3; color: var(--text-2); }
 .ktile[data-tone="ok"] b { color: var(--good); } .ktile[data-tone="warn"] b { color: var(--warning); } .ktile[data-tone="bad"] b { color: var(--critical); }
 .ttime { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: stretch; flex: 1; }
@@ -358,7 +358,7 @@ a.ticker-item:hover { text-decoration: none; }
   display: flex; flex-direction: column; justify-content: center; gap: 6px; text-align: left; min-width: 0;
   padding: 12px 14px; min-height: 64px; border-radius: 9px; border: 1px solid var(--grid); background: rgba(7, 20, 43, 0.5);
 }
-.ttime .cell b { display: block; font-size: 24px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
+.ttime .cell b { display: block; white-space: nowrap; font-size: clamp(24px, 1.75vw, 30px); line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
 .ttime .cell small { font-size: 11px; color: var(--muted); line-height: 1.25; }
 
 /* tabelas dos blocos de rede */
@@ -498,7 +498,7 @@ small.sub { display: block; color: var(--muted); font-size: 12px; margin-top: 1p
 .brow .bw { display: flex; height: 100%; gap: 2px; }
 .brow .sg { background: var(--c); min-width: 3px; cursor: pointer; border-radius: 3px; box-shadow: 0 0 10px -3px var(--c); transition: filter .15s; }
 .brow .sg:hover { filter: brightness(1.25); }
-.brow .tot { text-align: right; font: 700 19px var(--font); font-variant-numeric: tabular-nums; }
+.brow .tot { text-align: right; font: 700 24px var(--font); font-variant-numeric: tabular-nums; }
 .brow .bx { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; font-variant-numeric: tabular-nums; }
 .brow .bx small { font-size: 9px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .brow .bx em { font-style: normal; font-weight: 600; font-size: 13px; color: var(--text-2); }
@@ -514,7 +514,7 @@ small.sub { display: block; color: var(--muted); font-size: 12px; margin-top: 1p
 .age { text-align: left; padding: 14px 16px 13px; border-radius: 11px; border: 1px solid var(--grid); border-top: 3px solid var(--c); background: rgba(7, 20, 43, .5); color: var(--text); cursor: pointer; display: flex; flex-direction: column; gap: 8px; }
 .age:hover { border-color: var(--ring-strong); border-top-color: var(--c); background: rgba(8, 126, 131, .30); box-shadow: 0 6px 20px rgba(8, 126, 131, .25); }
 .age .al { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-.age b { font-size: 38px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--c); text-shadow: 0 0 22px color-mix(in srgb, var(--c) 40%, transparent); }
+.age b { font-size: clamp(42px, 3.4vw, 56px); line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--c); text-shadow: 0 0 22px color-mix(in srgb, var(--c) 40%, transparent); }
 .age.zero b { color: #3b4a62; text-shadow: none; }
 .age .ab2 { height: 8px; border-radius: 4px; background: rgba(15, 106, 111, .6); overflow: hidden; }
 .age .abw { display: flex; height: 100%; gap: 2px; } .age .abw i { background: var(--c); border-radius: 2px; }
@@ -563,7 +563,7 @@ body.loading .kgroups, body.loading .panel { opacity: .6; transition: opacity .2
 .hr-p { position: relative; color: inherit; text-decoration: none; cursor: pointer; transition: border-color .15s, background .15s, box-shadow .15s; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 11px; border: 1px solid var(--grid); border-left: 3px solid var(--c); background: rgba(7, 20, 43, .5); }
 .hr-av { position: relative; width: 38px; height: 38px; flex: none; border-radius: 50%; display: grid; place-items: center; font: 700 13px var(--font); color: #fff; background: var(--c); overflow: hidden; }
 .hr-av img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-.hr-p b { display: block; font-size: 21px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.hr-p b { display: block; font-size: 30px; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .hr-p .nm { font-weight: 600; font-size: 13px; color: var(--text); }
 .hr-p small { color: var(--muted); font-size: 11.5px; }
 .hr-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
@@ -589,7 +589,7 @@ table.hr-t { width: 100%; border-collapse: collapse; font-size: 12.5px; font-var
 .hr-row .bt { height: 14px; background: rgba(90, 135, 210, .12); border-radius: 7px; overflow: hidden; }
 .hr-row .bw { display: flex; height: 100%; }
 .hr-row .bw i { background: var(--c); }
-.hr-row .tot { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.hr-row .tot { text-align: right; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .hr-more { margin-top: 6px; }
 .panel[hidden] { display: none !important; }
 .hr-lg { display: inline-flex; align-items: center; gap: 6px; margin: 0 14px 8px 0; font-size: 12px; color: var(--text-2); }
@@ -605,3 +605,10 @@ table.hr-t { width: 100%; border-collapse: collapse; font-size: 12.5px; font-var
 .hr-r td:nth-child(4), .hr-r th:nth-child(4), .hr-r td:nth-child(5), .hr-r th:nth-child(5) { }
 .hr-r td:nth-child(5) { border-left: 2px solid var(--grid); }
 .hr-note { margin: 8px 2px 0; font-size: 12px; line-height: 1.5; }
+.hr-t { font-size: 14px; }
+.hr-t td.tot { font-size: 15px; }
+/* números grandes dos cartões: maiores, e menores só quando têm muitos dígitos (ex.: 4.450) para caber no cartão */
+.ktile b[data-len="4"] { font-size: clamp(34px, 3vw, 50px); }
+.ktile b[data-len="5"] { font-size: clamp(30px, 2.55vw, 44px); }
+.ktile b[data-len="6"] { font-size: clamp(26px, 2.15vw, 38px); }
+.ktile b[data-len="7"], .ktile b[data-len="8"] { font-size: clamp(22px, 1.8vw, 32px); }
