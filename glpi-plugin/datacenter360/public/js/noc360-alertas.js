@@ -35,17 +35,18 @@
 
     // ---------------------------------------------------------------- som
     let ctx = null, unlocked = false;
-    const unlock = () => {
+    const unlock = (ev) => {
         try {
             ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
             if (ctx.state === 'suspended') ctx.resume();
             const first = !unlocked;
             unlocked = true;
             flagEl && flagEl.classList.remove('noc360-flag-locked');
-            if (first) announce();
+            // clicar dentro do sinalizador (Silenciar, teste de voz) não dispara o aviso de ativação
+            if (first && !(ev && ev.target && ev.target.closest && ev.target.closest('.noc360-flag'))) announce();
         } catch (e) { /* sem áudio */ }
     };
-    ['pointerdown', 'keydown'].forEach((ev) => document.addEventListener(ev, unlock, {passive: true}));
+    ['pointerdown', 'keydown'].forEach((ev) => document.addEventListener(ev, (e) => unlock(e), {passive: true}));
     const TONES = {
         bip: [[880, 0, 0.18, 'square']],
         duplo: [[880, 0, 0.13, 'square'], [880, 0.2, 0.13, 'square']],
@@ -53,7 +54,8 @@
         sirene: [[620, 0, 0.45, 'sawtooth', 1240], [1240, 0.45, 0.45, 'sawtooth', 620], [620, 0.9, 0.45, 'sawtooth', 1240]],
         suave: [[660, 0, 0.3, 'sine'], [880, 0.16, 0.35, 'sine']],
     };
-    function play(name) {
+    function play(name, force = false) {
+        if (!force && (isMuted() || isQuiet())) return; // silenciado: nem o som que já estava agendado toca
         if (!unlocked || !ctx) { flagEl && flagEl.classList.add('noc360-flag-locked'); return; }
         const t0 = ctx.currentTime + 0.02;
         (TONES[name] || TONES.bip).forEach(([f, start, dur, type, f2]) => {
@@ -100,8 +102,9 @@
         .replace(/\s\|\s/g, ', ').replace(/\s?>=\s?/g, ' maior ou igual a ').replace(/\s?<=\s?/g, ' menor ou igual a ').replace(/\s?>\s?/g, ' maior que ').replace(/\s?<\s?/g, ' menor que ')
         .replace(/\s+/g, ' ').trim();
     let keepAlive = null;
-    function say(text) {
+    function say(text, force = false) {
         if (!window.speechSynthesis || !text) return;
+        if (!force && (isMuted() || isQuiet())) return; // silenciado: nem a fala que já estava agendada toca
         const v = vozNavegador();
         const frases = (vozTexto(text).match(/[^.!?]+[.!?]*/g) || []).map((f) => f.trim()).filter(Boolean);
         frases.forEach((f) => {
@@ -128,7 +131,7 @@
             if (!force && (sessionStorage.getItem('noc360.avisou') || isMuted() || isQuiet())) return;
             sessionStorage.setItem('noc360.avisou', '1');
         } catch (e) { /* sem sessionStorage: avisa uma vez por página */ }
-        setTimeout(() => say(AVISO), 150);
+        setTimeout(() => say(AVISO, force), 150);
     }
 
     // ---------------------------------------------------------------- silêncio (por navegador)
@@ -179,9 +182,10 @@
             const s = store.get() || {};
             s.muted = isMuted() ? 0 : Date.now() + cfg.mute_minutes * 60000;
             store.set(s);
+            if (s.muted) { clearInterval(keepAlive); try { speechSynthesis.cancel(); } catch (e) { /* sem voz */ } } // para na hora a fala em andamento
             refreshState();
         });
-        flagEl.querySelector('[data-voz]').addEventListener('click', (ev) => { ev.stopPropagation(); unlock(); play('sino'); setTimeout(() => announce(true), 900); });
+        flagEl.querySelector('[data-voz]').addEventListener('click', (ev) => { ev.stopPropagation(); unlock(); play('sino', true); setTimeout(() => announce(true), 900); });
     }
     function refreshState() {
         if (!flagEl) return;
