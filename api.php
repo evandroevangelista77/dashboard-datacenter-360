@@ -477,8 +477,12 @@ function hostFicha(): array
     }
     $now = time();
     $w = zbxBatchStrict([
-        'host' => ['host.get', ['output' => ['hostid', 'host', 'name', 'maintenance_status', 'monitored_by', 'proxyid'], 'hostids' => [$hid], 'selectInterfaces' => ['ip', 'main'],
-            'selectHostGroups' => ['name'], 'selectParentTemplates' => ['name'], 'selectInventory' => ['os', 'model', 'vendor', 'hardware', 'type', 'location']]],
+        'host' => ['host.get', ['output' => ['hostid', 'host', 'name', 'description', 'status', 'maintenance_status', 'maintenanceid', 'maintenance_from', 'monitored_by', 'proxyid', 'inventory_mode'],
+            'hostids' => [$hid], 'selectInterfaces' => ['type', 'main', 'ip', 'dns', 'port', 'useip', 'available', 'error'], 'selectTags' => ['tag', 'value'],
+            'selectHostGroups' => ['name'], 'selectParentTemplates' => ['name'], 'selectInventory' => 'extend']],
+        'info' => ['item.get', ['output' => ['name', 'key_', 'lastvalue', 'units', 'lastclock'], 'hostids' => [$hid], 'monitored' => true, 'searchByAny' => true, 'limit' => 40,
+            'search' => ['key_' => ['system.uptime', 'system.sw.os', 'system.hostname', 'agent.version', 'system.cpu.num', 'vm.memory.size[total]', 'sysUpTime', 'sysName', 'sysDescr',
+                'sysLocation', 'sysContact', 'system.hw.serialnumber', 'system.hw.model', 'system.descr', 'system.location', 'system.contact']]]],
         'items' => ['item.get', ['output' => ['itemid', 'key_', 'lastvalue', 'lastclock', 'units'], 'hostids' => [$hid], 'monitored' => true,
             'filter' => ['key_' => ['icmpping', 'icmppingsec', 'icmppingloss', 'system.cpu.util', 'vm.memory.util', 'vm.memory.utilization', 'system.uptime']]]],
         'active' => ['problem.get', ['output' => ['eventid', 'name', 'severity', 'clock', 'acknowledged'], 'hostids' => [$hid], 'severities' => [2, 3, 4, 5], 'sortfield' => ['eventid'], 'sortorder' => 'DESC']],
@@ -517,15 +521,51 @@ function hostFicha(): array
     foreach ($h['interfaces'] as $if) {
         $ip = $if['main'] === '1' ? $if['ip'] : $ip;
     }
+    $iface = ['1' => 'Agente', '2' => 'SNMP', '3' => 'IPMI', '4' => 'JMX'];
+    $avl = ['0' => 'desconhecido', '1' => 'disponível', '2' => 'indisponível'];
+    $inv = is_array($h['inventory']) && !array_is_list($h['inventory']) ? $h['inventory'] : [];
+    $inv = array_filter($inv, fn($v, $k) => !in_array($v, [null, '', '0'], true) && !in_array($k, ['hostid', 'inventory_mode'], true), ARRAY_FILTER_USE_BOTH);
+    $maint = null;
+    if ($h['maintenance_status'] === '1' && !in_array($h['maintenanceid'] ?? '0', [null, '0'], true)) {
+        try {
+            $m = zbx('maintenance.get', ['maintenanceids' => [$h['maintenanceid']], 'output' => ['name', 'description', 'active_since', 'active_till']]);
+            $maint = $m ? ['name' => $m[0]['name'], 'description' => $m[0]['description'] ?? '', 'since' => (int)($h['maintenance_from'] ?: $m[0]['active_since']), 'till' => (int)$m[0]['active_till']] : ['name' => 'em manutenção'];
+        } catch (Throwable $e) {
+            $maint = ['name' => 'em manutenção'];
+        }
+    }
+    $proxy = null;
+    if (!in_array($h['proxyid'] ?? '0', [null, '', '0'], true)) {
+        try {
+            $px = zbx('proxy.get', ['proxyids' => [$h['proxyid']], 'output' => 'extend']);
+            $proxy = $px ? ($px[0]['name'] ?? $px[0]['host'] ?? null) : null;
+        } catch (Throwable $e) {
+        }
+    }
+    $seen = [];
+    $info = [];
+    foreach ($w['info'] as $i) {
+        if (($i['lastvalue'] ?? '') === '' || isset($seen[$i['name']])) {
+            continue;
+        }
+        $seen[$i['name']] = true;
+        $info[] = ['name' => $i['name'], 'value' => $i['lastvalue'], 'units' => $i['units'] ?? '', 'clock' => (int)($i['lastclock'] ?? 0)];
+    }
     return ['hostid' => $hid, 'name' => $h['name'], 'host' => $h['host'], 'ip' => $ip, 'maintenance' => $h['maintenance_status'] === '1',
+        'description' => (string)($h['description'] ?? ''), 'status' => ($h['status'] ?? '0') === '1' ? 'desativado' : 'monitorado', 'proxy' => $proxy, 'maint' => $maint,
+        'inventory_mode' => ['-1' => 'desativado', '0' => 'manual', '1' => 'automático'][(string)($h['inventory_mode'] ?? '')] ?? '',
+        'tags' => $h['tags'] ?? [], 'info' => $info,
+        'interfaces' => array_map(fn($i) => ['type' => $iface[(string)($i['type'] ?? '')] ?? '?', 'main' => ($i['main'] ?? '') === '1', 'address' => ($i['useip'] ?? '1') === '1' ? ($i['ip'] ?? '') : ($i['dns'] ?? ''),
+            'port' => $i['port'] ?? '', 'available' => $avl[(string)($i['available'] ?? '')] ?? 'desconhecido', 'error' => $i['error'] ?? ''], $h['interfaces'] ?? []),
+        'outages' => array_map(fn($e) => ['clock' => $e['clock'], 'end' => $e['end'], 'name' => $e['name'], 'severity' => $e['severity'], 'url' => $e['url']], array_slice($big, 0, 40)),
         'groups' => array_column($h['hostgroups'], 'name'), 'templates' => array_column($h['parentTemplates'], 'name'),
-        'inventory' => is_array($h['inventory']) ? $h['inventory'] : [],
+        'inventory' => (object)$inv,
         'availability' => $avail, 'drops' => count($big), 'downtime' => $down, 'mttr' => $closed ? (int)round($down / count($closed)) : null,
         'cpu' => $num('system.cpu.util'), 'memory' => $num('vm.memory.util') ?? $num('vm.memory.utilization'),
         'latency_ms' => $num('icmppingsec') !== null ? round($num('icmppingsec') * 1000, 2) : null, 'loss' => $num('icmppingloss'), 'uptime' => $num('system.uptime'),
         'active' => array_map(fn($p) => ['name' => $p['name'], 'severity' => (int)$p['severity'], 'clock' => (int)$p['clock'], 'acknowledged' => $p['acknowledged'] === '1'], $w['active']),
         'history' => array_slice(array_values(array_filter($ev, fn($e) => $e['clock'] >= $now - 7 * 86400)), 0, 40),
-        'front' => $front . '/zabbix.php?action=problem.view&hostids%5B%5D=' . $hid . '&filter_set=1', 'days' => 30];
+        'front' => $front . '/zabbix.php?action=problem.view&hostids%5B%5D=' . $hid . '&filter_set=1', 'front_latest' => $front . '/zabbix.php?action=latest.view&hostids%5B%5D=' . $hid . '&filter_set=1', 'days' => 30];
 }
 
 function db(): mysqli

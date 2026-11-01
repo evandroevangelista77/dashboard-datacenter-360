@@ -102,6 +102,8 @@ Ativos
 - Acesso controlado pelo direito **DataCenter 360**, em *Administração → Perfis → [perfil] → aba DataCenter 360*. Na instalação, a leitura é liberada para os perfis da interface padrão (técnicos e administradores); perfis self-service ficam sem acesso.
 - Sessões abertas antes da instalação passam a ver o menu sem precisar relogar.
 
+A **ficha do ativo** (clicar num equipamento do mapa) tem a mesma visão do mapa dos Sistemas Internos: identificação (estado, nome técnico, ID, proxy, grupos, templates, tags), uptime, disponibilidade, quedas e MTTR de 30 dias, observações do host (descrição no Zabbix), manutenção, problemas ativos, histórico de 7 dias agrupado por tipo de alerta, interfaces com disponibilidade, informações coletadas, inventário em grupos (localização e contato, equipamento, sistema, rede), e os botões "Quedas no período", "Todos os alertas", "Problemas no Zabbix" e "Últimos dados".
+
 ### Alertas por voz, som e pop-up (só no painel NOC 360)
 
 Cada plugin notifica **só na sua própria área**: os alertas do NOC 360 aparecem apenas dentro do painel e da topologia do NOC 360 e não vazam para outras telas do GLPI nem para outros plugins (Sistemas Internos, Reembolso, PMO, RH e Ciclo têm os seus). O painel mostra o **sinalizador do NOC 360** (ao lado do botão de atualizar) (contador do que pede atenção agora, piscando quando chega algo) e avisa por **voz (pt-BR)**, **som** e **pop-up** no rodapé:

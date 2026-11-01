@@ -205,26 +205,91 @@
   const pill = (txt, cls) => `<span class="mp-li" style="display:inline-flex;padding:1px 9px;border-radius:99px"><b class="${cls}">${txt}</b></span>`;
   const statePill = (n) => n.state === 'down' ? pill('fora do ar', 'r') : n.state === 'maintenance' ? pill('em manutenção', '') : pill('no ar', 'gd');
 
+  /* ---------- ficha do ativo: mesma visão do mapa dos Sistemas Internos (identificação, observações, interfaces, dados coletados, inventário, histórico) */
+  const INV = { type: 'Tipo', type_full: 'Tipo (detalhado)', name: 'Nome', alias: 'Apelido', os: 'Sistema operacional', os_full: 'Sistema operacional (completo)', os_short: 'SO (curto)',
+    serialno_a: 'Número de série', serialno_b: 'Número de série B', tag: 'Etiqueta', asset_tag: 'Patrimônio', macaddress_a: 'MAC', macaddress_b: 'MAC B', hardware: 'Hardware',
+    hardware_full: 'Hardware (detalhado)', software: 'Software', software_full: 'Software (detalhado)', software_app_a: 'Aplicação A', software_app_b: 'Aplicação B', software_app_c: 'Aplicação C',
+    software_app_d: 'Aplicação D', software_app_e: 'Aplicação E', contact: 'Contato', location: 'Localização', location_lat: 'Latitude', location_lon: 'Longitude', notes: 'Observações',
+    chassis: 'Chassi', model: 'Modelo', hw_arch: 'Arquitetura', vendor: 'Fabricante', contract_number: 'Nº do contrato', installer_name: 'Instalado por', deployment_status: 'Situação de implantação',
+    url_a: 'URL A', url_b: 'URL B', url_c: 'URL C', host_networks: 'Redes', host_netmask: 'Máscara', host_router: 'Roteador/gateway', oob_ip: 'IP fora de banda (OOB)', oob_netmask: 'Máscara OOB',
+    oob_router: 'Roteador OOB', date_hw_purchase: 'Data de compra', date_hw_install: 'Data de instalação', date_hw_expiry: 'Fim da garantia', date_hw_decomm: 'Data de desativação',
+    site_address_a: 'Endereço', site_address_b: 'Endereço (complemento)', site_address_c: 'Endereço (linha 3)', site_city: 'Cidade', site_state: 'Estado', site_country: 'País', site_zip: 'CEP',
+    site_rack: 'Rack', site_notes: 'Observações do local', poc_1_name: 'Contato principal', poc_1_email: 'E-mail (contato principal)', poc_1_phone_a: 'Telefone (contato principal)',
+    poc_1_phone_b: 'Telefone 2 (contato principal)', poc_1_cell: 'Celular (contato principal)', poc_1_screen: 'Usuário (contato principal)', poc_1_notes: 'Observações (contato principal)',
+    poc_2_name: 'Contato secundário', poc_2_email: 'E-mail (contato secundário)', poc_2_phone_a: 'Telefone (contato secundário)', poc_2_phone_b: 'Telefone 2 (contato secundário)',
+    poc_2_cell: 'Celular (contato secundário)', poc_2_screen: 'Usuário (contato secundário)', poc_2_notes: 'Observações (contato secundário)' };
+  const INV_GROUPS = [['Localização e contato', /^(site_|location|contact|poc_)/], ['Equipamento', /^(type|vendor|model|chassis|hw_|hardware|serialno|tag$|asset_tag|macaddress|date_hw)/],
+    ['Sistema e software', /^(os|software|name$|alias$)/], ['Rede', /^(host_net|host_router|oob_)/], ['Outros', /./]];
+  /* texto livre do Zabbix: e-mails, telefones e URLs clicáveis; endereço com link para o mapa */
+  const linkify = (t, mapIt) => {
+    let h = esc(t);
+    h = h.replace(/\b(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+    h = h.replace(/\b([\w.+-]+@[\w-]+\.[\w.-]+)\b/g, '<a href="mailto:$1">$1</a>');
+    if (mapIt) h += ` <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t)}" target="_blank" rel="noopener" title="Abrir no Google Maps">📍 mapa</a>`;
+    return h;
+  };
+  const notesHtml = (txt) => {
+    const lines = String(txt || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean), rows = [], paras = [];
+    lines.forEach((l) => { const m = l.match(/^([^:]{1,40}?)\s*:\s*(.+)$/); if (m && !/^https?$/i.test(m[1])) rows.push([m[1], m[2]]); else paras.push(l); });
+    return (rows.length ? `<table class="mp-tb">${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${linkify(v, /endere|logradouro|localiza/i.test(k))}</td></tr>`).join('')}</table>` : '')
+      + paras.map((l) => `<p class="mp-p">${linkify(l)}</p>`).join('');
+  };
+  const dt = (ts) => new Date(ts * 1000).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const infoVal = (i) => { const n = Number(i.value); if (i.value === '' || isNaN(n)) return esc(i.value); if (i.units === 'uptime' || i.units === 's') return fmtDur(n); if (i.units === 'B') return nf(n / 1073741824, 1) + ' GB'; return nf(n, Number.isInteger(n) ? 0 : 2) + (i.units ? ' ' + esc(i.units) : ''); };
+  const tr = (l, v) => v == null || v === '' ? '' : `<tr><td>${l}</td><td>${v}</td></tr>`;
+
   async function openHost(id) {
     const n = D.nodes.find((x) => x.id === id); if (!n) return;
     const v = vendorOf(n), col = (VEND[v] || [0, '#35c2c8'])[1];
     openModal(head(kindOf(n), col, n.name, `${badge(v)} ${esc([n.model, n.os, n.ip].filter(Boolean).join(' · '))}`, statePill(n)), '<div class="mp-none">Buscando as informações no Zabbix…</div>');
     try {
       const f = await getJson(`action=hostficha&hostid=${encodeURIComponent(id)}`);
-      const inv = f.inventory || {}, av = f.availability;
+      const inv = f.inventory || {}, av = f.availability, m = f.maint, used = new Set();
       const sys = [['Fabricante', inv.vendor], ['Modelo', inv.model || inv.hardware], ['Sistema', inv.os], ['Tipo', inv.type], ['Local', inv.location], ['IP', f.ip]].filter(([, x]) => x);
-      const m = (lbl, val, cls = '') => `<div><span>${lbl}</span><b class="${cls}">${val}</b></div>`;
+      const kv = (lbl, val, cls = '') => `<div><span>${lbl}</span><b class="${cls}">${val}</b></div>`;
       const up = n.uptime ? fmtDur(n.uptime + Math.max(0, Date.now() / 1000 - (n.uptime_at || Date.now() / 1000))) : null;
+      const invHtml = INV_GROUPS.map(([title, re]) => {
+        const ks = Object.keys(inv).filter((k) => !used.has(k) && re.test(k)); ks.forEach((k) => used.add(k));
+        if (!ks.length) return '';
+        const lat = inv.location_lat, lon = inv.location_lon;
+        return `<div class="mp-sub"><h6>${title}</h6><table class="mp-tb">${ks.map((k) => tr(esc(INV[k] || k), /notes$/.test(k) ? `<div class="mp-pre">${linkify(inv[k])}</div>` : linkify(inv[k], /^site_address_a$|^location$/.test(k)))).join('')}
+          ${title === 'Localização e contato' && lat && lon ? tr('Coordenadas', `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lat + ',' + lon)}" target="_blank" rel="noopener">📍 ${esc(lat)}, ${esc(lon)}</a>`) : ''}</table></div>`;
+      }).join('');
+      // histórico de 7 dias agrupado por tipo de alerta (como nos Sistemas Internos)
+      const g = new Map();
+      (f.history || []).forEach((e) => { let x = g.get(e.name); if (!x) g.set(e.name, x = { name: e.name, sev: 0, n: 0, clock: 0, end: null, open: false, url: e.url });
+        x.n++; x.sev = Math.max(x.sev, e.severity); if (!e.end) x.open = true; if (e.clock > x.clock) { x.clock = e.clock; x.end = e.end; x.url = e.url; } });
+      const hist = [...g.values()].sort((a, b) => (b.open - a.open) || b.clock - a.clock);
+      const when2 = (x) => `<b>${dt(x.clock)}</b> → ${x.end ? `${when(x.end)} <span>(${fmtDur(x.end - x.clock)})</span>` : '<b class="y">em aberto</b>'}`;
       const ct = `<div class="two"><div class="mp-card"><h6>⏱ Uptime</h6><div class="big">${up || '–'}</div><div class="sm">${up ? 'medido pelo Zabbix' : 'sem item de uptime neste ativo'}</div></div>
-        <div class="mp-card"><h6>Sistema / hardware</h6>${sys.length ? sys.map(([k, x]) => `<div class="sm"><b>${k}:</b> ${esc(x)}</div>`).join('') : '<div class="sm">sem inventário no Zabbix</div>'}${f.groups.length ? `<div class="sm"><b>Grupos:</b> ${esc(f.groups.join(', '))}</div>` : ''}</div></div>
+        <div class="mp-card"><h6>Identificação</h6><div class="mp-tags"><span class="mp-tg ${n.state === 'down' ? 'r' : n.state === 'maintenance' ? '' : 'gd'}">${n.state === 'down' ? 'Fora do ar' : n.state === 'maintenance' ? 'Em manutenção' : 'Online'}</span>
+          ${f.status === 'desativado' ? '<span class="mp-tg">Monitoramento desativado</span>' : ''}${m ? '<span class="mp-tg">Em manutenção</span>' : ''}${(f.active || []).length ? `<span class="mp-tg y">${f.active.length} ${f.active.length === 1 ? 'problema' : 'problemas'}</span>` : ''}</div>
+          <div class="sm"><b>Nome:</b> ${esc(f.name)}</div>${f.host && f.host !== f.name ? `<div class="sm"><b>Nome técnico:</b> ${esc(f.host)}</div>` : ''}<div class="sm"><b>ID:</b> ${esc(f.hostid)}${f.proxy ? ` · via proxy <b>${esc(f.proxy)}</b>` : ''}</div>
+          ${sys.map(([k, x]) => `<div class="sm"><b>${k}:</b> ${esc(x)}</div>`).join('')}</div></div>
         <div class="mp-card"><h6>Últimos ${f.days} dias</h6><div class="mp-kv">
-          ${m('Disponibilidade', av != null ? nf(av, 3) + '%' : '–', av == null ? '' : av >= 99.9 ? 'gd' : av >= 99 ? 'y' : 'r')}${m('Tempo fora', f.downtime ? fmtDur(f.downtime) : '0')}${m('Quedas', nf(f.drops), f.drops ? 'y' : '')}${m('MTTR', f.mttr != null ? fmtDur(f.mttr) : '–')}
-          ${m('CPU', f.cpu != null ? nf(f.cpu, 0) + '%' : '–')}${m('Memória', f.memory != null ? nf(f.memory, 0) + '%' : '–')}${m('Latência', f.latency_ms != null ? nf(f.latency_ms, 1) + ' ms' : '–')}${m('Perda', f.loss != null ? nf(f.loss, 0) + '%' : '–')}</div>
+          ${kv('Disponibilidade', av != null ? nf(av, 3) + '%' : '–', av == null ? '' : av >= 99.9 ? 'gd' : av >= 99 ? 'y' : 'r')}${kv('Tempo fora', f.downtime ? fmtDur(f.downtime) : '0')}${kv('Quedas', nf(f.drops), f.drops ? 'y' : '')}${kv('MTTR', f.mttr != null ? fmtDur(f.mttr) : '–')}
+          ${kv('CPU', f.cpu != null ? nf(f.cpu, 0) + '%' : '–')}${kv('Memória', f.memory != null ? nf(f.memory, 0) + '%' : '–')}${kv('Latência', f.latency_ms != null ? nf(f.latency_ms, 1) + ' ms' : '–')}${kv('Perda', f.loss != null ? nf(f.loss, 0) + '%' : '–')}</div>
           <div class="sm" style="margin-top:8px">Quedas e MTTR consideram os alertas Alta e Desastre do período.</div>
-          <div class="mp-acts"><a href="${esc(f.front)}" target="_blank" rel="noopener">Problemas no Zabbix ↗</a></div></div>
-        <div class="mp-card"><h6>Problemas ativos agora</h6>${f.active.length ? `<div class="mp-list">${f.active.map((p) => `<div class="mp-li"><span class="sv" style="--c:${sevColor(p.severity)}">${SEV[p.severity]}</span><span class="nm">${esc(p.name)}</span><span class="wh">há ${ago(p.clock)}${p.acknowledged ? ' ✔' : ''}</span></div>`).join('')}</div>` : '<div class="mp-none">Nenhum problema aberto.</div>'}</div>
-        <div class="mp-card"><h6>Histórico de alertas · 7 dias · ${f.history.length} ${f.history.length === 1 ? 'alerta' : 'alertas'}</h6>${f.history.length ? `<div class="mp-list">${f.history.map((e) => `<a class="mp-li" href="${esc(e.url)}" target="_blank" rel="noopener"><span class="sv" style="--c:${sevColor(e.severity)}">${SEV[e.severity]}</span><span class="nm">${esc(e.name)}</span><span class="wh">${when(e.clock)}${e.end ? ` → ${when(e.end)} (${fmtDur(e.end - e.clock)})` : ' · ativo'}</span></a>`).join('')}</div>` : '<div class="mp-none">Sem alertas nos últimos 7 dias.</div>'}</div>`;
+          <div class="mp-acts"><button type="button" class="mp-bt" data-sub="outages">Quedas no período</button><button type="button" class="mp-bt" data-sub="hist">Todos os alertas</button>
+            <a href="${esc(f.front)}" target="_blank" rel="noopener">Problemas no Zabbix ↗</a><a href="${esc(f.front_latest)}" target="_blank" rel="noopener">Últimos dados ↗</a></div>
+          <div class="mp-drill" id="mpDrill" hidden></div></div>
+        ${f.description ? `<div class="mp-card"><h6>Observações do host (descrição no Zabbix)</h6>${notesHtml(f.description)}</div>` : ''}
+        ${m ? `<div class="mp-card"><h6>Manutenção</h6><table class="mp-tb">${tr('Nome', esc(m.name))}${tr('Desde', m.since ? dt(m.since) : '')}${tr('Até', m.till ? dt(m.till) : '')}${tr('Descrição', esc(m.description))}</table></div>` : ''}
+        <div class="mp-card"><h6>Problemas ativos agora</h6>${f.active.length ? `<div class="mp-list">${f.active.slice().sort((a, b) => b.severity - a.severity || b.clock - a.clock).map((p) => `<div class="mp-li"><span class="sv" style="--c:${sevColor(p.severity)}">${SEV[p.severity]}</span><span class="nm">${esc(p.name)}</span><span class="wh">há ${ago(p.clock)}${p.acknowledged ? ' ✔' : ''}</span></div>`).join('')}</div>` : '<div class="mp-none">Nenhum problema aberto.</div>'}</div>
+        <div class="mp-card"><h6>Histórico de alertas · 7 dias · ${(f.history || []).length} ${(f.history || []).length === 1 ? 'alerta' : 'alertas'}</h6>${hist.length ? `<div class="mp-list">${hist.slice(0, 15).map((x) => `<a class="mp-li" href="${esc(x.url)}" target="_blank" rel="noopener"><span class="sv" style="--c:${sevColor(x.sev)}">${SEV[x.sev]}</span><span class="nm">${esc(x.name)}${x.n > 1 ? ` <span class="mp-rep">${x.n}×</span>` : ''}</span><span class="wh">${when2(x)}</span></a>`).join('')}</div>${hist.length > 15 ? `<div class="sm">e mais ${hist.length - 15} tipos de alerta</div>` : ''}` : '<div class="mp-none">Sem alertas nos últimos 7 dias.</div>'}</div>
+        <div class="mp-card"><h6>Interfaces</h6><table class="mp-tb">${(f.interfaces || []).map((i) => tr(`${esc(i.type)}${i.main ? ' (principal)' : ''}`, `<b>${esc(i.address)}</b>${i.port ? ':' + esc(i.port) : ''} · <span class="${i.available === 'indisponível' ? 'r' : ''}">${esc(i.available)}</span>${i.error ? ` · <span class="r">${esc(i.error)}</span>` : ''}`)).join('') || '<tr><td>sem interfaces</td></tr>'}</table></div>
+        ${(f.info || []).length ? `<div class="mp-card"><h6>Informações coletadas</h6><table class="mp-tb">${f.info.map((i) => tr(esc(i.name), `${infoVal(i)}${i.clock ? ` <small>(${dt(i.clock)})</small>` : ''}`)).join('')}</table></div>` : ''}
+        ${invHtml ? `<div class="mp-card"><h6>Inventário${f.inventory_mode ? ` (${esc(f.inventory_mode)})` : ''}</h6>${invHtml}</div>` : ''}
+        <div class="mp-card"><h6>Grupos, templates e tags</h6><table class="mp-tb">${tr('Grupos', esc((f.groups || []).join(', ')))}${tr('Templates', esc((f.templates || []).join(', ')))}</table>
+          ${(f.tags || []).length ? `<div class="mp-tags">${f.tags.map((t) => `<span class="mp-tg">${esc(t.tag)}${t.value ? ': ' + esc(t.value) : ''}</span>`).join('')}</div>` : ''}</div>`;
       $('#mpCt').innerHTML = ct;
+      const dr = $('#mpDrill');
+      $('#mpCt').querySelectorAll('[data-sub]').forEach((b) => b.addEventListener('click', () => {
+        const k = b.dataset.sub, rows = k === 'outages' ? (f.outages || []) : (f.history || []);
+        if (!dr.hidden && dr.dataset.k === k) { dr.hidden = true; return; }
+        dr.dataset.k = k; dr.hidden = false;
+        dr.innerHTML = `<div class="sm"><b>${k === 'outages' ? `Quedas (Alta e Desastre) · ${f.days} dias · ${rows.length}` : `Todos os alertas · 7 dias · ${rows.length}`}</b></div>` + (rows.length ? `<div class="mp-list">${rows.map((e) => `<a class="mp-li" href="${esc(e.url)}" target="_blank" rel="noopener"><span class="sv" style="--c:${sevColor(e.severity)}">${SEV[e.severity]}</span><span class="nm">${esc(e.name)}</span><span class="wh">${dt(e.clock)}${e.end ? ` → ${when(e.end)} (${fmtDur(e.end - e.clock)})` : ' · ativo'}</span></a>`).join('')}</div>` : '<div class="mp-none">Nada no período.</div>');
+      }));
     } catch (e) { $('#mpCt').innerHTML = `<div class="mp-err">${esc(e.message)}</div>`; }
   }
   function openLink(i) {
