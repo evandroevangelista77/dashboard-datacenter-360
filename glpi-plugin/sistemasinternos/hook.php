@@ -2,6 +2,7 @@
 
 use GlpiPlugin\Sistemasinternos\Menu;
 use GlpiPlugin\Sistemasinternos\Settings;
+use GlpiPlugin\Sistemasinternos\Wazuh;
 
 /**
  * Cria as tabelas (grupos do Zabbix por perfil, auditoria e estado dos alertas
@@ -64,11 +65,61 @@ function plugin_sistemasinternos_install(): bool
             `date_creation` timestamp NULL DEFAULT NULL,
             PRIMARY KEY (`id`),
             KEY `date_creation` (`date_creation`)",
+        // Wazuh: cada vulnerabilidade vista (quando apareceu e quando sumiu = corrigida), para o tempo de correção
+        'glpi_plugin_sistemasinternos_wzvulns' => "
+            `id` int $sign NOT NULL AUTO_INCREMENT,
+            `vkey` char(40) NOT NULL,
+            `agent_id` varchar(20) NOT NULL,
+            `agent_name` varchar(255) DEFAULT NULL,
+            `cve` varchar(64) DEFAULT NULL,
+            `package` varchar(255) DEFAULT NULL,
+            `version` varchar(128) DEFAULT NULL,
+            `severity` varchar(16) NOT NULL DEFAULT '-',
+            `score` decimal(3,1) DEFAULT NULL,
+            `first_seen` datetime NOT NULL,
+            `last_seen` datetime NOT NULL,
+            `resolved_at` datetime DEFAULT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `vkey` (`vkey`),
+            KEY `agent_id` (`agent_id`),
+            KEY `resolved_at` (`resolved_at`),
+            KEY `last_seen` (`last_seen`)",
+        // foto diária dos totais de vulnerabilidades (evolução)
+        'glpi_plugin_sistemasinternos_wzsnaps' => "
+            `day` date NOT NULL,
+            `total` int $sign NOT NULL DEFAULT 0,
+            `critical` int $sign NOT NULL DEFAULT 0,
+            `high` int $sign NOT NULL DEFAULT 0,
+            `medium` int $sign NOT NULL DEFAULT 0,
+            `low` int $sign NOT NULL DEFAULT 0,
+            `unrated` int $sign NOT NULL DEFAULT 0,
+            `assets` int $sign NOT NULL DEFAULT 0,
+            `date_mod` datetime DEFAULT NULL,
+            PRIMARY KEY (`day`)",
+        // chamados abertos a partir do Wazuh (chave estável: evita abrir o mesmo duas vezes)
+        'glpi_plugin_sistemasinternos_wztickets' => "
+            `id` int $sign NOT NULL AUTO_INCREMENT,
+            `tkey` varchar(16) NOT NULL,
+            `kind` varchar(10) NOT NULL,
+            `agent_id` varchar(20) NOT NULL,
+            `ref` varchar(255) DEFAULT NULL,
+            `tickets_id` int $sign NOT NULL DEFAULT 0,
+            `users_id` int $sign NOT NULL DEFAULT 0,
+            `date_creation` datetime DEFAULT NULL,
+            PRIMARY KEY (`id`),
+            KEY `tkey` (`tkey`),
+            KEY `agent_id` (`agent_id`),
+            KEY `tickets_id` (`tickets_id`)",
     ];
     foreach ($tables as $table => $def) {
         if (!$DB->tableExists($table)) {
             $DB->doQuery("CREATE TABLE `$table` ($def) $opts");
         }
+    }
+
+    // 1.4.0: marca do último alerta de vulnerabilidade nova (por usuário)
+    if (!$DB->fieldExists('glpi_plugin_sistemasinternos_seens', 'last_wzvuln_id')) {
+        $DB->doQuery("ALTER TABLE `glpi_plugin_sistemasinternos_seens` ADD `last_wzvuln_id` int $sign NOT NULL DEFAULT 0");
     }
 
     // direitos: painel (ler), hosts (ler, incluir, editar, excluir) e configuração
@@ -96,6 +147,8 @@ function plugin_sistemasinternos_install(): bool
     }
 
     Settings::installDefaults();
+    // 1.4.0: sincronização horária das vulnerabilidades do Wazuh
+    CronTask::register(Wazuh::class, 'wazuhsync', HOUR_TIMESTAMP, ['comment' => 'Sincroniza as vulnerabilidades do Wazuh', 'mode' => CronTask::MODE_EXTERNAL, 'state' => CronTask::STATE_WAITING]);
     // 1.2.0: a Visão 360 roda dentro do GLPI, sem o servidor do SI 360 à parte
     Config::deleteConfigurationValues(Settings::CONTEXT, ['painel_url']);
 
@@ -114,9 +167,10 @@ function plugin_sistemasinternos_uninstall(): bool
 {
     global $DB;
 
-    foreach (['profilegroups', 'logs', 'seens', 'books'] as $t) {
+    foreach (['profilegroups', 'logs', 'seens', 'books', 'wzvulns', 'wzsnaps', 'wztickets'] as $t) {
         $DB->dropTable("glpi_plugin_sistemasinternos_$t", true);
     }
+    CronTask::unregister('sistemasinternos');
     ProfileRight::deleteProfileRights(Menu::RIGHTS);
     Config::deleteConfigurationValues(Settings::CONTEXT, array_keys(Settings::DEFAULTS));
     unset($_SESSION['glpimenu']);

@@ -16,7 +16,7 @@ use GlpiPlugin\Sistemasinternos\Painel;
 use GlpiPlugin\Sistemasinternos\ProfileTab;
 use GlpiPlugin\Sistemasinternos\Settings;
 
-define('PLUGIN_SISTEMASINTERNOS_VERSION', '1.3.0');
+define('PLUGIN_SISTEMASINTERNOS_VERSION', '2.0.0');
 define('PLUGIN_SISTEMASINTERNOS_MIN_GLPI', '12.0.0');
 define('PLUGIN_SISTEMASINTERNOS_MAX_GLPI', '12.0.99');
 
@@ -51,7 +51,7 @@ function plugin_init_sistemasinternos(): void
     $PLUGIN_HOOKS[Hooks::CONFIG_PAGE]['sistemasinternos'] = 'front/config.form.php';
 
     // token da conta de serviço do Zabbix gravado criptografado (GLPIKey)
-    $PLUGIN_HOOKS[Hooks::SECURED_CONFIGS]['sistemasinternos'] = ['zabbix_token'];
+    $PLUGIN_HOOKS[Hooks::SECURED_CONFIGS]['sistemasinternos'] = ['zabbix_token', 'wazuh_pass'];
 }
 
 /**

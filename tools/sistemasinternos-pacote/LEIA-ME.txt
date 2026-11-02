@@ -17,7 +17,11 @@ O painel do departamento de Sistemas Internos dentro do GLPI 12.0.x
   SLA vencendo, SLA vencido, host alterado por outra pessoa)
 - Configurações em abas: conexão, departamento, cadastro de hosts, alertas e
   notificações (horário de silêncio, volume, voz, duração do pop-up)
-- Cor do departamento #3769B2, com a árvore ao fundo e a marca-d'água
+- Wazuh (versão 2): Vulnerabilidades (executiva, por ativo, operacional e
+  EPSS), Segurança (eventos, MITRE ATT&CK, conformidade, FIM, SCA, acesso,
+  agentes e inventário), relatório executivo em PDF e pop-up de vulnerabilidade
+  nova P1/P2. Configure em Configurações → Wazuh (use um usuário só de leitura)
+- Cor do departamento #3769B2, sobre o fundo de datacenter do GLPI
 
 CONTEÚDO
 --------

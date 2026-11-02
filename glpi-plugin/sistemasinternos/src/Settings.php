@@ -21,6 +21,11 @@ class Settings extends CommonGLPI
         'zabbix_url'      => '',
         'zabbix_token'    => '',
         'zabbix_verify'   => '1',
+        'wazuh_url'       => '',
+        'wazuh_user'      => '',
+        'wazuh_pass'      => '',
+        'wazuh_verify'    => '0',
+        'wazuh_min_level' => '10',
         'groups'          => '29,19,63,4',
         'entities_id'     => '0',
         'title'           => 'Sistemas Internos',
@@ -68,6 +73,8 @@ class Settings extends CommonGLPI
         'glpi_new'     => ['Chamado novo na entidade', 'GLPI', 'ti-ticket', '#3769B2', ['on', 'flag', 'popup'], 'sino'],
         'glpi_sla1h'   => ['SLA vence em até 1 h', 'GLPI', 'ti-hourglass-high', '#f59e0b', ['on', 'flag', 'sound', 'popup', 'voice'], 'duplo'],
         'glpi_slalate' => ['SLA vencido', 'GLPI', 'ti-hourglass-empty', '#ef4444', ['on', 'flag', 'sound', 'popup', 'voice', 'sticky'], 'sirene'],
+        'wz_p1'        => ['Vulnerabilidade nova P1 (crítica)', 'Wazuh', 'ti-bug', '#e45959', ['on', 'popup'], 'suave'],
+        'wz_p2'        => ['Vulnerabilidade nova P2 (alta)', 'Wazuh', 'ti-bug', '#e97659', ['on', 'popup'], 'suave'],
         'host_change'  => ['Host incluído, alterado ou removido por outra pessoa', 'Cadastro', 'ti-server-cog', '#3769B2', ['on', 'popup'], 'suave'],
     ];
 
@@ -87,8 +94,10 @@ class Settings extends CommonGLPI
         if ($cache === null) {
             $cache = array_merge(self::DEFAULTS, array_map('strval', Config::getConfigurationValues(self::CONTEXT, array_keys(self::DEFAULTS))));
             // o GLPI criptografa os "secured_configs" ao gravar, mas não descriptografa ao ler
-            if ($cache['zabbix_token'] !== '') {
-                $cache['zabbix_token'] = (string) (new GLPIKey())->decrypt($cache['zabbix_token']);
+            foreach (['zabbix_token', 'wazuh_pass'] as $secret) {
+                if ($cache[$secret] !== '') {
+                    $cache[$secret] = (string) (new GLPIKey())->decrypt($cache[$secret]);
+                }
             }
         }
         return $cache;
@@ -169,8 +178,10 @@ class Settings extends CommonGLPI
     {
         $clean = array_intersect_key($values, self::DEFAULTS);
         // token em branco no formulário = manter o atual
-        if (array_key_exists('zabbix_token', $clean) && trim((string) $clean['zabbix_token']) === '') {
-            unset($clean['zabbix_token']);
+        foreach (['zabbix_token', 'wazuh_pass'] as $secret) {
+            if (array_key_exists($secret, $clean) && trim((string) $clean[$secret]) === '') {
+                unset($clean[$secret]);
+            }
         }
         Config::setConfigurationValues(self::CONTEXT, array_map('strval', $clean));
     }

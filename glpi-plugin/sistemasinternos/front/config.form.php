@@ -2,6 +2,7 @@
 
 use GlpiPlugin\Sistemasinternos\Menu;
 use GlpiPlugin\Sistemasinternos\Settings;
+use GlpiPlugin\Sistemasinternos\Wazuh;
 use GlpiPlugin\Sistemasinternos\Zabbix;
 
 Session::checkRight(Menu::RIGHT_CONFIG, UPDATE);
@@ -24,7 +25,17 @@ if (isset($_POST['save'])) {
             'tone'     => isset(Settings::TONES[$_POST['tone'][$key] ?? '']) ? $_POST['tone'][$key] : 'bip',
         ];
     }
+    $wurl = trim((string) ($_POST['wazuh_url'] ?? ''));
+    if ($wurl !== '' && !preg_match('#^https?://[^/\s]+$#', rtrim($wurl, '/'))) {
+        Session::addMessageAfterRedirect('O endereço do Wazuh deve ser só http(s)://servidor ou http(s)://servidor:porta, sem caminho.', false, ERROR);
+        Html::redirect("$self?tab=$tab");
+    }
     Settings::save([
+        'wazuh_url'      => rtrim($wurl, '/'),
+        'wazuh_user'     => mb_substr(trim((string) ($_POST['wazuh_user'] ?? '')), 0, 120),
+        'wazuh_pass'     => (string) ($_POST['wazuh_pass'] ?? ''),
+        'wazuh_verify'   => empty($_POST['wazuh_verify']) ? '0' : '1',
+        'wazuh_min_level' => (string) max(1, min(15, (int) ($_POST['wazuh_min_level'] ?? 10))),
         'zabbix_url'     => $url,
         'zabbix_token'   => trim((string) ($_POST['zabbix_token'] ?? '')),
         'zabbix_verify'  => empty($_POST['zabbix_verify']) ? '0' : '1',
@@ -86,6 +97,19 @@ if (isset($_POST['test'])) {
     }
 }
 
+// ------------------------------------------------------------------ teste da conexão com o Wazuh
+if (isset($_POST['test_wazuh'])) {
+    $tab = 'wazuh';
+    $test = [];
+    try {
+        foreach (Wazuh::test() as $row) {
+            $test[] = $row;
+        }
+    } catch (Throwable $ex) {
+        $test[] = ['bad', $ex->getMessage()];
+    }
+}
+
 Html::header('Configurações · Sistemas Internos 360', '', Menu::SECTOR, 'config');
 $e = fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);
 $c = Settings::all();
@@ -106,7 +130,7 @@ if (Settings::isConfigured()) {
 }
 
 $tabs = ['conexao' => ['Conexão com o Zabbix', 'ti-plug-connected'], 'departamento' => ['Departamento', 'ti-building-community'], 'hosts' => ['Cadastro de hosts', 'ti-server-2'],
-    'alertas' => ['Alertas', 'ti-alert-hexagon'], 'notificacoes' => ['Notificações', 'ti-bell-ringing']];
+    'wazuh' => ['Wazuh', 'ti-shield-lock'], 'alertas' => ['Alertas', 'ti-alert-hexagon'], 'notificacoes' => ['Notificações', 'ti-bell-ringing']];
 echo "<form method='post' action='" . $e($self) . "' class='card si360-card' style='max-width:1180px'><input type='hidden' name='tab' value='" . $e($tab) . "' data-si-tabinput>";
 echo "<div class='card-header'><ul class='nav nav-tabs card-header-tabs' data-si-tabs>";
 foreach ($tabs as $k => [$label, $icon]) {
@@ -169,6 +193,27 @@ echo "<div class='si360-tab' id='si-tab-hosts'" . ($tab === 'hosts' ? '' : ' hid
     . "<li><b>Ver</b>, <b>Incluir</b>, <b>Editar</b> (também ativar e desativar) e <b>Excluir definitivamente</b> são direitos do perfil: Administração → Perfis → aba <i>Sistemas Internos 360</i>.</li>"
     . "<li>Só aparecem os hosts dos grupos liberados para o perfil. Desativar e excluir exigem que <b>todos</b> os grupos do host sejam do perfil, para não afetar outros departamentos.</li>"
     . "<li>Excluir pede para digitar o nome técnico do host. Tudo fica na <b>Auditoria dos hosts</b>, com o antes e o depois.</li></ul></div></div>"
+    . "</div></div>";
+
+// ------------------------------------------------------------------ Wazuh
+echo "<div class='si360-tab' id='si-tab-wazuh'" . ($tab === 'wazuh' ? '' : ' hidden') . ">";
+if ($test && $tab === 'wazuh') {
+    echo "<div class='si360-test mb-3'>" . implode('', array_map(fn ($t) => "<div class='si360-test-row {$t[0]}'><i class='ti " . ['ok' => 'ti-circle-check', 'warn' => 'ti-alert-triangle', 'bad' => 'ti-circle-x'][$t[0]] . " me-2'></i>" . $e($t[1]) . "</div>", $test)) . "</div>";
+}
+echo "<div class='row g-3'>"
+    . "<div class='col-md-8'><label class='form-label'>Endereço do Wazuh</label><input class='form-control' name='wazuh_url' value='" . $e($c['wazuh_url']) . "' placeholder='https://wazuh.empresa.com.br'>"
+    . "<div class='form-hint'>O do <b>Dashboard</b> do Wazuh (porta 443: repassa as buscas ao Indexer) ou o do <b>Indexer</b> direto (porta 9200). Só o endereço, sem caminho.</div></div>"
+    . "<div class='col-md-4 d-flex align-items-end'><label class='form-check form-switch mb-2'><input class='form-check-input' type='checkbox' name='wazuh_verify' value='1'" . $check($c['wazuh_verify'] === '1') . "><span class='form-check-label'>Validar o certificado HTTPS</span></label></div>"
+    . "<div class='col-md-4'><label class='form-label'>Usuário</label><input class='form-control' name='wazuh_user' value='" . $e($c['wazuh_user']) . "' autocomplete='off' placeholder='glpi-leitura'></div>"
+    . "<div class='col-md-4'><label class='form-label'>Senha</label><input type='password' class='form-control' name='wazuh_pass' autocomplete='new-password' placeholder='" . ($c['wazuh_pass'] !== '' ? '•••••••• (em branco = manter a atual)' : 'senha do usuário') . "'>"
+    . "<div class='form-hint'>Guardada criptografada no GLPI e nunca enviada ao navegador.</div></div>"
+    . "<div class='col-md-4'><label class='form-label'>Alertas que podem virar chamado: nível mínimo</label><input type='number' min='1' max='15' class='form-control' name='wazuh_min_level' value='" . (int) $c['wazuh_min_level'] . "'>"
+    . "<div class='form-hint'>Na tela Vulnerabilidades → Operacional. Nível 10 ou mais costuma ser alto.</div></div>"
+    . "<div class='col-12'><button class='btn btn-outline-primary' name='test_wazuh' value='1' formnovalidate><i class='ti ti-plug-connected me-1'></i>Testar a conexão com o Wazuh</button></div>"
+    . "<div class='col-12'><div class='si360-howto'><b><i class='ti ti-shield-lock me-1'></i>Boas práticas</b><ul class='mb-0 mt-1'>"
+    . "<li>Crie no Wazuh um usuário <b>somente leitura</b> para o GLPI (Indexer/Dashboard → Security → Internal users, com um papel que leia os índices <code>wazuh-*</code>) em vez de usar o <code>admin</code>.</li>"
+    . "<li>O GLPI precisa alcançar o Wazuh na porta 443 (Dashboard) ou 9200 (Indexer). Só o servidor do GLPI fala com o Wazuh: o navegador nunca.</li>"
+    . "<li>O histórico e o tempo de correção das vulnerabilidades são guardados pelo GLPI por uma ação automática (<i>wazuhsync</i>, a cada hora). Garanta que o cron do GLPI está ativo.</li></ul></div></div>"
     . "</div></div>";
 
 // ------------------------------------------------------------------ alertas (matriz)

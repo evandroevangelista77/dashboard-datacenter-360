@@ -1,0 +1,27 @@
+name: Publicar release do Sistemas Internos 360
+# Para publicar: crie e envie uma tag com a versão do plugin (ex.: sistemasinternos-v2.0.0). O pacote é montado e a release é criada
+# aqui no GitHub, sem depender de nenhum computador pessoal (nem do `gh` instalado nele).
+on:
+  push:
+    tags: ['sistemasinternos-v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: A tag precisa bater com a versão do plugin
+        run: |
+          V=$(grep -oE "PLUGIN_SISTEMASINTERNOS_VERSION', '[^']+" glpi-plugin/sistemasinternos/setup.php | cut -d"'" -f3)
+          if [ "sistemasinternos-v$V" != "$GITHUB_REF_NAME" ]; then echo "A tag $GITHUB_REF_NAME não bate com a versão $V do setup.php"; exit 1; fi
+          echo "VERSAO=$V" >> "$GITHUB_ENV"
+      - name: Montar o pacote
+        run: bash tools/empacotar-sistemasinternos.sh .
+      - name: Criar a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "oak-sistemasinternos-completo-$VERSAO.zip" \
+            --title "Sistemas Internos 360/2 para GLPI 12 · $VERSAO" --latest \
+            --notes "Sistemas Internos 360/2, versão $VERSAO: a Visão 360 do departamento dentro do GLPI (Zabbix e chamados) com o Wazuh integrado. Vulnerabilidades (executiva, por ativo, operacional e EPSS), Segurança (eventos, MITRE ATT&CK, conformidade, FIM, SCA, acesso, agentes e inventário), relatório executivo em PDF, pop-up de vulnerabilidade nova P1/P2 e chamados sem duplicar. 100% PHP e JavaScript, sem servidores à parte; GLPI 12. Instalação no LEIA-ME.txt do pacote. O Wazuh é configurado em Configurações → Wazuh (use um usuário somente leitura)."

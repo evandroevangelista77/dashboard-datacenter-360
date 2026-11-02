@@ -55,8 +55,45 @@ class Alerts
             }
         }
 
-        // ---------------------------------------------------------------- GLPI
         global $DB;
+        // ---------------------------------------------------------------- Wazuh: vulnerabilidade nova P1 (crítica) e P2 (alta), só pop-up
+        if (Wazuh::isConfigured() && $DB->tableExists('glpi_plugin_sistemasinternos_wzvulns') && (Settings::alertOn('wz_p1') || Settings::alertOn('wz_p2'))) {
+            try {
+                Wazuh::syncIfStale(3600); // traz o que há de novo no Wazuh, depois de responder
+                $cur = (int) ($DB->request(['SELECT' => ['MAX' => 'id AS m'], 'FROM' => 'glpi_plugin_sistemasinternos_wzvulns'])->current()['m'] ?? 0);
+                $maxW = (int) ($state['last_wzvuln_id'] ?? 0);
+                if (!$first && $maxW > 0 && $cur > $maxW) {
+                    $q = $DB->doQuery('SELECT `agent_id`, MAX(`agent_name`) AS agent, `package`, SUM(`severity` = \'Critical\') AS c, SUM(`severity` = \'High\') AS h, MAX(`score`) AS score FROM `glpi_plugin_sistemasinternos_wzvulns` '
+                        . "WHERE `id` > $maxW AND `resolved_at` IS NULL AND `severity` IN ('Critical','High') GROUP BY `agent_id`, `package` ORDER BY c DESC, h DESC, score DESC LIMIT 40");
+                    $n = 0;
+                    $extra = 0;
+                    while ($r = $q->fetch_assoc()) {
+                        $key = (int) $r['c'] > 0 ? 'wz_p1' : 'wz_p2';
+                        if (!Settings::alertOn($key)) {
+                            continue;
+                        }
+                        if ($n >= 5) {
+                            $extra++;
+                            continue;
+                        }
+                        $n++;
+                        $host = preg_replace('/-\d{1,3}(\.\d{1,3}){3}$/', '', (string) $r['agent']);
+                        $parts = array_filter([(int) $r['c'] ? $r['c'] . ' crítica(s)' : '', (int) $r['h'] ? $r['h'] . ' alta(s)' : '']);
+                        $items[] = self::item($key, ($key === 'wz_p1' ? 'Vulnerabilidade nova P1' : 'Vulnerabilidade nova P2') . ' · ' . $host, $r['package'] . ': ' . implode(' e ', $parts) . ($r['score'] ? ' (CVSS ' . number_format((float) $r['score'], 1, ',', '') . ')' : ''),
+                            Menu::url('/front/vulnerabilidades.php#ops'), '');
+                    }
+                    if ($extra > 0) {
+                        $items[] = self::item('wz_p2', "Mais $extra pacote(s) com vulnerabilidade nova", 'Veja a fila completa em Vulnerabilidades → Operacional.', Menu::url('/front/vulnerabilidades.php#ops'), '');
+                    }
+                }
+                // primeira vez (ou depois da atualização do plugin): só marca o ponto de partida
+                $state['last_wzvuln_id'] = $cur;
+            } catch (Throwable $e) {
+                $errors[] = $e->getMessage();
+            }
+        }
+
+        // ---------------------------------------------------------------- GLPI
         $ents = Painel::entities();
         $base = ['is_deleted' => 0, 'entities_id' => $ents, 'status' => [1, 2, 3, 4]];
         $maxT = (int) $state['last_tickets_id'];
@@ -208,13 +245,13 @@ class Alerts
         if ($row) {
             return $row + ['_new' => false];
         }
-        return ['users_id' => $uid, 'last_eventid' => 0, 'last_recoveryid' => 0, 'last_tickets_id' => 0, 'last_logs_id' => 0, 'sla_alerted' => '', 'muted_until' => null, '_new' => true];
+        return ['users_id' => $uid, 'last_eventid' => 0, 'last_recoveryid' => 0, 'last_tickets_id' => 0, 'last_logs_id' => 0, 'last_wzvuln_id' => 0, 'sla_alerted' => '', 'muted_until' => null, '_new' => true];
     }
 
     private static function saveState(int $uid, array $s): void
     {
         global $DB;
-        $data = array_intersect_key($s, array_flip(['last_eventid', 'last_recoveryid', 'last_tickets_id', 'last_logs_id', 'sla_alerted', 'muted_until']));
+        $data = array_intersect_key($s, array_flip(['last_eventid', 'last_recoveryid', 'last_tickets_id', 'last_logs_id', 'last_wzvuln_id', 'sla_alerted', 'muted_until']));
         $data['date_mod'] = date('Y-m-d H:i:s');
         $DB->updateOrInsert(self::TABLE, $data, ['users_id' => $uid]);
     }
