@@ -4,14 +4,14 @@ Acompanha cada venda do **aviso de fechamento no CRM até o recebimento dos valo
 
 ## Como funciona
 
-1. **Abrir o Ciclo** (Comercial ou OTC): venda/projeto, cliente, nº da oportunidade no CRM, tipo de venda, valor, data do aviso de fechamento, contrato assinado, Comercial, OTC e GP. O Ciclo começa na data do aviso.
+1. **Abrir o Ciclo pelo Aviso de Fechamento do CRM** (Comercial ou OTC): negócio, empresa, nº da oportunidade, tipo de venda, valor, data que ganhou, contrato assinado, responsável (Comercial), OTC e GP, mais os blocos do negócio no CRM: **Oportunidade** (fase do funil, status, data prevista), **Dados da Oportunidade** (frente de negócio, origem e detalhe, tipo de prospecção, de negócio, de contrato e de negociação, duração, probabilidade, nº do RO, data do pregão), **Qualificação** (dor do cliente e descrição, nome do projeto, economic buyer, área do decisor, budget, negociação com quem decide, certificação, valor estimado pelo AM), **Proposta** (fabricante, ID, pré-vendas líder, versão, PoC, forma de pagamento, encerramento do contrato, envio ao cliente), **Informações Adicionais**, **Validação de Conformidade** (checklist Sim / Não / Não se aplica, com o resumo no topo) e **Contato**. O Ciclo começa na data que ganhou.
 2. O Ciclo passa pelas **fases** abaixo. Cada fase tem um **grupo responsável**, um **SLO** e o que ela **exige para concluir**. Ao começar, a fase abre um **chamado para o grupo** (com o link do Ciclo) e avisa a área, o GP e o OTC; ao terminar, o chamado é resolvido.
 3. Na fase atual, quem é do grupo (ou tem o direito de editar Ciclos) **conclui**, **devolve** para uma fase anterior (com motivo, contado como **retrabalho**) ou comenta. Quem edita Ciclos também **pula** uma fase, **cancela** e **reabre**.
 4. O Ciclo termina quando a última parcela é recebida.
 
 | # | Fase | Área sugerida | Vale para | SLO sugerido | Para concluir |
 |---|---|---|---|---|---|
-| 1 | Aviso de fechamento | Comercial | todas | 1 | (concluída ao abrir o Ciclo) |
+| 1 | Aviso de Fechamento do CRM | Comercial | todas | 1 | (concluída ao abrir o Ciclo) |
 | 2 | Validação da documentação | OTC | todas | 2 | — (incompleta: devolve ao Comercial) |
 | 3 | Centro de custo | Gestão de custos | todas | 2 | nº do centro de custo |
 | 4 | Divulgação do aviso | OTC | todas | 2 | — |
@@ -84,6 +84,7 @@ No Ciclo, um **Gantt** mostra cada passagem pelas fases no tempo (verde no prazo
 
 ## Versões
 
+- **1.0.4**: a primeira fase passa a se chamar **Aviso de Fechamento do CRM** e o Ciclo ganha os campos do negócio no CRM (oportunidade, dados da oportunidade, qualificação, proposta, informações adicionais, validação de conformidade e contato), guardados juntos e prontos para a integração com o CRM.
 - **1.0.3**: ata do transfermeeting no Ciclo (participantes e a ata em texto rico, na seção Transfermeeting dos dados), também disponível na busca.
 - **1.0.2**: clique nas barras de *Tempo médio por fase × SLO* e no *Ciclo médio por mês* abre os Ciclos no painel lateral; documentos no Ciclo (envio de vários arquivos com categoria e fase, visualização de PDF e imagens no painel lateral) e a biblioteca de documentos de todos os Ciclos.
 - **1.0.1**: “Onde os Ciclos estão agora” virou uma esteira do processo (cada Ciclo na sua fase, com dias contra o SLO); gráficos com texto maior e fases alinhadas à esquerda.

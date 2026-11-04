@@ -22,7 +22,7 @@ class Etapa extends CommonDBTM
      * "vale para": all | fisico (tem hardware) | servico (tem serviço) | nao_so_hw (tem software ou serviço)
      */
     public const DEFAULTS = [
-        'aviso'        => ['Aviso de fechamento', 'Comercial', 'all', 1, 'Venda fechada no CRM: oportunidade, cliente, tipo de venda e valor.', ''],
+        'aviso'        => ['Aviso de Fechamento do CRM', 'Comercial', 'all', 1, 'Negócio ganho no CRM: oportunidade, empresa, valor, qualificação, proposta e validação de conformidade.', ''],
         'validacao'    => ['Validação da documentação', 'OTC', 'all', 2, 'OTC confere se a documentação está completa e consistente. Incompleta: devolve ao Comercial.', ''],
         'centro_custo' => ['Centro de custo', 'Gestão de custos', 'all', 2, 'Gestão de custos cria o centro de custo (número e descrição).', 'cc_number'],
         'divulgacao'   => ['Divulgação do aviso', 'OTC', 'all', 2, 'OTC preenche as informações do aviso de fechamento e divulga.', ''],

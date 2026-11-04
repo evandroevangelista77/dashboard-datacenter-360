@@ -35,8 +35,8 @@ class Crm
             'business_type'    => ['Tipo de negócio', 'select', ['privado' => 'Privado', 'publico' => 'Público'], 'col-md-3'],
             'contract_type'    => ['Tipo do Contrato', 'select', ['novo' => 'Novo', 'renovacao' => 'Renovação', 'aditivo' => 'Aditivo'], 'col-md-3'],
             'negotiation_type' => ['Tipo de Negociação', 'select', ['direta' => 'Negociação Direta', 'licitacao' => 'Licitação', 'pregao' => 'Pregão', 'ata' => 'Ata de registro de preço'], 'col-md-3'],
-            'contract_months'  => ['Duração do contrato (meses)', 'number', '24', 'col-md-3'],
-            'probability'      => ['Probabilidade de fechamento %', 'percent', '90', 'col-md-3'],
+            'contract_months'  => ['Duração do contrato (meses)', 'number', '', 'col-md-3'],
+            'probability'      => ['Probabilidade de fechamento %', 'percent', '', 'col-md-3'],
             'ro_number'        => ['Número do RO - Registro da Oportunidade', 'text', '', 'col-md-3'],
             'date_auction'     => ['Data do Pregão', 'date', '', 'col-md-3'],
         ]],
@@ -154,6 +154,15 @@ class Crm
         return $n;
     }
 
+    /** Resumo no topo do formulário: fase do funil, status e a validação de conformidade. */
+    public static function summary(array $d): string
+    {
+        $c = self::checklist($d);
+        $parts = array_filter([self::label('funnel_phase', $d['funnel_phase'] ?? ''), self::label('crm_status', $d['crm_status'] ?? '')]);
+        $parts[] = "conformidade: <b class='cf-crm-ok'>{$c['sim']} sim</b>" . ($c['nao'] ? " · <b class='cf-crm-bad'>{$c['nao']} não</b>" : '') . ($c['vazio'] ? " · {$c['vazio']} sem resposta" : '');
+        return implode(' · ', array_map(fn ($p) => str_contains($p, '<b') ? $p : Menu::e($p), $parts));
+    }
+
     /** Blocos do CRM no formulário do Ciclo (name="crm[chave]"). */
     public static function form(array $d, bool $edit): string
     {
@@ -165,7 +174,7 @@ class Crm
             if ($code === 'conformidade') {
                 $c = self::checklist($d);
                 $total = count($fields);
-                $extra = " <span class='cf-crm-chk'><b class='ok'>{$c['sim']} sim</b>" . ($c['nao'] ? " · <b class='bad'>{$c['nao']} não</b>" : '') . ($c['na'] ? " · {$c['na']} não se aplica" : '')
+                $extra = " <span class='cf-crm-chk'><b class='cf-crm-ok'>{$c['sim']} sim</b>" . ($c['nao'] ? " · <b class='cf-crm-bad'>{$c['nao']} não</b>" : '') . ($c['na'] ? " · {$c['na']} não se aplica" : '')
                     . ($c['vazio'] ? " · {$c['vazio']} sem resposta" : '') . " <small>de $total</small></span>";
             }
             $h .= "<div class='col-12 cf-section'><i class='ti $icon me-1'></i>" . $e($title) . "$extra</div>";

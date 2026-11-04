@@ -88,12 +88,12 @@
 <main class="dash" id="dash">
   <section class="kgroups" aria-label="Indicadores">
     <div class="kgroup">
-      <header><h2>Alertas</h2><img src="logo-zabbix.svg" alt="Zabbix" height="14"><span class="hint">no período · Desastre, Alta e Atenção</span></header>
+      <header><h2>Alertas</h2><img src="logo-zabbix.svg" alt="Zabbix" height="14"><span class="hint" data-sevt="no período · {L}">no período · Desastre, Alta e Atenção</span></header>
       <div class="ktiles c4">
         <button type="button" class="ktile" data-kpi="sev5" data-go="secActive" style="--c:var(--sev-5)" title="Alertas de severidade Desastre no período"><span class="top"><span class="l">Desastre</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.3 2h7.4L21 7.3v9.4L15.7 22H8.3L3 16.7V7.3z"/><path d="M12 8v5M12 16.5v.01"/></svg></span><b>—</b><small></small><em class="desc">Falha crítica: serviço parado ou perda total.</em></button>
         <button type="button" class="ktile" data-kpi="sev4" data-go="secActive" style="--c:var(--sev-4)" title="Alertas de severidade Alta no período"><span class="top"><span class="l">Alta</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17v.01"/></svg></span><b>—</b><small></small><em class="desc">Problema grave com impacto no serviço.</em></button>
         <button type="button" class="ktile" data-kpi="sev2" data-go="secActive" style="--c:var(--sev-2)" title="Alertas de severidade Atenção (Warning) no período"><span class="top"><span class="l">Atenção</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 7.5v5M12 16v.01"/></svg></span><b>—</b><small></small><em class="desc">Alerta preventivo, sem impacto imediato.</em></button>
-        <button type="button" class="ktile" data-kpi="unacked" data-go="secActive" style="--c:var(--accent)" title="Problemas ativos (Desastre, Alta e Atenção) que ninguém reconheceu no Zabbix"><span class="top"><span class="l">Sem ACK</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.6 14.5c.9-1.2 1.4-2.7 1.4-4.5a8 8 0 0 0-12-6.9M6.3 6.3A8 8 0 0 0 4 10c0 5-2 6.5-2 6.5h14M10 20a2 2 0 0 0 4 0M2 2l20 20"/></svg></span><b>—</b><small></small><em class="desc">Ativos que ninguém reconheceu no Zabbix.</em></button>
+        <button type="button" class="ktile" data-kpi="unacked" data-go="secActive" style="--c:var(--accent)" title="Problemas ativos (Desastre, Alta e Atenção) que ninguém reconheceu no Zabbix" data-sevt="Problemas ativos ({L}) que ninguém reconheceu no Zabbix" data-sevattr="title"><span class="top"><span class="l">Sem ACK</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.6 14.5c.9-1.2 1.4-2.7 1.4-4.5a8 8 0 0 0-12-6.9M6.3 6.3A8 8 0 0 0 4 10c0 5-2 6.5-2 6.5h14M10 20a2 2 0 0 0 4 0M2 2l20 20"/></svg></span><b>—</b><small></small><em class="desc">Ativos que ninguém reconheceu no Zabbix.</em></button>
       </div>
     </div>
     <div class="kgroup">
@@ -130,7 +130,7 @@
     <div class="lgd" id="lgTkClient"></div><div class="board" id="bdTkClient"></div>
   </section>
   <section class="panel span-5" id="secClientAl">
-    <header><h2>Alertas por cliente</h2><img class="plogo" src="logo-zabbix.svg" alt="Zabbix" height="14"><span class="hint">Desastre · Alta · Atenção · clique para filtrar</span></header>
+    <header><h2>Alertas por cliente</h2><img class="plogo" src="logo-zabbix.svg" alt="Zabbix" height="14"><span class="hint" data-sevt="{D} · clique para filtrar">Desastre · Alta · Atenção · clique para filtrar</span></header>
     <div class="lgd" id="lgAlClient"></div><div class="board" id="bdAlClient"></div>
   </section>
 
@@ -192,7 +192,7 @@
 
 <footer class="foot">
   <span id="updated">—</span>
-  <span>Alertas: Desastre, Alta e Atenção · Chamados: entidade NOC para baixo · MTTD Zabbix = início → 1º reconhecimento, GLPI = abertura → 1º atendimento · MTTR Zabbix = início → recuperação, GLPI = abertura → solução · Atrasado = prazo de solução do GLPI vencido</span>
+  <span><span data-sevt="Alertas: {L}">Alertas: Desastre, Alta e Atenção</span> · Chamados: entidade NOC para baixo · MTTD Zabbix = início → 1º reconhecimento, GLPI = abertura → 1º atendimento · MTTR Zabbix = início → recuperação, GLPI = abertura → solução · Atrasado = prazo de solução do GLPI vencido</span>
 </footer>
 
 <div class="scrim" id="scrim"></div>

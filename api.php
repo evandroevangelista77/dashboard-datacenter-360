@@ -380,7 +380,7 @@ function mapa(): array
             'hosts' => ['host.get', ['output' => ['hostid', 'host', 'name', 'active_available', 'maintenance_status'], 'filter' => ['status' => 0],
                 'selectInterfaces' => ['ip', 'type', 'available', 'main'], 'selectHostGroups' => ['name'], 'selectParentTemplates' => ['name'],
                 'selectInventory' => ['os', 'model', 'vendor', 'hardware', 'type'], 'sortfield' => 'name']],
-            'problems' => ['problem.get', ['output' => ['eventid', 'name', 'severity', 'clock', 'acknowledged'], 'severities' => [2, 3, 4, 5], 'sortfield' => ['eventid'], 'sortorder' => 'DESC']],
+            'problems' => ['problem.get', ['output' => ['eventid', 'name', 'severity', 'clock', 'acknowledged'], 'severities' => sevList(), 'sortfield' => ['eventid'], 'sortorder' => 'DESC']],
             'icmp' => ['item.get', ['output' => ['itemid', 'hostid', 'key_', 'lastvalue', 'lastclock'], 'filter' => ['key_' => ['icmpping']], 'monitored' => true]],
             'upt' => ['item.get', ['output' => ['hostid', 'key_', 'lastvalue', 'lastclock', 'units'], 'search' => ['key_' => 'uptime'], 'monitored' => true]],
         ]);
@@ -484,9 +484,9 @@ function hostFicha(): array
             'search' => ['key_' => ['system.uptime', 'system.sw.os', 'system.hostname', 'agent.version', 'system.cpu.num', 'vm.memory.size[total]', 'sysUpTime', 'sysName', 'sysDescr',
                 'sysLocation', 'sysContact', 'system.hw.serialnumber', 'system.hw.model', 'system.descr', 'system.location', 'system.contact']]]],
         'items' => ['item.get', ['output' => ['itemid', 'name', 'key_', 'lastvalue', 'lastclock', 'units', 'value_type'], 'hostids' => [$hid], 'monitored' => true, 'limit' => 600, 'sortfield' => 'name']],
-        'active' => ['problem.get', ['output' => ['eventid', 'name', 'severity', 'clock', 'acknowledged'], 'hostids' => [$hid], 'severities' => [2, 3, 4, 5], 'sortfield' => ['eventid'], 'sortorder' => 'DESC']],
+        'active' => ['problem.get', ['output' => ['eventid', 'name', 'severity', 'clock', 'acknowledged'], 'hostids' => [$hid], 'severities' => sevList(), 'sortfield' => ['eventid'], 'sortorder' => 'DESC']],
         'events' => ['event.get', ['output' => ['eventid', 'objectid', 'clock', 'severity', 'name', 'r_eventid', 'acknowledged'], 'hostids' => [$hid], 'source' => 0, 'object' => 0, 'value' => 1,
-            'severities' => [2, 3, 4, 5], 'time_from' => $now - 30 * 86400, 'sortfield' => ['clock'], 'sortorder' => 'DESC', 'limit' => 300]],
+            'severities' => sevList(), 'time_from' => $now - 30 * 86400, 'sortfield' => ['clock'], 'sortorder' => 'DESC', 'limit' => 300]],
     ]);
     $h = $w['host'][0] ?? fail(404, 'Host não encontrado');
     $it = [];
@@ -787,7 +787,7 @@ function slas(int $from, int $till): array
  * Painel por cliente: severidades, chamados da entidade NOC, links/APs do escritório e servidores
  * =================================================================================================== */
 
-/** Severidades que o painel mostra (padrão: Desastre, Alta e Atenção/Warning). */
+/** Severidades que o painel mostra (padrão: Desastre, Alta e Atenção/Warning; troque em config.php, ex.: [5, 4, 3] para Desastre, Alta e Média). */
 function sevList(): array
 {
     global $cfg;
@@ -1371,7 +1371,7 @@ function ticketRow(array $t, int $now): array
 const ALERTAS_TIPOS = [
     'zbx_5'        => ['Desastre', 'Zabbix', 'ti-flame', '#e45959', ['flag', 'sound', 'popup', 'voice', 'sticky'], 'sirene'],
     'zbx_4'        => ['Alta', 'Zabbix', 'ti-alert-octagon', '#e97659', ['flag', 'sound', 'popup', 'voice', 'sticky'], 'duplo'],
-    'zbx_3'        => ['Média', 'Zabbix', 'ti-alert-triangle', '#ffa059', ['flag', 'sound', 'popup'], 'bip'],
+    'zbx_3'        => ['Média', 'Zabbix', 'ti-alert-triangle', '#ffa059', ['flag', 'popup', 'voice'], 'suave'],
     'zbx_2'        => ['Atenção', 'Zabbix', 'ti-alert-circle', '#ffc859', ['flag', 'popup', 'voice'], 'suave'],
     'zbx_1'        => ['Informação', 'Zabbix', 'ti-info-circle', '#7499ff', [], 'suave'],
     'zbx_0'        => ['Não classificada', 'Zabbix', 'ti-help-circle', '#97aab3', [], 'suave'],

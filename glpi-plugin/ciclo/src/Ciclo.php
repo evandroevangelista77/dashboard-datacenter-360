@@ -112,7 +112,7 @@ class Ciclo extends CommonDBTM
             ['id' => 6, 'table' => $t, 'field' => 'status', 'name' => __('Status'), 'datatype' => 'specific', 'searchtype' => ['equals', 'notequals'], 'massiveaction' => false],
             ['id' => 7, 'table' => $t, 'field' => 'current_phase', 'name' => 'Fase atual', 'datatype' => 'specific', 'searchtype' => ['equals', 'notequals'], 'massiveaction' => false],
             ['id' => 8, 'table' => $t, 'field' => 'amount', 'name' => 'Valor da venda', 'datatype' => 'decimal'],
-            ['id' => 9, 'table' => $t, 'field' => 'date_closing', 'name' => 'Aviso de fechamento', 'datatype' => 'datetime'],
+            ['id' => 9, 'table' => $t, 'field' => 'date_closing', 'name' => 'Aviso de Fechamento do CRM (data que ganhou)', 'datatype' => 'datetime'],
             ['id' => 10, 'table' => 'glpi_users', 'field' => 'name', 'linkfield' => 'users_id_gp', 'name' => 'GP', 'datatype' => 'dropdown', 'right' => 'all'],
             ['id' => 11, 'table' => 'glpi_users', 'field' => 'name', 'linkfield' => 'users_id_otc', 'name' => 'OTC', 'datatype' => 'dropdown', 'right' => 'all'],
             ['id' => 12, 'table' => $t, 'field' => 'cc_number', 'name' => 'Centro de custo', 'datatype' => 'string'],
@@ -190,6 +190,10 @@ class Ciclo extends CommonDBTM
         if (isset($input['transport_mode']) && !isset(self::TRANSPORT[$input['transport_mode']])) {
             $input['transport_mode'] = null;
         }
+        if (isset($input['crm']) && is_array($input['crm'])) {
+            $input['crm_data'] = json_encode(Crm::clean($input['crm']), JSON_UNESCAPED_UNICODE);
+        }
+        unset($input['crm']);
         foreach (['amount', 'transport_cost'] as $money) {
             if (isset($input[$money])) {
                 $input[$money] = max(0, Menu::parseMoney((string) $input[$money]));
@@ -206,7 +210,7 @@ class Ciclo extends CommonDBTM
     public function post_addItem()
     {
         parent::post_addItem();
-        Evento::record($this->getID(), null, 'open', 'Aviso de fechamento' . ($this->fields['opportunity'] ? ' da oportunidade ' . $this->fields['opportunity'] : '') . '.');
+        Evento::record($this->getID(), null, 'open', 'Aviso de Fechamento do CRM' . ($this->fields['opportunity'] ? ' da oportunidade ' . $this->fields['opportunity'] : '') . '.');
         Fase::build($this);
     }
 
@@ -254,8 +258,8 @@ class Ciclo extends CommonDBTM
         echo "<div class='cf'>";
         // ---------------------------------------------- cabeçalho
         echo "<div class='card mb-3'><div class='card-body d-flex flex-wrap align-items-center gap-3'><div class='cf-head-icon'><i class='ti ti-recycle'></i></div><div class='me-auto'>"
-            . "<div class='cf-crumb'>" . ($new ? 'Novo Ciclo' : $e(self::code($this->getID()))) . "</div><h2 class='m-0'>" . ($new ? 'Aviso de fechamento' : $e($f['name'])) . "</h2>"
-            . ($new ? "<div class='text-secondary small cf-subtitle'>Registre a venda fechada. O Ciclo começa na data do aviso e já segue para a validação da documentação pelo OTC.</div>"
+            . "<div class='cf-crumb'>" . ($new ? 'Novo Ciclo' : $e(self::code($this->getID()))) . "</div><h2 class='m-0'>" . ($new ? 'Aviso de Fechamento do CRM' : $e($f['name'])) . "</h2>"
+            . ($new ? "<div class='text-secondary small cf-subtitle'>Registre o negócio ganho no CRM com os mesmos blocos do CRM. O Ciclo começa na data em que o negócio foi ganho e já segue para a validação da documentação pelo OTC.</div>"
                 : "<div class='small text-secondary mt-1'>" . self::statusBadge((int) $f['status']) . ' · ' . $e($f['customer']) . ' · ' . $e(self::SALE_TYPES[$f['sale_type']][0] ?? '') . ($f['opportunity'] ? ' · oportunidade ' . $e($f['opportunity']) : '') . '</div>')
             . "</div>";
         if (!$new) {
@@ -286,18 +290,21 @@ class Ciclo extends CommonDBTM
         $money = fn ($name, $label, $col = 'col-md-3') => "<div class='$col'><label class='form-label'>$label</label><input class='form-control' name='$name' value='" . ((float) $f[$name] ? number_format((float) $f[$name], 2, ',', '.') : '') . "' $dis></div>";
         $section = fn ($title, $icon, $phase = '') => "<div class='col-12 cf-section'><i class='ti $icon me-1'></i>$title" . ($phase ? " <span class='text-secondary fw-normal'>· fase " . $e(Fase::name($phase)) . "</span>" : '') . "</div>";
 
-        echo "<form method='post' action='$action' class='card mb-3'><div class='card-header'><h3 class='card-title'><i class='ti ti-file-description me-2'></i>" . ($new ? 'Dados da venda' : 'Dados do Ciclo') . "</h3></div><div class='card-body row g-3'>";
-        echo $section('Venda', 'ti-briefcase', 'aviso');
-        echo "<div class='col-md-6'><label class='form-label required'>Venda / projeto</label><input class='form-control' name='name' maxlength='255' required placeholder='Ex.: Datacenter Prefeitura X - expansão de storage' value='" . $e($f['name']) . "' $dis></div>";
-        echo $text('customer', 'Cliente', 'col-md-6');
-        echo $text('opportunity', 'Oportunidade no CRM', 'col-md-3', 'nº da oportunidade');
+        $crm = Crm::decode($f['crm_data'] ?? '');
+        echo "<form method='post' action='$action' class='card mb-3'><div class='card-header'><h3 class='card-title'><i class='ti ti-file-description me-2'></i>" . ($new ? 'Aviso de Fechamento do CRM' : 'Dados do Ciclo') . "</h3>"
+            . (!$new ? "<div class='card-actions small text-secondary'>" . Crm::summary($crm) . "</div>" : '') . "</div><div class='card-body row g-3'>";
+        echo $section('Negócio', 'ti-briefcase', 'aviso');
+        echo "<div class='col-md-6'><label class='form-label required'>Negócio (venda / projeto)</label><input class='form-control' name='name' maxlength='255' required placeholder='Ex.: 50302205 - Câmeras Axon Body' value='" . $e($f['name']) . "' $dis></div>";
+        echo $text('customer', 'Empresa (cliente)', 'col-md-6', 'Razão social da empresa no CRM');
+        echo $text('opportunity', 'Nº da oportunidade no CRM', 'col-md-3', 'Ex.: 50302205');
         echo "<div class='col-md-3'><label class='form-label'>Tipo de venda</label>" . Dropdown::showFromArray('sale_type', array_map(fn ($t) => $t[0], self::SALE_TYPES), ['value' => $f['sale_type'], 'display' => false, 'width' => '100%', 'disabled' => !$edit]) . "</div>";
-        echo $money('amount', 'Valor da venda (R$)');
-        echo "<div class='col-md-3'><label class='form-label'>Aviso de fechamento em</label><input type='datetime-local' class='form-control' name='date_closing' value='" . $e($f['date_closing'] ? date('Y-m-d\TH:i', strtotime($f['date_closing'])) : '') . "' $dis></div>";
+        echo $money('amount', 'Valor (R$)');
+        echo "<div class='col-md-3'><label class='form-label'>Data que ganhou</label><input type='datetime-local' class='form-control' name='date_closing' value='" . $e($f['date_closing'] ? date('Y-m-d\TH:i', strtotime($f['date_closing'])) : '') . "' $dis></div>";
         echo $date('date_signed', 'Contrato assinado em');
-        echo $user('users_id_commercial', 'Comercial');
+        echo $user('users_id_commercial', 'Responsável (Comercial)');
         echo $user('users_id_otc', 'OTC');
         echo $user('users_id_gp', 'Gerente de projeto (GP)');
+        echo Crm::form($crm, $edit);
         if (!$new) {
             $fisico = in_array('fisico', self::SALE_TYPES[$f['sale_type']][1] ?? [], true);
             echo $section('Centro de custo', 'ti-building-bank', 'centro_custo');

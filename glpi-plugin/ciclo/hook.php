@@ -60,12 +60,16 @@ function plugin_ciclo_install(): bool
             $DB->doQuery("CREATE TABLE `$table` ($def) $opts");
         }
     }
-    // 1.0.3: ata do transfermeeting
-    foreach (['transfer_participants' => 'varchar(255) DEFAULT NULL AFTER `date_transfer`', 'transfer_minutes' => 'mediumtext AFTER `transfer_participants`'] as $field => $type) {
+    // 1.0.3: ata do transfermeeting; 1.0.4: campos do Aviso de Fechamento do CRM
+    foreach (['transfer_participants' => 'varchar(255) DEFAULT NULL AFTER `date_transfer`', 'transfer_minutes' => 'mediumtext AFTER `transfer_participants`',
+        'crm_data' => 'mediumtext AFTER `users_id_gp`'] as $field => $type) {
         if (!$DB->fieldExists(Ciclo::getTable(), $field)) {
             $DB->doQuery("ALTER TABLE `" . Ciclo::getTable() . "` ADD `$field` $type");
         }
     }
+
+    // 1.0.4: a primeira fase passa a se chamar Aviso de Fechamento do CRM (só se ainda tem o nome antigo)
+    $DB->update(Etapa::getTable(), ['name' => Etapa::DEFAULTS['aviso'][0]], ['code' => 'aviso', 'name' => 'Aviso de fechamento']);
 
     $pos = 0;
     foreach (Etapa::DEFAULTS as $code => [$name, $area, $applies, $slo, $description, $requirement]) {

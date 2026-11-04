@@ -8,7 +8,7 @@ Feito para ficar aberto numa TV de sala de operações (modo tela cheia) e tamb�
 
 | Bloco | Origem | Detalhe |
 |---|---|---|
-| **Alertas** | Zabbix | Desastre, Alta e Atenção no período (configurável em `severities`) e **sem ACK**, com os ativos agora; clicar abre a lista de alertas na gaveta |
+| **Alertas** | Zabbix | Desastre, Alta e Atenção (ou Média) no período (configurável em `severities`) e **sem ACK**, com os ativos agora; clicar abre a lista de alertas na gaveta |
 | **Chamados** | GLPI | Abertos no período, **pendentes** e **atrasados** (prazo de solução do GLPI vencido), só da entidade configurada para baixo (`glpi_entity_prefix`) |
 | **Tempo de resposta** | Zabbix + GLPI | **MTTD** (Zabbix: início do problema até o 1º reconhecimento; GLPI: abertura até o 1º atendimento) e **MTTR** (início até a recuperação; abertura até a solução) |
 | **Tempo em aberto** | GLPI | Chamados abertos agora por faixa de idade (< 1 dia a > 30 dias), por status |
@@ -55,7 +55,7 @@ Criado pelo `instalar.sh` na primeira instalação (fora da pasta web, `root:www
 | `glpi_mode` | `db` (padrão: lê o banco do GLPI com um usuário só `SELECT`, plugin dentro do GLPI) ou `rest` (lê pela API REST do GLPI, para um GLPI em outro servidor); com `rest`, informe `glpi_rest` = `url`, `app_token` e `user_token` |
 | `glpi_front` | Endereço do GLPI, para os links dos chamados |
 | `glpi_entity_prefix` | Entidade raiz do painel (ex.: `Empresa > TI > NOC`): só chamados dela para baixo |
-| `severities` | Severidades mostradas, em números do Zabbix (padrão `[5, 4, 2]`: Desastre, Alta e Atenção) |
+| `severities` | Severidades mostradas, em números do Zabbix: 5 Desastre, 4 Alta, 3 Média, 2 Atenção (Warning), 1 Informação. Padrão `[5, 4, 2]` (Desastre, Alta e Atenção); com `[5, 4, 3]` a Média substitui a Atenção em cartões, quadros, faixa AO VIVO, mapa e alertas por voz |
 | `client_root_markers` | Nomes de entidade cujo filho é o cliente (ex.: `CLIENTES` > Cliente A) |
 | `client_child_markers` | Nomes de entidade cujo pai é o cliente (ex.: Cliente A > `PARCEIROS`) |
 | `client_skip_levels`, `client_exclude` | Níveis ignorados ao achar o cliente e nomes que não contam como cliente |

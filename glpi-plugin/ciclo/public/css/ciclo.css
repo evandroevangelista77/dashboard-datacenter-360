@@ -365,3 +365,13 @@
 
 /* ata do transfermeeting (somente leitura) */
 .cf-minutes { padding: .75rem 1rem; border: 1px solid var(--tblr-border-color); border-radius: 8px; background: var(--tblr-bg-surface-secondary); min-height: 3rem; }
+
+/* Aviso de Fechamento do CRM */
+.cf-crm-label { font-size: .78rem; line-height: 1.25; min-height: 1.25em; }
+.cf-crm-chk { text-transform: none; letter-spacing: 0; font-weight: 500; margin-left: .4rem; font-size: .8rem; }
+.cf-crm-chk small { color: var(--tblr-secondary-color); }
+.cf-crm-ok { color: #16a34a; }
+.cf-crm-bad { color: #dc2626; }
+.form-select.cf-yn-sim { border-color: color-mix(in srgb, #22c55e 55%, var(--tblr-border-color)); background-color: color-mix(in srgb, #22c55e 7%, var(--tblr-bg-forms, transparent)); }
+.form-select.cf-yn-nao { border-color: color-mix(in srgb, #ef4444 55%, var(--tblr-border-color)); background-color: color-mix(in srgb, #ef4444 7%, var(--tblr-bg-forms, transparent)); }
+.form-select.cf-yn-na { color: var(--tblr-secondary-color); }

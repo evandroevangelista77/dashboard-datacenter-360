@@ -13,7 +13,27 @@
     sev: [0, 1, 2, 3, 4, 5].map((i) => css(`--sev-${i}`)),
   };
   const SEV = ['Não classificada', 'Informação', 'Atenção', 'Média', 'Alta', 'Desastre'];
-  const SHOWN = [5, 4, 2]; // Desastre, Alta e Atenção (Warning)
+  let SHOWN = [5, 4, 2]; // severidades exibidas: vêm do servidor (config 'severities'; padrão Desastre, Alta e Atenção)
+  const SEVMETA = {
+    5: ['Desastre', 'Falha crítica: serviço parado ou perda total.', '<path d="M8.3 2h7.4L21 7.3v9.4L15.7 22H8.3L3 16.7V7.3z"/><path d="M12 8v5M12 16.5v.01"/>'],
+    4: ['Alta', 'Problema grave com impacto no serviço.', '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17v.01"/>'],
+    3: ['Média', 'Degradação do serviço: acompanhar antes que piore.', '<path d="M12 3l9 9-9 9-9-9z"/><path d="M12 8.5v4M12 16v.01"/>'],
+    2: ['Atenção', 'Alerta preventivo, sem impacto imediato.', '<circle cx="12" cy="12" r="9.5"/><path d="M12 7.5v5M12 16v.01"/>'],
+  };
+  /** Ajusta os 3 cartões de severidade e os textos fixos ao que o servidor está exibindo (ex.: Média no lugar de Atenção). */
+  function applySeverities(sevs) {
+    if (!Array.isArray(sevs) || !sevs.length) return;
+    SHOWN = sevs.map(Number).filter((s) => SEVMETA[s]).sort((x, y) => y - x);
+    $$('.ktile[data-kpi^="sev"]').forEach((el, i) => {
+      const sv = SHOWN[i]; if (sv == null) { el.hidden = true; return; }
+      el.hidden = false; el.dataset.kpi = `sev${sv}`; el.style.setProperty('--c', `var(--sev-${sv})`);
+      el.title = `Alertas de severidade ${SEVMETA[sv][0]} no período`;
+      el.querySelector('.l').textContent = SEVMETA[sv][0]; el.querySelector('.desc').textContent = SEVMETA[sv][1];
+      el.querySelector('svg.ic').innerHTML = SEVMETA[sv][2];
+    });
+    const nomes = SHOWN.map((s) => SEVMETA[s][0]), L = nomes.length > 1 ? `${nomes.slice(0, -1).join(', ')} e ${nomes[nomes.length - 1]}` : nomes[0], D = nomes.join(' · ');
+    $$('[data-sevt]').forEach((el) => { const t = el.dataset.sevt.replace('{L}', L).replace('{D}', D); if (el.dataset.sevattr) el.setAttribute(el.dataset.sevattr, t); else el.textContent = t; });
+  }
 
   /* ---------------- formatação */
   const nf = new Intl.NumberFormat('pt-BR');
@@ -103,6 +123,7 @@
   /* ---------------- render */
   function render(d) {
     const k = d.kpi, int = (x) => nf.format(Math.round(x));
+    applySeverities(d.severities);
     SHOWN.forEach((sv) => {
       const n = k.alerts_by_sev[sv] ?? 0, a = k.active_by_sev[sv] ?? 0;
       setKpi(`sev${sv}`, n, `${nf.format(a)} ${a === 1 ? 'ativo' : 'ativos'} agora`, int, sv === 5 && n ? 'bad' : '');
@@ -513,6 +534,7 @@
     sev5: '<path d="M8.3 2h7.4L21 7.3v9.4L15.7 22H8.3L3 16.7V7.3z"/><path d="M12 8v5M12 16.5v.01"/>',
     sev4: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17v.01"/>',
     sev2: '<circle cx="12" cy="12" r="9.5"/><path d="M12 7.5v5M12 16v.01"/>',
+    sev3: '<path d="M12 3l9 9-9 9-9-9z"/><path d="M12 8.5v4M12 16v.01"/>',
     unacked: '<path d="M18.6 14.5c.9-1.2 1.4-2.7 1.4-4.5a8 8 0 0 0-12-6.9M6.3 6.3A8 8 0 0 0 4 10c0 5-2 6.5-2 6.5h14M10 20a2 2 0 0 0 4 0M2 2l20 20"/>',
     tickets: '<path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/>',
     pending: '<circle cx="12" cy="12" r="9.5"/><path d="M10 9v6M14 9v6"/>',
