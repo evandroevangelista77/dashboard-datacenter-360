@@ -108,11 +108,14 @@ if (isset($_POST['save'])) {
     } catch (Throwable $ex) {
         Session::addMessageAfterRedirect($ex->getMessage(), false, ERROR);
     }
-    Html::back();
+    $aba = in_array($_POST['aba'] ?? '', ['conexao', 'mapa', 'painel', 'alertas'], true) ? $_POST['aba'] : 'conexao';
+    Html::redirect($_SERVER['PHP_SELF'] . '?aba=' . $aba);
 }
 
 $e = fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);
+$aba = in_array($_GET['aba'] ?? '', ['conexao', 'mapa', 'painel', 'alertas'], true) ? $_GET['aba'] : 'conexao';
 $sev = Settings::severities();
+$mapSev = [5, 4, 3, 2, 1];   // severidades que dá para liberar por host group no mapa
 $groups = dc360_hostgroups();
 $alerts = Settings::alerts();
 $viewers = Settings::viewerIds();
@@ -139,12 +142,20 @@ Html::header('NOC 360 — configuração', $_SERVER['PHP_SELF'], 'config', 'plug
 ?>
 <form method="post" action="<?= $e($_SERVER['PHP_SELF']) ?>" class="card">
   <input type="hidden" name="_glpi_csrf_token" value="<?= $e(Session::getNewCSRFToken()) ?>">
+  <input type="hidden" name="aba" id="dcAba" value="<?= $e($aba) ?>">
   <div class="card-header"><h3 class="card-title"><i class="ti ti-building-broadcast-tower me-1"></i>NOC 360 · configuração</h3></div>
   <div class="card-body">
     <?php if (!$dirOk): ?>
       <div class="alert alert-danger small">A pasta <code><?= $e(dirname(Settings::FILE)) ?></code> não existe ou não é gravável pelo servidor web: esta tela não consegue salvar. Rode o instalador do painel (<code>instalar.sh</code>) para criá-la.</div>
     <?php endif; ?>
 
+    <ul class="nav nav-tabs mb-3" role="tablist" id="dcTabs">
+      <?php foreach (['conexao' => ['1. Conexão com o Zabbix', 'ti-plug-connected'], 'mapa' => ['2. Mapa: entidade → host group → severidades', 'ti-map-2'], 'painel' => ['3. Painel', 'ti-layout-dashboard'], 'alertas' => ['4. Alertas do navegador', 'ti-bell-ringing']] as $k => [$rot, $ic]): ?>
+        <li class="nav-item" role="presentation"><a class="nav-link <?= $aba === $k ? 'active' : '' ?>" data-bs-toggle="tab" href="#dc-<?= $k ?>" data-aba="<?= $k ?>" role="tab"><i class="ti <?= $ic ?> me-1"></i><?= $e($rot) ?></a></li>
+      <?php endforeach; ?>
+    </ul>
+    <div class="tab-content">
+    <div class="tab-pane <?= $aba === 'conexao' ? 'active show' : '' ?>" id="dc-conexao" role="tabpanel">
     <h4 class="mt-2">1. Conexão com o Zabbix</h4>
     <p class="text-secondary small">Use uma conta de serviço do Zabbix com <b>somente leitura</b> nos host groups do mapa. O token fica em arquivo no servidor, fora da pasta web, e nunca vai para o navegador. Em branco, vale o que está no <code>config.php</code> do instalador.</p>
     <div class="row g-3">
@@ -164,17 +175,18 @@ Html::header('NOC 360 — configuração', $_SERVER['PHP_SELF'], 'config', 'plug
       </div>
     </div>
 
-    <hr class="my-4">
-    <h4>2. Mapa: entidade → host group → severidades</h4>
+    </div>
+    <div class="tab-pane <?= $aba === 'mapa' ? 'active show' : '' ?>" id="dc-mapa" role="tabpanel">
+    <h4 class="mt-2">2. Mapa: entidade → host group → severidades</h4>
     <p class="text-secondary small">Cada linha liga uma entidade do GLPI (o cliente) a um host group do Zabbix e diz quais severidades aparecem no painel para aquele host group. Um host group pode estar em mais de uma entidade. Hosts de grupos sem linha aqui continuam sendo ligados ao cliente pelo nome do grupo, com as severidades do painel (seção 3).</p>
     <?php if ($groups === null): ?>
       <div class="alert alert-warning small">Não foi possível listar os host groups do Zabbix. Salve a conexão e volte a esta tela; até lá, informe o ID do host group.</div>
     <?php endif; ?>
     <div class="table-responsive">
-      <table class="table table-sm table-vcenter">
+      <table class="table table-sm table-vcenter" id="dcMapa">
         <thead><tr>
           <th>Entidade (GLPI)</th><th>Host group (Zabbix)</th>
-          <?php foreach ($sev as $s): ?><th class="text-center"><?= $e(Settings::SEVERITY_LABELS[$s] ?? $s) ?></th><?php endforeach; ?>
+          <?php foreach ($mapSev as $s): ?><th class="text-center"><?= $e(Settings::SEVERITY_LABELS[$s] ?? $s) ?></th><?php endforeach; ?>
           <th class="text-center">Remover</th>
         </tr></thead>
         <tbody>
@@ -205,8 +217,8 @@ Html::header('NOC 360 — configuração', $_SERVER['PHP_SELF'], 'config', 'plug
                 <input type="hidden" name="map[<?= $i ?>][group_name]" value="<?= $e($r['group_name']) ?>">
               <?php endif; ?>
             </td>
-            <?php foreach ($sev as $s): ?>
-              <td class="text-center"><input class="form-check-input" type="checkbox" name="map[<?= $i ?>][sev][]" value="<?= $s ?>" <?= in_array($s, $r['severities'], true) ? 'checked' : '' ?>></td>
+            <?php foreach ($mapSev as $s): ?>
+              <td class="text-center"><input class="form-check-input" type="checkbox" name="map[<?= $i ?>][sev][]" value="<?= $s ?>" data-def="<?= in_array($s, $sev, true) ? 1 : 0 ?>" <?= in_array($s, $r['severities'], true) ? 'checked' : '' ?>></td>
             <?php endforeach; ?>
             <td class="text-center"><input class="form-check-input" type="checkbox" name="map[<?= $i ?>][delete]" value="1"></td>
           </tr>
@@ -214,10 +226,12 @@ Html::header('NOC 360 — configuração', $_SERVER['PHP_SELF'], 'config', 'plug
         </tbody>
       </table>
     </div>
-    <p class="text-secondary small">Para incluir mais linhas, salve: as linhas em branco aparecem de novo.</p>
+    <button type="button" class="btn btn-sm btn-outline-primary" id="dcAddLinha"><i class="ti ti-plus me-1"></i>Adicionar linha</button>
+    <span class="text-secondary small ms-2">Cada linha vale para uma entidade e um host group; marque as severidades que devem aparecer. Salve para aplicar.</span>
 
-    <hr class="my-4">
-    <h4>3. Painel</h4>
+    </div>
+    <div class="tab-pane <?= $aba === 'painel' ? 'active show' : '' ?>" id="dc-painel" role="tabpanel">
+    <h4 class="mt-2">3. Painel</h4>
     <div class="row g-3">
       <div class="col-md-6">
         <label class="form-label">Severidades exibidas nos cartões</label>
@@ -250,8 +264,9 @@ Html::header('NOC 360 — configuração', $_SERVER['PHP_SELF'], 'config', 'plug
         <input class="form-control" type="number" min="0" max="600" name="cache_seconds" value="<?= $e(Settings::get('cache_ttl', 60)) ?>"></div>
     </div>
 
-    <hr class="my-4">
-    <h4>4. Alertas do navegador</h4>
+    </div>
+    <div class="tab-pane <?= $aba === 'alertas' ? 'active show' : '' ?>" id="dc-alertas" role="tabpanel">
+    <h4 class="mt-2">4. Alertas do navegador</h4>
     <p class="text-secondary small">Canais de cada tipo de alerta. Os alertas aparecem só dentro do painel NOC 360.</p>
     <div class="table-responsive">
       <table class="table table-sm">
@@ -286,10 +301,24 @@ Html::header('NOC 360 — configuração', $_SERVER['PHP_SELF'], 'config', 'plug
       <div class="col-md-3"><label class="form-label">SLA: avisar com antecedência (min)</label>
         <input class="form-control" type="number" min="5" max="1440" name="alerts_sla_warn_minutes" value="<?= (int) $alerts['sla_warn_minutes'] ?>"></div>
     </div>
+    </div>
+    </div>
   </div>
   <div class="card-footer d-flex justify-content-end">
     <button type="submit" name="save" value="1" class="btn btn-primary"><i class="ti ti-device-floppy me-1"></i>Salvar</button>
   </div>
 </form>
+<script>
+(() => {
+  const aba = document.getElementById('dcAba');
+  document.querySelectorAll('#dcTabs [data-aba]').forEach((a) => a.addEventListener('click', () => { aba.value = a.dataset.aba; history.replaceState(null, '', '?aba=' + a.dataset.aba); }));
+  const add = document.getElementById('dcAddLinha'), tb = document.querySelector('#dcMapa tbody');
+  if (add && tb) add.addEventListener('click', () => {
+    const last = tb.lastElementChild, n = tb.children.length, c = last.cloneNode(true);
+    c.querySelectorAll('[name]').forEach((el) => { el.name = el.name.replace(/map\[\d+\]/, 'map[' + n + ']'); if (el.type === 'checkbox') el.checked = el.name.endsWith('[sev][]') && el.dataset.def === '1'; else el.value = el.tagName === 'SELECT' ? (el.options[0] ? el.options[0].value : '') : ''; });
+    tb.appendChild(c);
+  });
+})();
+</script>
 <?php
 Html::footer();

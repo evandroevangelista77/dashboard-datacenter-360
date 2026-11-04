@@ -57,6 +57,7 @@ class Menu extends CommonGLPI
             ],
         ];
         if (Session::haveRight('config', UPDATE)) {
+            $content['mapa'] = ['title' => 'Mapa: entidade → host group', 'page' => "$front/config.form.php?aba=mapa", 'icon' => 'ti ti-map-2'];
             $content['configuracao'] = ['title' => 'Configuração', 'page' => "$front/config.form.php", 'icon' => 'ti ti-settings'];
         }
         return $content;
