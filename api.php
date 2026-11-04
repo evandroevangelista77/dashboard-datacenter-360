@@ -1515,7 +1515,7 @@ function data(): array
         $c = $hostClient[$p['hostid']] ?? '—';
         $touch($c);
         $agg[$c]['active']++;
-        $agg[$c]['unacked'] += $p['acknowledged'] ? 0 : 1;
+        $agg[$c]['unacked'] += ($p['acknowledged'] || $p['severity'] < 4) ? 0 : 1;   // Sem ACK: só Desastre e Alta
     }
 
     // ---------------- filtros: cliente, host e chamado
@@ -1573,10 +1573,10 @@ function data(): array
     $perHost = $hostAct = $hostUn = [];
     foreach ($active as &$p) {
         $activeCount[$p['severity']] = ($activeCount[$p['severity']] ?? 0) + 1;
-        $unacked += $p['acknowledged'] ? 0 : 1;
+        $unacked += ($p['acknowledged'] || $p['severity'] < 4) ? 0 : 1;   // Sem ACK: só Desastre e Alta
         $perHost[$p['hostid']][] = $p['severity'];
         $hostAct[$p['hostid']] = ($hostAct[$p['hostid']] ?? 0) + 1;
-        $hostUn[$p['hostid']] = ($hostUn[$p['hostid']] ?? 0) + ($p['acknowledged'] ? 0 : 1);
+        $hostUn[$p['hostid']] = ($hostUn[$p['hostid']] ?? 0) + (($p['acknowledged'] || $p['severity'] < 4) ? 0 : 1);
         $p['url'] = $front . '/tr_events.php?triggerid=' . $p['objectid'] . '&eventid=' . $p['eventid'];
     }
     unset($p);
@@ -1663,7 +1663,7 @@ function data(): array
         'severities' => $sevs,
         'kpi' => [
             'alerts' => count($events), 'alerts_by_sev' => $sevCount,
-            'active' => count($active), 'active_by_sev' => $activeCount, 'unacked' => $unacked,
+            'active' => count($active), 'active_by_sev' => $activeCount, 'active_high' => (int)(($activeCount[5] ?? 0) + ($activeCount[4] ?? 0)), 'unacked' => $unacked,
             'tickets' => count($P), 'backlog' => count($O),
             'pending' => count(array_filter($O, fn($t) => $t['pending'])), 'overdue' => count(array_filter($O, fn($t) => $t['late'])),
             'mttd_zbx' => avg($detect), 'mttd_zbx_n' => count($detect), 'mttd_glpi' => avg($tme), 'mttd_glpi_n' => count($tme),

@@ -8,7 +8,7 @@ Feito para ficar aberto numa TV de sala de operações (modo tela cheia) e tamb�
 
 | Bloco | Origem | Detalhe |
 |---|---|---|
-| **Alertas** | Zabbix | Desastre, Alta e Atenção (ou Média) no período (configurável em `severities`) e **sem ACK**, com os ativos agora; clicar abre a lista de alertas na gaveta |
+| **Alertas** | Zabbix | Desastre, Alta e Atenção (ou Média) no período (configurável em `severities`) e **sem ACK** (só Desastre e Alta que ninguém reconheceu), com os ativos agora; clicar abre a lista de alertas na gaveta |
 | **Chamados** | GLPI | Abertos no período, **pendentes** e **atrasados** (prazo de solução do GLPI vencido), só da entidade configurada para baixo (`glpi_entity_prefix`) |
 | **Tempo de resposta** | Zabbix + GLPI | **MTTD** (Zabbix: início do problema até o 1º reconhecimento; GLPI: abertura até o 1º atendimento) e **MTTR** (início até a recuperação; abertura até a solução) |
 | **Tempo em aberto** | GLPI | Chamados abertos agora por faixa de idade (< 1 dia a > 30 dias), por status |

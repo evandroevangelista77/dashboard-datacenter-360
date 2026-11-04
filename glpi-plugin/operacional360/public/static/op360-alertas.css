@@ -1,0 +1,56 @@
+/* Operacional 360: sinalizador no topo e pop-ups dos alertas por voz, som e tela (em todas as telas do GLPI) */
+.op360-flag { position: relative; display: flex; align-items: center; --n-accent: #087E83; }
+.op360-flag .nav-link { position: relative; color: inherit; }
+.op360-flag.op360-flag-active .nav-link > .ti { color: var(--n-flag, var(--n-accent)); }
+.op360-flag-count { position: absolute; top: 2px; right: 0; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--n-accent); color: #fff;
+    font-size: .68rem; font-weight: 700; line-height: 18px; text-align: center; box-shadow: 0 0 0 2px var(--tblr-bg-surface, #fff); }
+.op360-flag-pulse .nav-link::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; border: 2px solid var(--n-flag, var(--n-accent)); animation: op360-ring 1.4s ease-out infinite; pointer-events: none; }
+.op360-flag-pulse .op360-flag-count { animation: op360-blink 1s steps(2, start) infinite; }
+.op360-flag-locked .nav-link > .ti { animation: op360-shake .6s ease-in-out infinite; }
+@keyframes op360-ring { 0% { transform: scale(.7); opacity: .9; } 100% { transform: scale(1.7); opacity: 0; } }
+@keyframes op360-blink { to { opacity: .35; } }
+@keyframes op360-shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-12deg); } 75% { transform: rotate(12deg); } }
+.op360-flag-floating { position: fixed; right: 60px; top: 14px; z-index: 1050; background: var(--tblr-bg-surface, #fff); border-radius: 50%; box-shadow: 0 6px 20px rgba(0, 0, 0, .3); }
+.op360-flag-menu { width: 420px; max-width: calc(100vw - 24px); padding: 0; overflow: hidden; }
+.op360-flag-head { display: flex; flex-direction: column; gap: .1rem; padding: .65rem .9rem; color: #fff; background: linear-gradient(135deg, #087E83, #054f53); }
+.op360-flag-state { font-size: .74rem; opacity: .9; }
+.op360-flag-list { max-height: 420px; overflow-y: auto; }
+.op360-flag-empty { padding: 1.3rem; text-align: center; color: var(--tblr-secondary-color); font-size: .85rem; }
+.op360-flag-item { display: flex; gap: .7rem; padding: .6rem .9rem; color: inherit; text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--tblr-border-color, #ccc) 60%, transparent); }
+.op360-flag-item:hover { background: rgba(8, 126, 131, .12); color: inherit; }
+.op360-flag-foot { display: flex; justify-content: space-between; gap: .5rem; padding: .5rem .7rem; border-top: 1px solid var(--tblr-border-color); }
+.op360-flag-foot .btn-primary { background: #087E83; border-color: #087E83; }
+.op360-ico { width: 34px; height: 34px; flex: none; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem;
+    background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); }
+.op360-txt { display: flex; flex-direction: column; min-width: 0; font-size: .84rem; line-height: 1.35; }
+.op360-txt span, .op360-txt small { color: var(--tblr-secondary-color); }
+.op360-txt small { font-size: .72rem; }
+
+.op360-toasts { position: fixed; bottom: 18px; right: 18px; z-index: 1090; display: flex; flex-direction: column; gap: .6rem; width: 390px; max-width: calc(100vw - 24px); pointer-events: none; }
+.op360-toasts.left { right: auto; left: 18px; }
+.op360-toast { pointer-events: auto; display: flex; gap: .75rem; align-items: flex-start; padding: .85rem .9rem; border-radius: 12px;
+    background: var(--tblr-bg-surface, #fff); color: var(--tblr-body-color); border: 1px solid var(--tblr-border-color); border-left: 5px solid var(--c, #087E83);
+    box-shadow: 0 14px 34px rgba(5, 25, 40, .4); opacity: 0; transform: translateY(24px); transition: opacity .25s, transform .25s; }
+.op360-toast.in { opacity: 1; transform: none; }
+.op360-toast.out { opacity: 0; transform: translateY(24px); }
+.op360-toast .op360-txt { flex: 1; }
+.op360-toast .op360-txt b { font-size: .92rem; color: var(--tblr-body-color); }
+.op360-toast .op360-txt small { text-transform: uppercase; letter-spacing: .04em; font-weight: 700; color: var(--c, #087E83); }
+.op360-toast .btn-primary { align-self: flex-start; background: #087E83; border-color: #087E83; }
+.op360-toast .btn-close { flex: none; }
+
+/* fora do GLPI (painel direto ou em quadro): sem Bootstrap/Tabler, o menu e as cores vêm daqui */
+.op360-standalone .op360-flag, .op360-standalone .op360-toasts { --tblr-bg-surface: #0d2347; --tblr-body-color: #eef4fc; --tblr-border-color: rgba(90, 135, 210, .35); --tblr-secondary-color: #9bb2d3; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.op360-standalone .op360-flag-menu { display: none; position: absolute; right: 0; top: calc(100% + 8px); z-index: 1100; background: #0d2347; color: #eef4fc; border: 1px solid rgba(90, 135, 210, .35); border-radius: 12px; box-shadow: 0 18px 44px rgba(0, 0, 0, .5); }
+.op360-standalone .op360-flag.show .op360-flag-menu { display: block; }
+.op360-standalone .op360-flag-bar { position: relative; }
+.op360-standalone .op360-flag .nav-link { cursor: pointer; font-size: 18px; line-height: 1; }
+.op360-standalone .op360-flag-count { box-shadow: 0 0 0 2px #07142b; }
+.op360-standalone .op360-flag-item { color: #eef4fc; }
+.op360-standalone .btn { font: 600 12px system-ui, sans-serif; padding: 5px 10px; border-radius: 8px; border: 1px solid rgba(90, 135, 210, .4); background: transparent; color: #eef4fc; text-decoration: none; cursor: pointer; display: inline-block; }
+.op360-standalone .btn-primary { background: #087E83; border-color: #087E83; color: #fff; }
+.op360-standalone .op360-toast .btn-close { width: 22px; height: 22px; border: 0; background: transparent; color: inherit; font-size: 18px; cursor: pointer; }
+.op360-standalone .op360-toast .btn-close::before { content: "×"; }
+.op360-standalone .mt-2 { margin-top: .5rem; }
+.op360-emo { font-style: normal; line-height: 1; }
+.op360-standalone .op360-flag-left .op360-flag-menu { right: auto; left: 0; }

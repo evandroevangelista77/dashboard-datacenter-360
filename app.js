@@ -128,7 +128,8 @@
       const n = k.alerts_by_sev[sv] ?? 0, a = k.active_by_sev[sv] ?? 0;
       setKpi(`sev${sv}`, n, `${nf.format(a)} ${a === 1 ? 'ativo' : 'ativos'} agora`, int, sv === 5 && n ? 'bad' : '');
     });
-    setKpi('unacked', k.unacked, `de ${nf.format(k.active)} ativos`, int, k.unacked ? 'warn' : 'ok');
+    const altas = k.active_high ?? ((k.active_by_sev[5] || 0) + (k.active_by_sev[4] || 0));   // Sem ACK: só Desastre e Alta
+    setKpi('unacked', k.unacked, `de ${nf.format(altas)} ativos (Desastre e Alta)`, int, k.unacked ? 'warn' : 'ok');
     setKpi('tickets', k.tickets, `${nf.format(k.backlog)} em aberto agora`, int);
     setKpi('pending', k.pending, k.backlog ? `de ${nf.format(k.backlog)} em aberto` : 'nenhum em aberto', int, k.pending ? 'warn' : 'ok');
     setKpi('overdue', k.overdue, 'prazo do GLPI vencido', int, k.overdue ? 'bad' : 'ok');
@@ -366,12 +367,12 @@
     const all = data.active, now = Date.now() / 1000;
     const counts = {}; SHOWN.forEach((s) => (counts[s] = 0));
     all.forEach((p) => { counts[p.severity] = (counts[p.severity] || 0) + 1; });
-    const noack = all.filter((p) => !p.acknowledged).length;
+    const noack = all.filter((p) => !p.acknowledged && p.severity >= 4).length;
     $('#sevChips').innerHTML = `<button type="button" class="chip ${local.sev == null && !local.noack ? 'on' : ''}" data-sev="">Todos <b>${all.length}</b></button>` +
       SHOWN.map((s) => `<button type="button" class="chip ${local.sev === s ? 'on' : ''}" data-sev="${s}" ${counts[s] ? '' : 'disabled'}>
         <i style="background:${C.sev[s]}"></i>${SEV[s]} <b>${counts[s]}</b></button>`).join('') +
-      `<button type="button" class="chip ${local.noack ? 'on' : ''}" data-noack="1">Sem ACK <b>${noack}</b></button>`;
-    const rows = sortRows($('#tblActive'), all.filter((p) => (local.sev == null || p.severity === local.sev) && (!local.noack || !p.acknowledged)));
+      `<button type="button" class="chip ${local.noack ? 'on' : ''}" data-noack="1" title="Desastre e Alta que ninguém reconheceu">Sem ACK <b>${noack}</b></button>`;
+    const rows = sortRows($('#tblActive'), all.filter((p) => (local.sev == null || p.severity === local.sev) && (!local.noack || (!p.acknowledged && p.severity >= 4))));
     $('#activeHint').textContent = `${rows.length} de ${all.length} · clique para abrir o alerta no Zabbix`;
     $('#tblActive tbody').innerHTML = rows.length ? rows.map((p) => `
       <tr class="clickable" data-url="${esc(p.url)}" title="Abrir este alerta no Zabbix">
@@ -639,7 +640,7 @@
     const mkT = (arr) => arr.map((t) => ({ ...t, _q: `${t.id} ${t.client} ${t.name} ${t.status}`.toLowerCase() }));
     const scope = state.client ? ` · ${esc(state.client)}` : '';
     const aTiles = [...SHOWN.map((s) => ({ label: SEV[s], color: C.sev[s], fn: (p) => p.severity === s })),
-      { label: 'Sem ACK', color: 'var(--accent)', fn: (p) => !p.acknowledged }];
+      { label: 'Sem ACK', color: 'var(--accent)', fn: (p) => !p.acknowledged && p.severity >= 4 }];
     const tTiles = [{ label: 'No prazo', color: '#3fcf6f', fn: (t) => t.open && !t.late && !t.pending },
       { label: 'Pendentes', color: C.warning, fn: (t) => t.pending },
       { label: 'Atrasados', color: C.critical, fn: (t) => t.late },
@@ -650,9 +651,9 @@
       openDrawer({ title: `Alertas ${SEV[sv]}`, icon: kind, color: C.sev[sv], items: mkA(arr), render: alertItem, tiles: aTiles,
         sub: `Ativos agora, do mais antigo ao mais recente · ${nf.format(k.alerts_by_sev[sv] || 0)} no período${scope}` });
     } else if (kind === 'unacked') {
-      const arr = zbx.filter((p) => !p.acknowledged).sort(bySev);
+      const arr = zbx.filter((p) => !p.acknowledged && p.severity >= 4).sort(bySev);
       openDrawer({ title: 'Alertas sem ACK', icon: kind, color: 'var(--accent)', items: mkA(arr), render: alertItem, tiles: aTiles,
-        sub: `Do mais crítico para o mais tranquilo · ninguém reconheceu no Zabbix${scope}` });
+        sub: `Do mais crítico para o mais tranquilo · Desastre e Alta que ninguém reconheceu no Zabbix${scope}` });
     } else if (kind === 'tickets' || kind === 'pending' || kind === 'overdue') {
       const fn = { tickets: () => true, pending: (t) => t.pending, overdue: (t) => t.late }[kind];
       const rank = (t) => (t.late ? 0 : t.pending ? 1 : t.open ? 2 : 3);
