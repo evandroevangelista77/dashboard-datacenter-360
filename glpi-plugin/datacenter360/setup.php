@@ -9,7 +9,7 @@ use Glpi\Plugin\Hooks;
 use GlpiPlugin\Datacenter360\Menu;
 use GlpiPlugin\Datacenter360\ProfileTab;
 
-define('PLUGIN_DATACENTER360_VERSION', '1.4.3');
+define('PLUGIN_DATACENTER360_VERSION', '1.5.0');
 define('PLUGIN_DATACENTER360_MIN_GLPI', '11.0.0');
 define('PLUGIN_DATACENTER360_MAX_GLPI', '12.0.99');
 
@@ -42,6 +42,9 @@ function plugin_init_datacenter360(): void
 
     // Seção "Dashboard" no menu lateral; quem não tem o direito não vê os itens
     // (Menu::getMenuContent() devolve false).
+    // roda de configuração (Configurar → Plugins → NOC 360), com as mesmas opções do Operacional 360
+    $PLUGIN_HOOKS[Hooks::CONFIG_PAGE]['datacenter360'] = 'front/config.form.php';
+
     $PLUGIN_HOOKS[Hooks::MENU_TOADD]['datacenter360'] = [Menu::SECTOR => [Menu::class]];
 
     // Aplicado a cada desenho do menu: põe a seção no topo e a acrescenta mesmo

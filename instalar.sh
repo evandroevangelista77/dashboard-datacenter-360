@@ -10,6 +10,9 @@ CONF_DIR=/etc/datacenter360
 CONF=$CONF_DIR/config.php
 
 mkdir -p "$WEB" "$CONF_DIR"
+# pasta onde a tela de configuração do plugin (GLPI) grava os ajustes; só o servidor web escreve
+WEBUSER=${DC360_WEBUSER:-www-data}
+install -d -o "$WEBUSER" -g "$WEBUSER" -m 750 /var/lib/datacenter360
 
 if [ ! -f "$CONF" ]; then
     : "${ZABBIX_TOKEN:?defina ZABBIX_TOKEN (token somente leitura do Zabbix) na primeira instalação}"

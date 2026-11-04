@@ -35,14 +35,14 @@ class Menu extends CommonGLPI
 
     public static function getMenuContent()
     {
-        if (!Session::haveRight(self::$rightname, READ)) {
+        if (!Settings::canView()) {   // direito do perfil e, se houver lista, o usuário precisa estar nela
             return false;
         }
 
         $front = '/plugins/datacenter360/front';
 
         // 'title' dá nome à seção; as demais chaves viram itens dela
-        return [
+        $content = [
             'title'            => 'NOC',
             'is_multi_entries' => true,
             'datacenter360'    => [
@@ -56,6 +56,10 @@ class Menu extends CommonGLPI
                 'icon'  => 'ti ti-topology-star-3',
             ],
         ];
+        if (Session::haveRight('config', UPDATE)) {
+            $content['configuracao'] = ['title' => 'Configuração', 'page' => "$front/config.form.php", 'icon' => 'ti ti-settings'];
+        }
+        return $content;
     }
 
     /**

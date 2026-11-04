@@ -15,6 +15,18 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
 $cfg = require '/etc/datacenter360/config.php';
+// Ajustes salvos pela tela do GLPI (Configurar → Plugins → NOC 360) valem mais que o config.php do instalador.
+$ovr = is_readable('/var/lib/datacenter360/config.json') ? json_decode((string)file_get_contents('/var/lib/datacenter360/config.json'), true) : null;
+if (is_array($ovr)) {
+    foreach (['zabbix_url', 'zabbix_token', 'zabbix_front', 'glpi_front', 'severities', 'sla_hours', 'list_max', 'glpi_max_tickets', 'cache_ttl', 'glpi_entity_prefix', 'alertas', 'mapa_entidades'] as $k) {
+        if (array_key_exists($k, $ovr) && $ovr[$k] !== null && $ovr[$k] !== '' && $ovr[$k] !== []) {
+            $cfg[$k] = $ovr[$k];
+        }
+    }
+    if (array_key_exists('zabbix_verify', $ovr)) {
+        $cfg['zabbix_verify'] = (bool)$ovr['zabbix_verify'];
+    }
+}
 date_default_timezone_set($cfg['timezone']);
 
 const STATUS_GLPI = [1 => 'Novo', 2 => 'Em atendimento', 3 => 'Planejado', 4 => 'Pendente', 5 => 'Solucionado', 6 => 'Fechado'];
@@ -40,6 +52,14 @@ function fail(int $code, string $msg): never
 }
 
 /** Trava de somente leitura: o painel só consulta. Mesmo com um token de perfil mais amplo, nada é alterado no Zabbix. */
+/** Opções do cURL para o certificado HTTPS do Zabbix (config 'zabbix_verify', padrão verificar). */
+function zbxSsl(): array
+{
+    global $cfg;
+    $v = (bool)($cfg['zabbix_verify'] ?? true);
+    return [CURLOPT_SSL_VERIFYPEER => $v, CURLOPT_SSL_VERIFYHOST => $v ? 2 : 0];
+}
+
 function zbxGuard(string $method): void
 {
     if (!preg_match('/\.get$|^sla\.getsli$|^apiinfo\.version$/', $method)) {
@@ -62,7 +82,7 @@ function zbxBatch(array $calls): array
         $ch = curl_init($cfg['zabbix_url']);
         curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 40,
             CURLOPT_HTTPHEADER => ['Content-Type: application/json-rpc', 'Authorization: Bearer ' . $cfg['zabbix_token']],
-            CURLOPT_POSTFIELDS => json_encode(['jsonrpc' => '2.0', 'method' => $method, 'params' => $params ?: new stdClass(), 'id' => 1])]);
+            CURLOPT_POSTFIELDS => json_encode(['jsonrpc' => '2.0', 'method' => $method, 'params' => $params ?: new stdClass(), 'id' => 1])] + zbxSsl());
         curl_multi_add_handle($mh, $ch);
         $hs[$key] = $ch;
     }
@@ -93,7 +113,7 @@ function zbx(string $method, array $params = []): mixed
         CURLOPT_TIMEOUT => 25,
         CURLOPT_HTTPHEADER => ['Content-Type: application/json-rpc', 'Authorization: Bearer ' . $cfg['zabbix_token']],
         CURLOPT_POSTFIELDS => json_encode(['jsonrpc' => '2.0', 'method' => $method, 'params' => $params ?: new stdClass(), 'id' => 1]),
-    ]);
+    ] + zbxSsl());
     $raw = curl_exec($ch);
     if ($raw === false) {
         throw new RuntimeException('Zabbix inacessível: ' . curl_error($ch));
@@ -181,7 +201,7 @@ function versionsRaw(): array
     $ch = curl_init($cfg['zabbix_url']);
     curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10,
         CURLOPT_HTTPHEADER => ['Content-Type: application/json-rpc'],
-        CURLOPT_POSTFIELDS => json_encode(['jsonrpc' => '2.0', 'method' => 'apiinfo.version', 'params' => new stdClass(), 'id' => 1])]);
+        CURLOPT_POSTFIELDS => json_encode(['jsonrpc' => '2.0', 'method' => 'apiinfo.version', 'params' => new stdClass(), 'id' => 1])] + zbxSsl());
     $zbx = json_decode((string)curl_exec($ch), true)['result'] ?? null;
     try {
         $glpi = glpiRemote()
@@ -788,6 +808,41 @@ function slas(int $from, int $till): array
  * =================================================================================================== */
 
 /** Severidades que o painel mostra (padrão: Desastre, Alta e Atenção/Warning; troque em config.php, ex.: [5, 4, 3] para Desastre, Alta e Média). */
+/** Linhas do mapa entidade → host group → severidades, salvas na tela de configuração do plugin. */
+function mapaEntidades(): array
+{
+    global $cfg;
+    return array_values(array_filter((array)($cfg['mapa_entidades'] ?? []), fn($m) => is_array($m) && !empty($m['group_name'])));
+}
+
+/** Nome do host group => severidades que aparecem para ele (união das linhas do mapa). */
+function grupoSev(): array
+{
+    $out = [];
+    foreach (mapaEntidades() as $m) {
+        $out[$m['group_name']] = array_values(array_unique(array_merge($out[$m['group_name']] ?? [], array_map('intval', (array)($m['severities'] ?? [])))));
+    }
+    return $out;
+}
+
+/** O alerta de severidade $sev, de um host destes grupos, aparece no painel? */
+function sevPermitida(array $groupNames, int $sev, array $gsev): bool
+{
+    $m = [];
+    foreach ($groupNames as $g) {
+        if (isset($gsev[$g])) {
+            $m = array_merge($m, $gsev[$g]);
+        }
+    }
+    return $m ? in_array($sev, $m, true) : in_array($sev, sevList(), true);
+}
+
+/** Severidades a buscar no Zabbix: as do painel mais as liberadas por algum host group do mapa. */
+function sevAll(): array
+{
+    return array_values(array_unique(array_merge(sevList(), ...array_values(grupoSev()))));
+}
+
 function sevList(): array
 {
     global $cfg;
@@ -910,6 +965,11 @@ function groupClientMap(array $groupNames, array $clients): array
     foreach (($cfg['client_groups'] ?? []) as $client => $groups) {
         foreach ((array)$groups as $g) {
             $map[$g] = $client;
+        }
+    }
+    foreach (mapaEntidades() as $m) {   // linhas do mapa da tela de configuração: valem mais que o nome
+        if (!empty($m['entity_name'])) {
+            $map[$m['group_name']] = cliOf((string)$m['entity_name']);
         }
     }
     foreach ($groupNames as $g) {
@@ -1280,8 +1340,8 @@ function glpiTicketContent(int $id): string
 function zabbixRaw(int $from, int $till): array
 {
     global $cfg;
-    return fileCache("zraw:v2:$from:$till", (int)($cfg['cache_ttl'] ?? 20), function () use ($from, $till) {
-        $sev = sevList();
+    return fileCache("zraw:v3:" . implode('', sevAll()) . ":$from:$till", (int)($cfg['cache_ttl'] ?? 20), function () use ($from, $till) {
+        $sev = sevAll();
         $w1 = zbxBatchStrict([
             'hosts' => ['host.get', ['output' => ['hostid', 'host', 'name', 'active_available'], 'filter' => ['status' => 0],
                 'selectInterfaces' => ['type', 'available'], 'selectHostGroups' => ['name'], 'sortfield' => 'name']],
@@ -1391,7 +1451,7 @@ function alertas(): array
     global $cfg;
     $a = $cfg['alertas'] ?? [];
     $now = time();
-    $sev = sevList();
+    $sev = sevAll();
     $zbx = fileCache('alertas:z:' . implode(',', $sev), 10, function () use ($sev) {
         $w1 = zbxBatchStrict(['p' => ['problem.get', ['output' => ['eventid', 'r_eventid', 'r_clock', 'name', 'severity', 'clock', 'acknowledged'], 'severities' => $sev,
             'recent' => true, 'sortfield' => ['eventid'], 'sortorder' => 'DESC', 'limit' => 400]]]);
@@ -1406,6 +1466,17 @@ function alertas(): array
             'severity' => (int)$p['severity'], 'clock' => (int)$p['clock'], 'ack' => $p['acknowledged'] === '1',
             'host' => $hosts[$p['eventid']]['name'] ?? '—', 'hostid' => $hosts[$p['eventid']]['hostid'] ?? null], $w1['p']);
     });
+    if (sevAll() !== sevList()) {   // severidades por host group (mapa da tela de configuração)
+        $gsev = grupoSev();
+        $hg = fileCache('alertas:hg', 300, function () {
+            $o = [];
+            foreach (zbx('host.get', ['output' => ['hostid'], 'selectHostGroups' => ['name'], 'filter' => ['status' => 0]]) as $h) {
+                $o[$h['hostid']] = array_column($h['hostgroups'] ?? [], 'name');
+            }
+            return $o;
+        });
+        $zbx = array_values(array_filter($zbx, fn($x) => sevPermitida($hg[(string)$x['hostid']] ?? [], (int)$x['severity'], $gsev)));
+    }
     $tk = fileCache('alertas:t', 20, fn() => glpiRemote() ? glpiTicketsRest(0, 0, true) : glpiTicketsDb(0, 0, true));
     $tickets = [];
     foreach ($tk as $t) {
@@ -1456,6 +1527,15 @@ function data(): array
     $raw = zabbixRaw($from, $till);
     tick('zabbix');
     $zHosts = $raw['hosts'];
+    if (sevAll() !== sevList()) {   // há host group do mapa com severidades próprias
+        $gsev = grupoSev();
+        $hg = [];
+        foreach ($zHosts as $h) {
+            $hg[(string)$h['hostid']] = array_column($h['hostgroups'] ?? [], 'name');
+        }
+        $raw['problems'] = array_values(array_filter($raw['problems'], fn($x) => sevPermitida($hg[(string)$x['hostid']] ?? [], (int)$x['severity'], $gsev)));
+        $raw['events'] = array_values(array_filter($raw['events'], fn($x) => sevPermitida($hg[(string)$x['hostid']] ?? [], (int)$x['severity'], $gsev)));
+    }
     $clients = glpiClients();
     $groupNames = [];
     foreach ($zHosts as $h) {

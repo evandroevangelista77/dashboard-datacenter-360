@@ -152,6 +152,17 @@ Abaixo, a tabela **Tempo de resposta por analista** aplica o MTTD e o MTTR aos m
 
 A ação `horas` do `api.php` só faz leituras (`GET /events`) e soma a duração de cada lançamento no **dia em que começou**. Para testar sem acesso à API, `'fixture' => '/caminho/eventos.json'` lê os lançamentos de um arquivo.
 
+### Configuração pela tela do GLPI
+
+Em **Configurar → Plugins → NOC 360** (também no menu NOC → Configuração, só para quem configura o GLPI) fica a tela de configuração, com as mesmas opções do Operacional 360:
+
+1. **Conexão com o Zabbix**: endereço da API, token (em branco mantém o salvo), endereços do Zabbix e do GLPI para os links e a verificação do certificado HTTPS, com teste da conexão.
+2. **Mapa entidade → host group → severidades**: cada linha liga uma entidade do GLPI (o cliente) a um host group do Zabbix e diz quais severidades aparecem para esse grupo. A linha vale mais que a correspondência pelo nome do grupo.
+3. **Painel**: severidades dos cartões, entidade raiz, quem pode ver o painel dentro do GLPI, metas de solução por prioridade, limites das listas e cache.
+4. **Alertas do navegador**: canais de cada tipo (sinalizador, som, pop-up, voz, fica até fechar), intervalo, volume, velocidade da voz, pop-ups, silenciar e antecedência do aviso de SLA.
+
+A tela grava `/var/lib/datacenter360/config.json` (pasta criada pelo `instalar.sh`, dona o servidor web, `DC360_WEBUSER` troca o usuário), que o painel lê por cima do `config.php`. O token fica nesse arquivo, fora da pasta web, e nunca vai para o navegador. Os valores novos valem em até 1 minuto (cache). Para voltar ao que está no `config.php`, apague o `config.json`.
+
 ### Instalação do plugin
 
 ```bash
