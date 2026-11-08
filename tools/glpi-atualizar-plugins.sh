@@ -56,14 +56,14 @@ fi
 
 mkdir -p "$SRC"
 
-# git com o token só na linha de comando (não vai para a configuração do repositório)
+# git sempre em HTTP/1.1 (evita quedas de HTTP/2 em redes instáveis); o token, se existir, vai só na linha de comando
 git_auth() {
   if [ -n "${GH_TOKEN:-}" ]; then
     local b64
     b64=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
-    git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $b64" "$@"
+    git -c http.version=HTTP/1.1 -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $b64" "$@"
   else
-    git "$@"
+    git -c http.version=HTTP/1.1 "$@"
   fi
 }
 
@@ -75,12 +75,17 @@ declare -A PRONTO=()
 baixar() { # baixa/atualiza o repositório (uma vez por execução)
   local repo="$1"
   [ -n "${PRONTO[$repo]:-}" ] && return "${PRONTO[$repo]}"
-  local dir="$SRC/$repo" url="https://github.com/$OWNER/$repo.git" rc=0
-  if [ -d "$dir/.git" ]; then
-    git_auth -C "$dir" fetch -q origin main && git -C "$dir" reset -q --hard origin/main || rc=1
-  else
-    git_auth clone -q --depth 50 "$url" "$dir" || rc=1
-  fi
+  local dir="$SRC/$repo" url="https://github.com/$OWNER/$repo.git" rc=1 tentativa
+  for tentativa in 1 2 3; do
+    if [ -d "$dir/.git" ]; then
+      if git_auth -C "$dir" fetch -q origin main && git -C "$dir" reset -q --hard origin/main; then rc=0; break; fi
+    else
+      rm -rf "$dir"
+      if git_auth clone -q --depth 50 "$url" "$dir"; then rc=0; break; fi
+    fi
+    echo "   tentativa $tentativa de 3 falhou para $repo; repetindo..." >&2
+    sleep 3
+  done
   PRONTO[$repo]=$rc
   return $rc
 }
@@ -99,7 +104,7 @@ for l in "${MAPA[@]}"; do
   IFS='|' read -r chave repo sub <<<"$l"
   quer "$chave" || continue
   if ! baixar "$repo"; then
-    echo "!! $chave: não consegui baixar $OWNER/$repo (repositório privado? configure GH_TOKEN em $ENV_FILE)"
+    echo "!! $chave: não consegui baixar $OWNER/$repo após 3 tentativas (rede fora do ar ou repositório privado; neste caso configure GH_TOKEN em $ENV_FILE)"
     FALHA+=("$chave"); continue
   fi
   origem="$SRC/$repo"; [ "$sub" != "." ] && origem="$origem/$sub"
