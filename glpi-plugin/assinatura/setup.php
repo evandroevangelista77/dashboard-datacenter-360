@@ -11,13 +11,22 @@
 use Glpi\Plugin\Hooks;
 use GlpiPlugin\Assinatura\TicketTab;
 
-define('PLUGIN_ASSINATURA_VERSION', '1.0.0');
+define('PLUGIN_ASSINATURA_VERSION', '1.1.0');
 define('PLUGIN_ASSINATURA_MIN_GLPI', '12.0.0');
 define('PLUGIN_ASSINATURA_MAX_GLPI', '12.0.99');
 
 function plugin_init_assinatura(): void
 {
     global $PLUGIN_HOOKS;
+
+    // aba do plugin em Administração → Perfis
+    Plugin::registerClass(GlpiPlugin\Assinatura\ProfileTab::class, ['addtabon' => [Profile::class]]);
+
+    // sessões abertas antes da instalação ainda não têm o direito do plugin
+    if (isset($_SESSION['glpiactiveprofile']['id']) && !isset($_SESSION['glpiactiveprofile']['plugin_assinatura'])) {
+        $rights = ProfileRight::getProfileRights($_SESSION['glpiactiveprofile']['id'], ['plugin_assinatura']);
+        $_SESSION['glpiactiveprofile']['plugin_assinatura'] = (int) ($rights['plugin_assinatura'] ?? 0);
+    }
 
     Plugin::registerClass(TicketTab::class, ['addtabon' => [Ticket::class]]);
 

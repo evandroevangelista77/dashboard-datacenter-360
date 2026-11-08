@@ -15,7 +15,7 @@ class Settings extends CommonGLPI
 {
     public const CONTEXT = 'plugin:assinatura';
 
-    public static string $rightname = 'config';
+    public static string $rightname = 'plugin_assinatura';
 
     public static function getTypeName($nb = 0)
     {

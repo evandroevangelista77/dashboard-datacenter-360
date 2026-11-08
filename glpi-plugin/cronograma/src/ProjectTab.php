@@ -6,6 +6,7 @@ use CommonGLPI;
 use Document;
 use Html;
 use Project;
+use Session;
 
 /**
  * Aba "Cronograma (MS Project)" no Projeto: envio do arquivo e histórico de importações.
@@ -14,7 +15,7 @@ class ProjectTab extends CommonGLPI
 {
     public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0)
     {
-        if (!$item instanceof Project || $item->isNewItem()) {
+        if (!$item instanceof Project || $item->isNewItem() || !Session::haveRight('plugin_cronograma', READ)) {
             return '';
         }
         return self::createTabEntry('Cronograma (MS Project)', 0, null, 'ti ti-timeline');
@@ -30,7 +31,7 @@ class ProjectTab extends CommonGLPI
         $imported = self::countImported($projectId);
 
         echo "<div class='p-3'>";
-        if ($item->canUpdateItem()) {
+        if ($item->canUpdateItem() && Session::haveRight('plugin_cronograma', UPDATE)) {
             // o envio fica numa página própria: formulário com upload dentro da aba (AJAX) não era enviado
             $url = htmlspecialchars($CFG_GLPI['root_doc'] . '/plugins/cronograma/front/import.php?projects_id=' . $projectId, ENT_QUOTES);
             $label = $imported === 0 ? 'Importar cronograma do MS Project' : "Reimportar cronograma ($imported tarefa(s) já importada(s))";

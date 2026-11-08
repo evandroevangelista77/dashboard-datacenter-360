@@ -15,7 +15,7 @@ class ProfileTab extends CommonGLPI
     public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0)
     {
         if ($item instanceof Profile && $item->getField('interface') === 'central') {
-            return self::createTabEntry('DataCenter 360', 0, null, Menu::getIcon());
+            return self::createTabEntry('NOC 360', 0, null, Menu::getIcon());
         }
         return '';
     }

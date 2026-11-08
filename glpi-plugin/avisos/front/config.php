@@ -9,7 +9,7 @@ use GlpiPlugin\Avisos\Canal;
 use GlpiPlugin\Avisos\Pagina;
 use GlpiPlugin\Avisos\Teams;
 
-Session::checkRight('config', UPDATE);
+Session::checkRight('plugin_avisos', UPDATE);
 
 global $DB;
 $e = fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);

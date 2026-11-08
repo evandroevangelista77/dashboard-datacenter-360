@@ -2,6 +2,7 @@
 
 function plugin_cronograma_install(): bool
 {
+    plugin_cronograma_ensure_rights();
     global $DB;
 
     $charset   = DBConnection::getDefaultCharset();
@@ -57,6 +58,7 @@ function plugin_cronograma_install(): bool
 
 function plugin_cronograma_uninstall(): bool
 {
+    ProfileRight::deleteProfileRights(['plugin_cronograma']);
     global $DB;
 
     // as tarefas importadas continuam no projeto; só os vínculos e o histórico saem
@@ -73,4 +75,23 @@ function plugin_cronograma_item_purge(CommonDBTM $item): void
 
     $field = $item instanceof Project ? 'projects_id' : 'projecttasks_id';
     $DB->delete('glpi_plugin_cronograma_tasks', [$field => $item->getID()]);
+}
+
+/** Direito do plugin em Administração → Perfis. Criado uma vez; o padrão preserva quem já acessava. */
+function plugin_cronograma_ensure_rights(): void
+{
+    global $DB;
+    $name = 'plugin_cronograma';
+    if (!countElementsInTable(ProfileRight::getTable(), ['name' => $name])) {
+        ProfileRight::addProfileRights([$name]);
+        foreach ($DB->request(['SELECT' => ['id'], 'FROM' => Profile::getTable(), 'WHERE' => ['interface' => 'central']]) as $row) {
+            $config = ProfileRight::getProfileRights($row['id'], ['config'])['config'] ?? 0;
+            $rights = READ | UPDATE;
+            $DB->update(ProfileRight::getTable(), ['rights' => $rights], ['profiles_id' => $row['id'], 'name' => $name]);
+        }
+    }
+    if (isset($_SESSION['glpiactiveprofile']['id'])) {
+        $current = ProfileRight::getProfileRights($_SESSION['glpiactiveprofile']['id'], [$name]);
+        $_SESSION['glpiactiveprofile'][$name] = (int) ($current[$name] ?? 0);
+    }
 }

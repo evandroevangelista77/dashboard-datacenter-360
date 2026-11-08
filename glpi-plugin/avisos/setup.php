@@ -12,13 +12,22 @@ use Glpi\Plugin\Hooks;
 use GlpiPlugin\Avisos\Aviso;
 use GlpiPlugin\Avisos\Canal;
 
-define('PLUGIN_AVISOS_VERSION', '1.2.0');
+define('PLUGIN_AVISOS_VERSION', '1.3.0');
 define('PLUGIN_AVISOS_MIN_GLPI', '12.0.0');
 define('PLUGIN_AVISOS_MAX_GLPI', '12.0.99');
 
 function plugin_init_avisos(): void
 {
     global $PLUGIN_HOOKS;
+
+    // aba do plugin em Administração → Perfis
+    Plugin::registerClass(GlpiPlugin\Avisos\ProfileTab::class, ['addtabon' => [Profile::class]]);
+
+    // sessões abertas antes da instalação ainda não têm o direito do plugin
+    if (isset($_SESSION['glpiactiveprofile']['id']) && !isset($_SESSION['glpiactiveprofile']['plugin_avisos'])) {
+        $rights = ProfileRight::getProfileRights($_SESSION['glpiactiveprofile']['id'], ['plugin_avisos']);
+        $_SESSION['glpiactiveprofile']['plugin_avisos'] = (int) ($rights['plugin_avisos'] ?? 0);
+    }
 
     Plugin::registerClass(Aviso::class);
     Plugin::registerClass(Canal::class);

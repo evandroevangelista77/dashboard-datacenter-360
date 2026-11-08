@@ -3,6 +3,7 @@
 use GlpiPlugin\Assinatura\SignRequest;
 
 Session::checkLoginUser();
+Session::checkRight('plugin_assinatura', READ);
 
 $ticket = new Ticket();
 $ticketId = (int) ($_POST['tickets_id'] ?? 0);

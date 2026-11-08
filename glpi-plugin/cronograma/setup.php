@@ -11,13 +11,22 @@
 
 use GlpiPlugin\Cronograma\ProjectTab;
 
-define('PLUGIN_CRONOGRAMA_VERSION', '1.0.0');
+define('PLUGIN_CRONOGRAMA_VERSION', '1.1.0');
 define('PLUGIN_CRONOGRAMA_MIN_GLPI', '12.0.0');
 define('PLUGIN_CRONOGRAMA_MAX_GLPI', '12.0.99');
 
 function plugin_init_cronograma(): void
 {
     global $PLUGIN_HOOKS;
+
+    // aba do plugin em Administração → Perfis
+    Plugin::registerClass(GlpiPlugin\Cronograma\ProfileTab::class, ['addtabon' => [Profile::class]]);
+
+    // sessões abertas antes da instalação ainda não têm o direito do plugin
+    if (isset($_SESSION['glpiactiveprofile']['id']) && !isset($_SESSION['glpiactiveprofile']['plugin_cronograma'])) {
+        $rights = ProfileRight::getProfileRights($_SESSION['glpiactiveprofile']['id'], ['plugin_cronograma']);
+        $_SESSION['glpiactiveprofile']['plugin_cronograma'] = (int) ($rights['plugin_cronograma'] ?? 0);
+    }
 
     Plugin::registerClass(ProjectTab::class, ['addtabon' => [Project::class]]);
     // tarefa ou projeto apagado de vez: o vínculo com o UID do Project sai junto

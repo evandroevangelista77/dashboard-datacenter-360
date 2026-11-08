@@ -5,6 +5,7 @@ use GlpiPlugin\Assinatura\SignRequest;
 
 function plugin_assinatura_install(): bool
 {
+    plugin_assinatura_ensure_rights();
     global $DB;
 
     $table = SignRequest::getTable();
@@ -61,6 +62,7 @@ function plugin_assinatura_install(): bool
 
 function plugin_assinatura_uninstall(): bool
 {
+    ProfileRight::deleteProfileRights(['plugin_assinatura']);
     global $DB;
 
     $DB->dropTable(SignRequest::getTable(), true);
@@ -68,4 +70,23 @@ function plugin_assinatura_uninstall(): bool
     CronTask::unregister('assinatura');
 
     return true;
+}
+
+/** Direito do plugin em Administração → Perfis. Criado uma vez; o padrão preserva quem já acessava. */
+function plugin_assinatura_ensure_rights(): void
+{
+    global $DB;
+    $name = 'plugin_assinatura';
+    if (!countElementsInTable(ProfileRight::getTable(), ['name' => $name])) {
+        ProfileRight::addProfileRights([$name]);
+        foreach ($DB->request(['SELECT' => ['id'], 'FROM' => Profile::getTable(), 'WHERE' => ['interface' => 'central']]) as $row) {
+            $config = ProfileRight::getProfileRights($row['id'], ['config'])['config'] ?? 0;
+            $rights = READ | (($config & UPDATE) ? UPDATE : 0);
+            $DB->update(ProfileRight::getTable(), ['rights' => $rights], ['profiles_id' => $row['id'], 'name' => $name]);
+        }
+    }
+    if (isset($_SESSION['glpiactiveprofile']['id'])) {
+        $current = ProfileRight::getProfileRights($_SESSION['glpiactiveprofile']['id'], [$name]);
+        $_SESSION['glpiactiveprofile'][$name] = (int) ($current[$name] ?? 0);
+    }
 }

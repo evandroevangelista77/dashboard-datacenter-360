@@ -30,6 +30,9 @@ function plugin_init_satisfacao(): void
 {
     global $PLUGIN_HOOKS;
 
+    // aba do plugin em Administração → Perfis
+    Plugin::registerClass(GlpiPlugin\Satisfacao\ProfileTab::class, ['addtabon' => [Profile::class]]);
+
     Plugin::registerClass(Survey::class);
     Plugin::registerClass(Question::class);
     Plugin::registerClass(Campaign::class);

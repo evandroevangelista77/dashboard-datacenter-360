@@ -17,7 +17,7 @@ class TicketTab extends CommonGLPI
 {
     public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0)
     {
-        if (!$item instanceof Ticket || $item->isNewItem()) {
+        if (!$item instanceof Ticket || $item->isNewItem() || !Session::haveRight('plugin_assinatura', READ)) {
             return '';
         }
         $count = count((new SignRequest())->find(['tickets_id' => $item->getID(), 'NOT' => ['status' => 'canceled']]));

@@ -11,7 +11,7 @@ use Session;
  */
 class Canal extends CommonDBTM
 {
-    public static string $rightname = 'config';
+    public static string $rightname = 'plugin_avisos';
 
     /** Plugin → [nome, ícone, cor]. */
     public const SOURCES = [
@@ -28,12 +28,12 @@ class Canal extends CommonDBTM
 
     public static function canView(): bool
     {
-        return Session::haveRight('config', UPDATE);
+        return Session::haveRight('plugin_avisos', UPDATE);
     }
 
     public static function canUpdate(): bool
     {
-        return Session::haveRight('config', UPDATE);
+        return Session::haveRight('plugin_avisos', UPDATE);
     }
 
     public static function forSource(string $source): ?array

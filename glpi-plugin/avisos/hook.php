@@ -7,6 +7,7 @@ use GlpiPlugin\Avisos\Teams;
 /** Tabelas, canais do Teams (um por plugin), configuração e a ação automática da fila. */
 function plugin_avisos_install(): bool
 {
+    plugin_avisos_ensure_rights();
     global $DB;
     $charset = DBConnection::getDefaultCharset();
     $collation = DBConnection::getDefaultCollation();
@@ -64,6 +65,7 @@ function plugin_avisos_install(): bool
 
 function plugin_avisos_uninstall(): bool
 {
+    ProfileRight::deleteProfileRights(['plugin_avisos']);
     global $DB;
     foreach ([Aviso::getTable(), Canal::getTable(), Teams::QUEUE] as $table) {
         if ($DB->tableExists($table)) {
@@ -73,4 +75,23 @@ function plugin_avisos_uninstall(): bool
     Config::deleteConfigurationValues('plugin:avisos', ['popup', 'poll_seconds', 'retention_days']);
     CronTask::unregister('avisos');
     return true;
+}
+
+/** Direito do plugin em Administração → Perfis. Criado uma vez; o padrão preserva quem já acessava. */
+function plugin_avisos_ensure_rights(): void
+{
+    global $DB;
+    $name = 'plugin_avisos';
+    if (!countElementsInTable(ProfileRight::getTable(), ['name' => $name])) {
+        ProfileRight::addProfileRights([$name]);
+        foreach ($DB->request(['SELECT' => ['id'], 'FROM' => Profile::getTable(), 'WHERE' => ['interface' => 'central']]) as $row) {
+            $config = ProfileRight::getProfileRights($row['id'], ['config'])['config'] ?? 0;
+            $rights = ($config & UPDATE) ? UPDATE : 0;
+            $DB->update(ProfileRight::getTable(), ['rights' => $rights], ['profiles_id' => $row['id'], 'name' => $name]);
+        }
+    }
+    if (isset($_SESSION['glpiactiveprofile']['id'])) {
+        $current = ProfileRight::getProfileRights($_SESSION['glpiactiveprofile']['id'], [$name]);
+        $_SESSION['glpiactiveprofile'][$name] = (int) ($current[$name] ?? 0);
+    }
 }

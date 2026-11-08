@@ -3,7 +3,7 @@
 use GlpiPlugin\Assinatura\LibreSignClient;
 use GlpiPlugin\Assinatura\Settings;
 
-Session::checkRight('config', UPDATE);
+Session::checkRight('plugin_assinatura', UPDATE);
 
 if (isset($_POST['save']) || isset($_POST['test'])) {
     Settings::save($_POST);

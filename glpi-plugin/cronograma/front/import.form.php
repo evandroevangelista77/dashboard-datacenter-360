@@ -4,6 +4,7 @@ use GlpiPlugin\Cronograma\Importer;
 use GlpiPlugin\Cronograma\MsProjectReader;
 
 Session::checkLoginUser();
+Session::checkRight('plugin_cronograma', UPDATE);
 
 $project = new Project();
 $projectId = (int) ($_POST['projects_id'] ?? 0);
