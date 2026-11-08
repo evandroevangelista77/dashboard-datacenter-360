@@ -7,9 +7,8 @@
 #   sudo bash glpi-atualizar-plugins.sh crm vmo      # só estes (pela chave do plugin)
 #   sudo bash glpi-atualizar-plugins.sh --lista      # mostra o mapa plugin -> repositório
 #
-# Repositórios privados: crie /etc/glpi-plugins.env (chmod 600, dono root) com uma linha
-#   GH_TOKEN=<token fine-grained só de leitura (Contents: Read) nos repositórios dos plugins>
-# O token nunca é impresso nem gravado em outro lugar. Os repositórios públicos funcionam sem ele.
+# Todos os repositórios dos plugins são públicos: não precisa de token nem de login.
+# (Se um dia algum voltar a ser privado, crie /etc/glpi-plugins.env com a linha GH_TOKEN=<token de leitura>.)
 #
 # O que faz, para cada plugin: baixa a versão mais nova do GitHub, copia para <GLPI>/plugins/<chave>,
 # ajusta o dono para o servidor web e, se a versão do plugin mudou, roda plugin:install e plugin:activate.
